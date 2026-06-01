@@ -1,0 +1,6 @@
+{
+  "name": "R2H Portal & Back Office",
+  "description": "Portail d'administration et CRM unifié pour r2h.ma, africapoolspa.com et gardenexpo.ma. Gestion des salons, plans de stands interactifs, devis/factures et campagnes marketing boostées par l'IA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
