@@ -17,7 +17,8 @@ import {
   Sliders,
   Sparkles,
   Percent,
-  TrendingDown
+  TrendingDown,
+  Download
 } from 'lucide-react';
 import { SiteId, Transaction, TransactionItem } from '../types';
 import { initialSites } from '../initialData';
@@ -149,7 +150,212 @@ export default function ComptabiliteView({
   };
 
   const printDocument = () => {
-    window.print();
+    if (focusReceipt) {
+      downloadDocument(focusReceipt);
+    } else {
+      window.print();
+    }
+  };
+
+  const downloadDocument = (receipt: Transaction) => {
+    const totalHT = receipt.amount;
+    const tva = totalHT * 0.2;
+    const totalTTC = totalHT * 1.2;
+    const siteLabel = receipt.site === 'africapool' ? 'Africa Pool & Spa Expo 2025' : receipt.site === 'gardenexpo' ? 'Garden Expo Africa 2025' : 'R2H Communication';
+    
+    // Create a hidden, isolated iframe for beautiful PDF vector rendering
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.zIndex = '-9999';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      triggerToast("Erreur d'initialisation de l'assistant PDF.");
+      return;
+    }
+
+    const itemsRows = receipt.items.map(item => `
+      <tr style="border-bottom: 1px solid #e8e6de;">
+        <td style="padding: 12px 14px; text-align: left; font-weight: 600; color: #2d2d2d; font-size: 11px;">${item.description}</td>
+        <td style="padding: 12px 14px; text-align: center; color: #7a7667; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: bold;">${item.quantity}</td>
+        <td style="padding: 12px 14px; text-align: right; color: #2d2d2d; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: bold; white-space: nowrap;">${item.unitPrice.toLocaleString('fr-FR')} MAD</td>
+        <td style="padding: 12px 14px; text-align: right; color: #2d2d2d; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 800; white-space: nowrap;">${(item.quantity * item.unitPrice).toLocaleString('fr-FR')} MAD</td>
+      </tr>
+    `).join('');
+
+    const paidCheckWatermark = receipt.status === 'paye' ? `
+      <div style="position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) rotate(12deg); border: 4px dashed #7e8f7a; color: #7e8f7a; opacity: 0.16; font-size: 32px; font-weight: 900; letter-spacing: 0.18em; padding: 14px 28px; border-radius: 12px; z-index: 1; pointer-events: none; font-family: system-ui, sans-serif; text-align: center;">
+        PAYÉ / ENCAISSÉ
+      </div>
+    ` : '';
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${receipt.num || 'FACTURE'}_R2H</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 18mm 15mm;
+          }
+          body {
+            font-family: "Inter", system-ui, -apple-system, sans-serif;
+            color: #2d2d2d;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .invoice-sheet {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+          }
+          .font-title {
+            font-family: "Playfair Display", "Times New Roman", serif;
+            letter-spacing: -0.01em;
+          }
+          .text-slate {
+            color: #7a7667;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="invoice-sheet">
+          ${paidCheckWatermark}
+          
+          <!-- Corporate Stationery Header -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-b: 1px solid #e8e6de; padding-bottom: 22px; margin-bottom: 24px;">
+            <div>
+              <div class="font-title" style="font-size: 20px; font-weight: 900; color: #2d2d2d; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.1;">R2H Communication</div>
+              <div style="font-size: 11px; color: #7a7667; font-weight: 500; margin-top: 4px;">Agence Événementielle Globale • Marketing & Stands</div>
+              <div style="font-size: 9.5px; color: #a4a090; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">Rabat, Casablanca &bull; Royaume du Maroc</div>
+            </div>
+            
+            <div style="text-align: right;">
+              <div class="font-title" style="font-size: 14px; font-weight: 900; color: #a68a64; text-transform: uppercase; letter-spacing: 0.02em;">
+                ${receipt.type === 'devis' ? 'DEVIS PROFORMA' : 'FACTURE DE VENTE'}
+              </div>
+              <div style="font-size: 12px; font-weight: 700; color: #2d2d2d; font-family: 'JetBrains Mono', monospace; margin-top: 4px;">N&deg; ${receipt.num}</div>
+              <span style="display: inline-block; font-size: 9px; padding: 2px 7px; background-color: #fcfbf7; border: 1px solid #e8e6de; border-radius: 4px; color: #7a7667; text-transform: uppercase; font-weight: 700; margin-top: 6px; letter-spacing: 0.02em;">
+                Salon : ${receipt.site === 'africapool' ? 'Africa Pool & Spa' : receipt.site === 'gardenexpo' ? 'Garden Expo Africa' : 'R2H Corporate'}
+              </span>
+            </div>
+          </div>
+
+          <!-- Customer and Issuer Addresses Grid -->
+          <div style="display: grid; grid-template-columns: 1fr 1.05fr; gap: 30px; margin-bottom: 30px; font-size: 11px; line-height: 1.45;">
+            <div>
+              <span style="font-size: 8.5px; text-transform: uppercase; font-weight: 800; color: #a4a090; letter-spacing: 0.08em; display: block; margin-bottom: 5px;">Émetteur Officiel</span>
+              <div style="font-weight: 700; color: #2d2d2d;">R2H Communication SARL a.u.b.m.</div>
+              <div style="color: #7a7667; margin-top: 3px;">N&deg; 45, avenue des FAR, Tour des Habous, Casablanca, Maroc</div>
+              <div style="font-size: 9px; color: #a4a090; font-family: 'JetBrains Mono', monospace; margin-top: 6px; font-weight: 500;">ICE: 00234556111002 &bull; Patente: 3455829</div>
+            </div>
+            
+            <div style="background-color: #fcfbf7; border: 1px solid #e8e6de; padding: 14px 18px; border-radius: 12px;">
+              <span style="font-size: 8.5px; text-transform: uppercase; font-weight: 800; color: #a68a64; letter-spacing: 0.08em; display: block; margin-bottom: 5px;">Destinataire commercial</span>
+              <div style="font-weight: 800; color: #2d2d2d; font-size: 12px;">${receipt.companyName}</div>
+              <div style="color: #7a7667; margin-top: 3px; font-weight: 500;">Représentant désigné : <strong>${receipt.clientName}</strong></div>
+              <div style="font-size: 9px; color: #7a7667; font-family: 'JetBrains Mono', monospace; margin-top: 8px;">Date d'édition : ${receipt.date}</div>
+              <div style="font-size: 9px; color: #7a7667; font-family: 'JetBrains Mono', monospace;">Échéance limite : ${receipt.dueDate}</div>
+            </div>
+          </div>
+
+          <!-- Prestation Detail Table -->
+          <div style="border: 1px solid #e8e6de; border-radius: 12px; overflow: hidden; margin-bottom: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.01);">
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+              <thead>
+                <tr style="background-color: #fcfbf7; border-bottom: 1px solid #e8e6de; font-size: 8.5px; text-transform: uppercase; font-weight: 800; color: #7a7667; letter-spacing: 0.02em;">
+                  <th style="padding: 10px 14px; text-align: left;">Désignation des prestations de stand</th>
+                  <th style="padding: 10px 14px; text-align: center; width: 60px;">Qté</th>
+                  <th style="padding: 10px 14px; text-align: right; width: 110px;">Prix Unit. HT</th>
+                  <th style="padding: 10px 14px; text-align: right; width: 110px;">Montant HT</th>
+                </tr>
+              </thead>
+              <tbody style="background-color: #ffffff;">
+                ${itemsRows}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Financial Calculation and Bank Details Grid -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 30px; font-size: 11px;">
+            <!-- Bank accounts details structured -->
+            <div style="max-width: 280px; color: #7a7667; font-size: 9.5px; line-height: 1.4;">
+              <span style="font-weight: 800; text-transform: uppercase; color: #a4a090; letter-spacing: 0.05em; display: block; margin-bottom: 4px; font-size: 8px;">Consignes de Règlement</span>
+              <div>Règlement par chèque de banque barré ou par transfert de fonds direct aux coordonnées de l'agence régisseuse :</div>
+              <div style="font-weight: bold; color: #2d2d2d; font-family: 'JetBrains Mono', monospace; margin-top: 6px; background-color: #fcfbf7; padding: 10px; border-radius: 8px; border: 1px solid #e8e6de; font-size: 8px; line-height: 1.45;">
+                ATTIJARIWAFA BANK CASABLANCA<br>
+                RIB : <span style="letter-spacing: 0.05em; color: #a68a64;">007 780 0001234567890123 44</span>
+              </div>
+            </div>
+
+            <!-- Totals box identical to high end layouts -->
+            <div style="width: 240px; border-top: 2px solid #a68a64; padding-top: 10px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 10px; color: #7a7667; font-weight: 500;">
+                <span>SOUS-TOTAL HORS TAXES (HT) :</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-weight: bold; color: #2d2d2d;">${totalHT.toLocaleString('fr-FR')} MAD</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 10px; color: #7a7667; font-weight: 500;">
+                <span>TVA EXIGIBLE (20.00%) :</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-weight: bold; color: #2d2d2d;">${tva.toLocaleString('fr-FR')} MAD</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #e8e6de; font-size: 12.5px; margin-top: 4px;">
+                <span style="font-weight: 800; color: #2d2d2d; font-family: 'Playfair Display', serif;">NET À PAYER TTC :</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-weight: 800; color: #a68a64; font-size: 13.5px;">${totalTTC.toLocaleString('fr-FR')} MAD</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notes section -->
+          ${receipt.notes ? `
+            <div style="border-top: 1px dashed #e8e6de; margin-top: 26px; padding-top: 12px; font-size: 9.5px; color: #7a7667;">
+              <span style="font-weight: 800; text-transform: uppercase; color: #a68a64; display: block; margin-bottom: 3px; font-size: 8px; letter-spacing: 0.05em;">Mentions particulières & Conditions</span>
+              <div style="font-style: italic; line-height: 1.45; color: #2d2d2d; font-weight: 500;">${receipt.notes}</div>
+            </div>
+          ` : ''}
+
+          <!-- Page Stamp / Professional metadata footer -->
+          <div style="margin-top: 45px; display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: #a4a090; border-top: 1px solid #fcfbf7; padding-top: 12px; font-family: 'JetBrains Mono', monospace;">
+            <div>Facture générée sécuritairement via R2H ERP</div>
+            <div style="text-align: right; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #a68a64;">Cachet de l'Événement faisant foi</div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            // Slight delay to ensure content layout is fully computed
+            setTimeout(function() {
+              window.print();
+              setTimeout(function() {
+                window.frameElement.parentNode.removeChild(window.frameElement);
+              }, 500);
+            }, 300);
+          }
+        </script>
+      </body>
+      </html>
+    `;
+
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    triggerToast("Ouverture de l'assistant d'impression vectorielle PDF - R2H...");
   };
 
   return (
@@ -451,6 +657,13 @@ export default function ComptabiliteView({
                     >
                       <Printer className="w-3 h-3" />
                       <span>Imprimer PDF</span>
+                    </button>
+                    <button
+                      onClick={() => downloadDocument(focusReceipt)}
+                      className="p-1 px-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Télécharger</span>
                     </button>
                   </div>
                 )}
