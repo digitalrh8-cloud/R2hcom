@@ -1,0 +1,46 @@
+# Workflow d'Intégration Continue (CI) - Portail R2H & MongoDB
+name: MongoDB Integration CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    services:
+      # Lance un service temporaire MongoDB local pour valider les tests d'intégration éventuels
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Utiliser Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Installer les dépendances
+      run: npm ci
+
+    - name: Valider la syntaxe et types TypeScript (Linter)
+      run: npm run lint
+
+    - name: Compiler le serveur et le client web
+      run: npm run build
+      env:
+        NODE_ENV: production
+        # Configuration des variables d'environnement de simulation pour la compilation
+        MONGODB_URI: mongodb://localhost:27017/r2h_test
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

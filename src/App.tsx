@@ -221,6 +221,10 @@ export default function App() {
             selectedSite={selectedSite}
             contacts={contacts}
             setContacts={setContacts}
+            stands={stands}
+            transactions={transactions}
+            setTransactions={setTransactions}
+            setCurrentTab={setCurrentTab}
           />
         );
       case 'clients':
@@ -229,6 +233,10 @@ export default function App() {
             selectedSite={selectedSite}
             contacts={contacts}
             setContacts={setContacts}
+            stands={stands}
+            transactions={transactions}
+            setTransactions={setTransactions}
+            setCurrentTab={setCurrentTab}
           />
         );
       case 'devis':
