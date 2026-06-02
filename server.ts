@@ -27,7 +27,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
-// --- Vercel Database Sync Endpoints ---
+// --- MongoDB Database Sync Endpoints ---
 
 // Get DB connection and configuration status
 app.get('/api/db/status', (req, res) => {
@@ -39,38 +39,38 @@ app.get('/api/db/status', (req, res) => {
   }
 });
 
-// Load all datasets from Vercel Postgres
+// Load all datasets from MongoDB
 app.get('/api/db/load', async (req, res) => {
   try {
     const status = getDatabaseStatus();
     if (!status.isConfigured) {
-      res.json({ success: false, configured: false, message: 'DATABASE_URL non configurée' });
+      res.json({ success: false, configured: false, message: 'MONGODB_URI non configurée' });
       return;
     }
     const data = await loadUserDataFromDatabase();
     if (data) {
       res.json({ success: true, configured: true, data });
     } else {
-      res.status(500).json({ success: false, configured: true, error: 'Échec du chargement des données depuis PostgreSQL' });
+      res.status(500).json({ success: false, configured: true, error: 'Échec du chargement des données depuis MongoDB' });
     }
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || String(err) });
   }
 });
 
-// Save / sync full state to Vercel Postgres
+// Save / sync full state to MongoDB
 app.post('/api/db/save', async (req, res) => {
   try {
     const status = getDatabaseStatus();
     if (!status.isConfigured) {
-      res.json({ success: false, configured: false, message: 'DATABASE_URL non configurée' });
+      res.json({ success: false, configured: false, message: 'MONGODB_URI non configurée' });
       return;
     }
     const success = await saveUserDataToDatabase(req.body);
     if (success) {
       res.json({ success: true });
     } else {
-      res.status(500).json({ success: false, error: 'Échec de la sauvegarde des données dans PostgreSQL' });
+      res.status(500).json({ success: false, error: 'Échec de la sauvegarde des données dans MongoDB' });
     }
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || String(err) });
@@ -172,13 +172,13 @@ async function startServer() {
   initializeDatabaseSchema()
     .then((success) => {
       if (success) {
-        console.log('[Postgres DB] Database schema successfully verified.');
+        console.log('[MongoDB DB] Database collections successfully verified.');
       } else {
-        console.log('[Postgres DB] Database connection not active or configured.');
+        console.log('[MongoDB DB] Database connection not active or configured.');
       }
     })
     .catch((err) => {
-      console.error('[Postgres DB] Async schema boot failed raw:', err);
+      console.error('[MongoDB DB] Async collection boot failed raw:', err);
     });
 
   app.listen(PORT, '0.0.0.0', () => {

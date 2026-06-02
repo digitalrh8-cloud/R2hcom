@@ -94,8 +94,8 @@ export default function SettingsView({ selectedSite, dbStatus }: SettingsViewPro
         <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-display flex items-center gap-1.5 justify-between">
             <div className="flex items-center gap-1.5">
-              <Database className="w-4 h-4 text-blue-500" />
-              <span>Base de Données Vercel Postgres</span>
+              <Database className="w-4 h-4 text-emerald-500" />
+              <span>Base de Données MongoDB</span>
             </div>
             {dbStatus?.isConfigured ? (
               <span className="text-[9px] px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-bold flex items-center gap-1">
@@ -118,7 +118,7 @@ export default function SettingsView({ selectedSite, dbStatus }: SettingsViewPro
                     <span>Synchronisation Cloud Active</span>
                   </p>
                   <p className="text-[10px] text-slate-500 leading-relaxed">
-                    Toutes les modifications sur vos stands, prospects, factures et campagnes marketing IA sont enregistrées directement dans votre instance Vercel Postgres en temps réel.
+                    Toutes les modifications sur vos stands, prospects, factures et campagnes marketing IA sont enregistrées directement dans votre instance MongoDB en temps réel.
                   </p>
                 </div>
                 
@@ -130,7 +130,7 @@ export default function SettingsView({ selectedSite, dbStatus }: SettingsViewPro
                     </span>
                   </div>
                   <div className="flex justify-between border-t border-slate-200/50 pt-1 mt-1">
-                    <span className="text-slate-400">Tables Liées :</span>
+                    <span className="text-slate-400">Collections Liées :</span>
                     <span className="font-bold text-slate-700">stands, contacts, transactions, campaigns, tasks</span>
                   </div>
                 </div>
@@ -140,11 +140,11 @@ export default function SettingsView({ selectedSite, dbStatus }: SettingsViewPro
                 <div className="p-3 bg-amber-50/40 border border-amber-100 rounded-lg space-y-1.5">
                   <p className="font-bold text-amber-800 text-[11px] flex items-center gap-1.5">
                     <AlertCircle className="w-4.5 h-4.5 text-amber-600 shrink-0" />
-                    <span>En attente de connexion Vercel</span>
+                    <span>En attente de connexion MongoDB</span>
                   </p>
                   <p className="text-[10px] text-slate-500 leading-relaxed">
-                    Le portail fonctionne actuellement de manière autonome avec stockage local (localStorage). 
-                    Pour le lier à votre base Vercel Postgres, définissez la variable d'environnement <strong>DATABASE_URL</strong> dans la configuration de votre application AI Studio.
+                    Le portail fonctionne actuellement de manière autonome avec stockage mémoire temporaire. 
+                    Pour le lier à votre instance de base de données MongoDB, définissez la variable d'environnement <strong>MONGODB_URI</strong> dans l'application.
                   </p>
                 </div>
               </div>
@@ -159,15 +159,15 @@ export default function SettingsView({ selectedSite, dbStatus }: SettingsViewPro
               </button>
               <button 
                 onClick={() => {
-                  if (confirm("Êtes-vous sûr de vouloir vider le stockage local et resynchroniser depuis la base ?\nCette action rafraîchira la page.")) {
-                    localStorage.clear();
+                  if (confirm("Êtes-vous sûr de vouloir vider la session de connexion et resynchroniser ?\nCette action rafraîchira la page.")) {
+                    document.cookie = "r2h_portal_authenticated=; path=/; max-age=0; SameSite=Lax";
                     window.location.reload();
                   }
                 }}
                 className="flex-1 py-2 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 rounded-lg font-semibold text-center cursor-pointer text-xs flex items-center justify-center gap-1"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>Restaurer par défaut</span>
+                <span>Déconnecter et synchroniser</span>
               </button>
             </div>
 

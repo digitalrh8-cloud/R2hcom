@@ -21,40 +21,59 @@ import MarketingView from './components/MarketingView';
 import SettingsView from './components/SettingsView';
 import LoginView from './components/LoginView';
 
+// Browser cookie helpers for local session persistence without localStorage
+function getCookie(name: string): string | null {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  return null;
+}
+
+function setCookie(name: string, value: string, days = 365) {
+  const d = new Date();
+  d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+  const expires = `expires=${d.toUTCString()}`;
+  document.cookie = `${name}=${value};${expires};path=/;SameSite=Lax`;
+}
+
+function eraseCookie(name: string) {
+  document.cookie = `${name}=; Max-Age=-99999999;path=/;SameSite=Lax`;
+}
+
 export default function App() {
   // Global site context switcher, defaulting to R2H consolidator in Moroccan workspace
   const [selectedSite, setSelectedSite] = useState<SiteId>('r2h');
   
-  // Authentication status with localStorage session persistence
+  // Authentication status with cookie session persistence (excluding localStorage)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem('r2h_portal_authenticated') === 'true';
+    return getCookie('r2h_portal_authenticated') === 'true';
   });
 
   const handleLoginSuccess = (adminName: string) => {
     setIsAuthenticated(true);
-    localStorage.setItem('r2h_portal_authenticated', 'true');
+    setCookie('r2h_portal_authenticated', 'true');
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    localStorage.removeItem('r2h_portal_authenticated');
+    eraseCookie('r2h_portal_authenticated');
   };
   
   // Navigation tabs 'dashboard' | 'prospects' | 'clients' | 'devis' | 'factures' | 'stands' | 'marketing' | 'parametres'
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
 
-  // Database states with local persistence in local storage
+  // Database states
   const [stands, setStands] = useState<Stand[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  // Vercel Database sync states
+  // MongoDB Database sync states
   const [dbStatus, setDbStatus] = useState<{ isConfigured: boolean; dbInitialized: boolean; error: string | null; maskedUrl: string | null } | null>(null);
   const [isInitiallyLoaded, setIsInitiallyLoaded] = useState<boolean>(false);
 
-  // Load connection status and hydrate data from Postgres DB or localStorage fallback
+  // Load connection status and hydrate data from master MongoDB database or static memory sandbox
   useEffect(() => {
     async function loadInitialData() {
       try {
@@ -63,12 +82,12 @@ export default function App() {
         setDbStatus(status);
 
         if (status.isConfigured) {
-          console.log('[Postgres Sync] Database is configured. Executing load...');
+          console.log('[MongoDB Sync] Database is configured. Executing load...');
           const loadResp = await fetch('/api/db/load');
           const result = await loadResp.json();
           
           if (result.success && result.data) {
-            console.log('[Postgres Sync] Loaded state successfully from Vercel database.');
+            console.log('[MongoDB Sync] Loaded data successfully from MongoDB database.');
             const { stands: dbS, contacts: dbC, transactions: dbT, campaigns: dbM, tasks: dbK } = result.data;
             setStands(dbS);
             setContacts(dbC);
@@ -76,46 +95,24 @@ export default function App() {
             setCampaigns(dbM);
             setTasks(dbK);
             
-            // Hydrate local cache
-            localStorage.setItem('r2h_portal_stands', JSON.stringify(dbS));
-            localStorage.setItem('r2h_portal_contacts', JSON.stringify(dbC));
-            localStorage.setItem('r2h_portal_transactions', JSON.stringify(dbT));
-            localStorage.setItem('r2h_portal_campaigns', JSON.stringify(dbM));
-            localStorage.setItem('r2h_portal_tasks', JSON.stringify(dbK));
-            
             setIsInitiallyLoaded(true);
             return;
           } else {
-            console.warn('[Postgres Sync] Table load failed, falling back to local storage:', result.error);
+            console.warn('[MongoDB Sync] Collections load failed, falling back to static sandbox state:', result.error);
           }
         } else {
-          console.log('[Postgres Sync] Database not configured. Running default LocalStorage/Static sandbox.');
+          console.log('[MongoDB Sync] Database not configured. Running default static sandbox memory mode.');
         }
       } catch (err) {
-        console.error('[Postgres Sync] Failed to communicate with database API:', err);
+        console.error('[MongoDB Sync] Failed to communicate with database API:', err);
       }
 
-      // LocalStorage / static fallback
-      const localS = localStorage.getItem('r2h_portal_stands');
-      const localC = localStorage.getItem('r2h_portal_contacts');
-      const localT = localStorage.getItem('r2h_portal_transactions');
-      const localM = localStorage.getItem('r2h_portal_campaigns');
-      const localK = localStorage.getItem('r2h_portal_tasks');
-
-      if (localS) setStands(JSON.parse(localS));
-      else setStands(initialStands);
-
-      if (localC) setContacts(JSON.parse(localC));
-      else setContacts(initialContacts);
-
-      if (localT) setTransactions(JSON.parse(localT));
-      else setTransactions(initialTransactions);
-
-      if (localM) setCampaigns(JSON.parse(localM));
-      else setCampaigns(initialCampaigns);
-
-      if (localK) setTasks(JSON.parse(localK));
-      else setTasks(initialTasks);
+      // Memory sandboxing fallback (No localStorage)
+      setStands(initialStands);
+      setContacts(initialContacts);
+      setTransactions(initialTransactions);
+      setCampaigns(initialCampaigns);
+      setTasks(initialTasks);
 
       setIsInitiallyLoaded(true);
     }
@@ -123,8 +120,8 @@ export default function App() {
     loadInitialData();
   }, []);
 
-  // Sync state snapshot to Postgres if active
-  const saveToPostgres = async (
+  // Sync state snapshot to MongoDB if active
+  const saveToMongoDB = async (
     currentStands: Stand[],
     currentContacts: Contact[],
     currentTransactions: Transaction[],
@@ -145,48 +142,43 @@ export default function App() {
         })
       });
     } catch (err) {
-      console.error('[Postgres Sync] Auto-save failed:', err);
+      console.error('[MongoDB Sync] Auto-save database fail:', err);
     }
   };
 
-  // Save states back to localStorage and Postgres to maintain absolute precision
+  // Synchronise state changes to MongoDB database without any LocalStorage
   useEffect(() => {
     if (!isInitiallyLoaded) return;
     if (stands.length > 0) {
-      localStorage.setItem('r2h_portal_stands', JSON.stringify(stands));
-      saveToPostgres(stands, contacts, transactions, campaigns, tasks);
+      saveToMongoDB(stands, contacts, transactions, campaigns, tasks);
     }
   }, [stands, isInitiallyLoaded]);
 
   useEffect(() => {
     if (!isInitiallyLoaded) return;
     if (contacts.length > 0) {
-      localStorage.setItem('r2h_portal_contacts', JSON.stringify(contacts));
-      saveToPostgres(stands, contacts, transactions, campaigns, tasks);
+      saveToMongoDB(stands, contacts, transactions, campaigns, tasks);
     }
   }, [contacts, isInitiallyLoaded]);
 
   useEffect(() => {
     if (!isInitiallyLoaded) return;
     if (transactions.length > 0) {
-      localStorage.setItem('r2h_portal_transactions', JSON.stringify(transactions));
-      saveToPostgres(stands, contacts, transactions, campaigns, tasks);
+      saveToMongoDB(stands, contacts, transactions, campaigns, tasks);
     }
   }, [transactions, isInitiallyLoaded]);
 
   useEffect(() => {
     if (!isInitiallyLoaded) return;
     if (campaigns.length > 0) {
-      localStorage.setItem('r2h_portal_campaigns', JSON.stringify(campaigns));
-      saveToPostgres(stands, contacts, transactions, campaigns, tasks);
+      saveToMongoDB(stands, contacts, transactions, campaigns, tasks);
     }
   }, [campaigns, isInitiallyLoaded]);
 
   useEffect(() => {
     if (!isInitiallyLoaded) return;
     if (tasks.length > 0) {
-      localStorage.setItem('r2h_portal_tasks', JSON.stringify(tasks));
-      saveToPostgres(stands, contacts, transactions, campaigns, tasks);
+      saveToMongoDB(stands, contacts, transactions, campaigns, tasks);
     }
   }, [tasks, isInitiallyLoaded]);
 
