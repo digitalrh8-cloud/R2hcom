@@ -19,9 +19,11 @@ Ne commettez **jamais** vos mots de passe MongoDB ou vos clés d'API directement
 
 | Nom du Secret | Description | Exemple de valeur |
 | :--- | :--- | :--- |
-| `MONGODB_URI` | Chaîne de connexion complète à votre cluster MongoDB Atlas | `mongodb+srv://Vercel-Admin-atlas-teal-house:mypassword@atlas-teal-house.egjqebb.mongodb.net/...` |
+| `MONGODB_URI` / `MONGO_URL` | Chaîne de connexion complète ou URL d'accès MongoDB. | `mongodb+srv://user:pass@host/db` ou la variable `MONGO_PUBLIC_URL` de Railway. |
 | `GEMINI_API_KEY` | Clé secrète de l'API Google Gemini pour la génération marketing | `al-9h46TwciYmr_nJg0xRgHn8oNvmRSoZJZ1MjtHEa79Ib` |
 | `MONGO_DATABASE_NAME` | Le nom de la base de données cible dans MongoDB | `r2h` |
+
+> 💡 **Spécificité Railway :** Vous pouvez connecter directement votre base de données MongoDB Railway en définissant soit de manière globale la variable `MONGODB_URI` (ou `MONGO_URL` / `MONGO_PUBLIC_URL`), soit en injectant les variables individuelles fournies par Railway : `MONGO_INITDB_ROOT_USERNAME`, `MONGO_INITDB_ROOT_PASSWORD`, `MONGOHOST`, `MONGOPORT` etc. Le portail se charge d'assembler la chaîne de connexion automatiquement de façon transparente.
 
 ---
 

@@ -19,8 +19,64 @@ function cleanEnv(val: string | undefined): string {
   return val.trim().replace(/^['"]|['"]$/g, '');
 }
 
+// Helper to resolve nested Railway placeholders like ${{VAR}} or ${VAR} in values recursively
+function resolveEnvValue(key: string): string {
+  const rawValue = process.env[key];
+  if (!rawValue) return '';
+  
+  let resolved = rawValue.trim();
+  const regex = /\$\{\{?([A-Za-z0-9_]+)\}?\}/g;
+  
+  let attempts = 0;
+  while (regex.test(resolved) && attempts < 10) {
+    regex.lastIndex = 0; // Reset regex state
+    resolved = resolved.replace(regex, (_, varName) => {
+      const matchVal = process.env[varName];
+      return matchVal !== undefined ? matchVal : '';
+    });
+    attempts++;
+  }
+  return cleanEnv(resolved);
+}
+
+// Extract database name from connection string
+export function getDatabaseNameFromUri(uri: string): string {
+  try {
+    const cleanUri = uri.split('?')[0];
+    const lastSlashIdx = cleanUri.lastIndexOf('/');
+    if (lastSlashIdx !== -1) {
+      const dbPart = cleanUri.substring(lastSlashIdx + 1);
+      if (dbPart && !uri.startsWith(dbPart) && dbPart !== 'mongodb:' && dbPart !== 'mongodb+srv:') {
+        return dbPart;
+      }
+    }
+  } catch (e) {
+    // Ignore error
+  }
+  return '';
+}
+
 function getMongoUri(): string {
-  return cleanEnv(process.env.MONGODB_URI || process.env.MONGO_URL || '');
+  // Try direct URIs with parsed placeholders first
+  const directUri = resolveEnvValue('MONGODB_URI') || 
+                    resolveEnvValue('MONGO_URL') || 
+                    resolveEnvValue('MONGO_PUBLIC_URL');
+  if (directUri) {
+    return directUri;
+  }
+
+  // Compose from individual components if present
+  const user = resolveEnvValue('MONGOUSER') || resolveEnvValue('MONGO_INITDB_ROOT_USERNAME');
+  const password = resolveEnvValue('MONGOPASSWORD') || resolveEnvValue('MONGO_INITDB_ROOT_PASSWORD');
+  const host = resolveEnvValue('MONGOHOST') || resolveEnvValue('RAILWAY_PRIVATE_DOMAIN');
+  const port = resolveEnvValue('MONGOPORT') || '27017';
+  const database = resolveEnvValue('MONGO_DATABASE_NAME') || 'r2h';
+
+  if (user && password && host) {
+    return `mongodb://${user}:${password}@${host}:${port}/${database}?authSource=admin`;
+  }
+
+  return '';
 }
 
 let mongoClient: MongoClient | null = null;
@@ -62,7 +118,10 @@ export async function getDb(): Promise<Db | null> {
   const client = await getMongoClient();
   if (!client) return null;
   if (!dbInstance) {
-    dbInstance = client.db(process.env.MONGO_DATABASE_NAME || 'r2h');
+    // Dynamically retrieve database name from MONGODB_URI if not manually specified in MONGO_DATABASE_NAME
+    const uriDatabase = getDatabaseNameFromUri(getMongoUri());
+    const dbName = process.env.MONGO_DATABASE_NAME || uriDatabase || 'r2h';
+    dbInstance = client.db(dbName);
   }
   return dbInstance;
 }
