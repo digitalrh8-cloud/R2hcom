@@ -8,7 +8,8 @@ import {
   loadUserDataFromMongo, 
   saveUserDataToMongo, 
   initializeDbSchema,
-  getDb
+  getDb,
+  resetDbSchema
 } from './lib/mongodb';
 
 import { Stand, Contact, Transaction, Campaign, Task } from './src/types';
@@ -35,6 +36,13 @@ export async function initializeDatabaseSchema(): Promise<boolean> {
     console.warn('[Startup Test] MongoDB database initialisation check: FAILED/OFFLINE.');
   }
   return result;
+}
+
+/**
+ * Bridge force schema reset operation
+ */
+export async function resetDatabaseSchema(force = false): Promise<boolean> {
+  return resetDbSchema(force);
 }
 
 /**

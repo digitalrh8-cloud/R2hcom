@@ -155,6 +155,42 @@ export async function initializeDbSchema(): Promise<boolean> {
 }
 
 /**
+ * Reset and force re-create database schemas/baseline records
+ */
+export async function resetDbSchema(force = false): Promise<boolean> {
+  const db = await getDb();
+  if (!db) {
+    console.warn('[MongoDB Service] Database connection offline - cannot reset schemas.');
+    return false;
+  }
+
+  try {
+    if (force) {
+      console.log('[MongoDB Service] Manual database format and re-seed requested. Drop collections...');
+      const collections = await db.listCollections().toArray();
+      const colNames = collections.map(c => c.name);
+      const targets = ['stands', 'contacts', 'transactions', 'campaigns', 'tasks'];
+      for (const name of targets) {
+        if (colNames.includes(name)) {
+          await db.collection(name).drop();
+          console.log(`[MongoDB Service] Dropped collection: ${name}`);
+        }
+      }
+    }
+
+    schemaInitialized = false;
+    await seedCollectionsIfEmpty(db);
+    schemaInitialized = true;
+    dbError = null;
+    return true;
+  } catch (err: any) {
+    console.error('[MongoDB Service] Force reset of collections failing:', err);
+    dbError = err.message || String(err);
+    return false;
+  }
+}
+
+/**
  * Seeds static baseline datasets when collections are empty
  */
 async function seedCollectionsIfEmpty(db: Db) {

@@ -120,6 +120,31 @@ export default function App() {
     loadInitialData();
   }, []);
 
+  // Function to manually trigger database state refresh on demand
+  const refreshDbState = async (): Promise<void> => {
+    try {
+      const statusResp = await fetch('/api/db/status');
+      const status = await statusResp.json();
+      setDbStatus(status);
+
+      if (status.isConfigured) {
+        const loadResp = await fetch('/api/db/load');
+        const result = await loadResp.json();
+        
+        if (result.success && result.data) {
+          const { stands: dbS, contacts: dbC, transactions: dbT, campaigns: dbM, tasks: dbK } = result.data;
+          setStands(dbS);
+          setContacts(dbC);
+          setTransactions(dbT);
+          setCampaigns(dbM);
+          setTasks(dbK);
+        }
+      }
+    } catch (err) {
+      console.error('[MongoDB Manual Refresh] Error refreshing DB state:', err);
+    }
+  };
+
   // Sync state snapshot to MongoDB if active
   const saveToMongoDB = async (
     currentStands: Stand[],
@@ -270,6 +295,7 @@ export default function App() {
           <SettingsView 
             selectedSite={selectedSite}
             dbStatus={dbStatus}
+            refreshDbState={refreshDbState}
           />
         );
       default:

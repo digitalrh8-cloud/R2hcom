@@ -11,7 +11,8 @@ import {
   getDatabaseStatus, 
   loadUserDataFromDatabase, 
   saveUserDataToDatabase,
-  initializeDatabaseSchema
+  initializeDatabaseSchema,
+  resetDatabaseSchema
 } from './db';
 
 // Load environment variables
@@ -71,6 +72,32 @@ app.post('/api/db/save', async (req, res) => {
       res.json({ success: true });
     } else {
       res.status(500).json({ success: false, error: 'Échec de la sauvegarde des données dans MongoDB' });
+    }
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || String(err) });
+  }
+});
+
+// Force-create or reseed MongoDB collections/tables
+app.post('/api/db/initialize', async (req, res) => {
+  try {
+    const status = getDatabaseStatus();
+    if (!status.isConfigured) {
+      res.json({ success: false, configured: false, message: 'MONGODB_URI non configurée.' });
+      return;
+    }
+    const { force = false } = req.body || {};
+    const success = await resetDatabaseSchema(force);
+    if (success) {
+      res.json({ 
+        success: true, 
+        message: force 
+          ? 'La base de données a été réinitialisée et toutes les tables (collections) ont été recréées avec succès !'
+          : 'Les tables (collections) ont été vérifiées et initialisées avec succès !',
+        collections: ['stands', 'contacts', 'transactions', 'campaigns', 'tasks']
+      });
+    } else {
+      res.status(500).json({ success: false, error: 'Échec d\'initialisation des tables MongoDB. Vérifiez votre connexion.' });
     }
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || String(err) });

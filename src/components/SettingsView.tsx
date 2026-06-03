@@ -21,12 +21,18 @@ import { initialSites } from '../initialData';
 interface SettingsViewProps {
   selectedSite: SiteId;
   dbStatus: { isConfigured: boolean; dbInitialized: boolean; error: string | null; maskedUrl: string | null } | null;
+  refreshDbState?: () => Promise<void>;
 }
 
-export default function SettingsView({ selectedSite, dbStatus }: SettingsViewProps) {
+export default function SettingsView({ selectedSite, dbStatus, refreshDbState }: SettingsViewProps) {
   const [ticketPrice, setTicketPrice] = useState('2500'); // MAD/m²
   const [earlyBirdDiscount, setEarlyBirdDiscount] = useState('15');
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
+  const [initStatus, setInitStatus] = useState<{ loading: boolean; type: 'success' | 'err' | null; message: string | null }>({
+    loading: false,
+    type: null,
+    message: null
+  });
 
   const activeSite = initialSites.find(s => s.id === selectedSite) || initialSites[0];
 
@@ -35,6 +41,44 @@ export default function SettingsView({ selectedSite, dbStatus }: SettingsViewPro
     setTimeout(() => {
       setBackupStatus('Fichier R2H_Backup_2026_05_22.json compilé avec succès et téléversé.');
     }, 2000);
+  };
+
+  const handleInitializeTables = async (force: boolean) => {
+    setInitStatus({ 
+      loading: true, 
+      type: null, 
+      message: force ? "Réinitialisation complète et formatage de la base de données..." : "Initialisation des tables en cours..." 
+    });
+    try {
+      const resp = await fetch('/api/db/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        setInitStatus({
+          loading: false,
+          type: 'success',
+          message: data.message || 'La base de données a été initialisée et les tables (collections) créées avec succès !'
+        });
+        if (refreshDbState) {
+          await refreshDbState();
+        }
+      } else {
+        setInitStatus({
+          loading: false,
+          type: 'err',
+          message: data.error || data.message || "Une erreur s'est produite lors de l'initialisation."
+        });
+      }
+    } catch (err: any) {
+      setInitStatus({
+        loading: false,
+        type: 'err',
+        message: err.message || String(err)
+      });
+    }
   };
 
 
@@ -147,6 +191,56 @@ export default function SettingsView({ selectedSite, dbStatus }: SettingsViewPro
                     Pour le lier à votre instance de base de données MongoDB, définissez la variable d'environnement <strong>MONGODB_URI</strong> dans l'application.
                   </p>
                 </div>
+              </div>
+            )}
+
+            {/* Manual Tables Creation and Seeding Section */}
+            {dbStatus?.isConfigured && (
+              <div className="border-t border-slate-100 pt-3 space-y-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Création & Seeding des Tables</p>
+                <p className="text-[10px] text-slate-500 leading-normal">
+                  Vérifiez, créez ou reformatez vos tables <code>(stands, contacts, transactions, campaigns, tasks)</code> directement sur votre espace MongoDB Railway.
+                </p>
+                
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={() => handleInitializeTables(false)}
+                    disabled={initStatus.loading}
+                    className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700/90 rounded-lg font-semibold text-center cursor-pointer text-[11px] border border-slate-200 transition-colors duration-150"
+                  >
+                    Vérifier & Créer
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm("ATTENTION : Cette action supprimera TOUTES les données existantes pour les remplacer par le jeu d'origine. Êtes-vous sûr ?")) {
+                        handleInitializeTables(true);
+                      }
+                    }}
+                    disabled={initStatus.loading}
+                    className="flex-1 py-1.5 bg-amber-50 hover:bg-amber-100 disabled:opacity-50 text-amber-700 border border-amber-200/60 rounded-lg font-semibold text-center cursor-pointer text-[11px] transition-colors duration-150"
+                  >
+                    Formater & Recréer
+                  </button>
+                </div>
+
+                {initStatus.message && (
+                  <div className={`p-2.5 rounded-lg text-[10px] leading-relaxed flex items-start gap-1.5 border transition-all duration-300 ${
+                    initStatus.loading 
+                      ? 'bg-slate-50 border-slate-100 text-slate-500' 
+                      : initStatus.type === 'success'
+                      ? 'bg-emerald-50/50 border-emerald-100/70 text-emerald-800'
+                      : 'bg-rose-50/50 border-rose-100/70 text-rose-800'
+                  }`}>
+                    {initStatus.loading ? (
+                      <div className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin shrink-0 mt-0.5"></div>
+                    ) : initStatus.type === 'success' ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                    )}
+                    <span className="font-medium">{initStatus.message}</span>
+                  </div>
+                )}
               </div>
             )}
 
