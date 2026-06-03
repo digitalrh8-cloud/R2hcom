@@ -28,7 +28,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
-// --- MongoDB Database Sync Endpoints ---
+// --- PostgreSQL Database Sync Endpoints ---
 
 // Get DB connection and configuration status
 app.get('/api/db/status', (req, res) => {
@@ -45,14 +45,14 @@ app.get('/api/db/load', async (req, res) => {
   try {
     const status = getDatabaseStatus();
     if (!status.isConfigured) {
-      res.json({ success: false, configured: false, message: 'MONGODB_URI non configurée' });
+      res.json({ success: false, configured: false, message: 'DATABASE_URL non configurée' });
       return;
     }
     const data = await loadUserDataFromDatabase();
     if (data) {
       res.json({ success: true, configured: true, data });
     } else {
-      res.status(500).json({ success: false, configured: true, error: 'Échec du chargement des données depuis MongoDB' });
+      res.status(500).json({ success: false, configured: true, error: 'Échec du chargement des données depuis PostgreSQL' });
     }
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || String(err) });
@@ -64,26 +64,26 @@ app.post('/api/db/save', async (req, res) => {
   try {
     const status = getDatabaseStatus();
     if (!status.isConfigured) {
-      res.json({ success: false, configured: false, message: 'MONGODB_URI non configurée' });
+      res.json({ success: false, configured: false, message: 'DATABASE_URL non configurée' });
       return;
     }
     const success = await saveUserDataToDatabase(req.body);
     if (success) {
       res.json({ success: true });
     } else {
-      res.status(500).json({ success: false, error: 'Échec de la sauvegarde des données dans MongoDB' });
+      res.status(500).json({ success: false, error: 'Échec de la sauvegarde des données dans PostgreSQL' });
     }
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || String(err) });
   }
 });
 
-// Force-create or reseed MongoDB collections/tables
+// Force-create or reseed PostgreSQL tables
 app.post('/api/db/initialize', async (req, res) => {
   try {
     const status = getDatabaseStatus();
     if (!status.isConfigured) {
-      res.json({ success: false, configured: false, message: 'MONGODB_URI non configurée.' });
+      res.json({ success: false, configured: false, message: 'DATABASE_URL non configurée.' });
       return;
     }
     const { force = false } = req.body || {};
@@ -92,12 +92,12 @@ app.post('/api/db/initialize', async (req, res) => {
       res.json({ 
         success: true, 
         message: force 
-          ? 'La base de données a été réinitialisée et toutes les tables (collections) ont été recréées avec succès !'
-          : 'Les tables (collections) ont été vérifiées et initialisées avec succès !',
+          ? 'La base de données a été réinitialisée et toutes les tables ont été recréées avec succès !'
+          : 'Les tables ont été vérifiées et initialisées avec succès !',
         collections: ['stands', 'contacts', 'transactions', 'campaigns', 'tasks']
       });
     } else {
-      res.status(500).json({ success: false, error: 'Échec d\'initialisation des tables MongoDB. Vérifiez votre connexion.' });
+      res.status(500).json({ success: false, error: 'Échec d\'initialisation des tables PostgreSQL. Vérifiez votre connexion.' });
     }
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || String(err) });
@@ -199,13 +199,13 @@ async function startServer() {
   initializeDatabaseSchema()
     .then((success) => {
       if (success) {
-        console.log('[MongoDB DB] Database collections successfully verified.');
+        console.log('[PostgreSQL DB] Database tables successfully verified.');
       } else {
-        console.log('[MongoDB DB] Database connection not active or configured.');
+        console.log('[PostgreSQL DB] Database connection not active or configured.');
       }
     })
     .catch((err) => {
-      console.error('[MongoDB DB] Async collection boot failed raw:', err);
+      console.error('[PostgreSQL DB] Async table boot failed raw:', err);
     });
 
   app.listen(PORT, '0.0.0.0', () => {

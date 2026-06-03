@@ -4,13 +4,13 @@
  */
 
 import { 
-  getMongoStatus, 
-  loadUserDataFromMongo, 
-  saveUserDataToMongo, 
+  getPostgresStatus, 
+  loadUserDataFromPostgres, 
+  saveUserDataToPostgres, 
   initializeDbSchema,
-  getDb,
+  getPgPool,
   resetDbSchema
-} from './lib/mongodb';
+} from './lib/postgres';
 
 import { Stand, Contact, Transaction, Campaign, Task } from './src/types';
 
@@ -20,20 +20,21 @@ import { Stand, Contact, Transaction, Campaign, Task } from './src/types';
 export async function initializeDatabaseSchema(): Promise<boolean> {
   const result = await initializeDbSchema();
   
-  // Initialization test on app startup via MongoDB Client
+  // Initialization test on app startup via Postgres pool
   if (result) {
-    console.log('[Startup Test] MongoDB database initialisation check: SUCCESS.');
-    const db = await getDb();
-    if (db) {
+    console.log('[Startup Test] Postgres database initialisation check: SUCCESS.');
+    const pool = await getPgPool();
+    if (pool) {
       try {
-        const count = await db.collection('stands').countDocuments();
-        console.log('[Startup Test] MongoDB CRUD validation check: SUCCESS. Stands count:', count);
+        const res = await pool.query('SELECT COUNT(*) FROM stands');
+        const count = parseInt(res.rows[0].count, 10);
+        console.log('[Startup Test] Postgres CRUD validation check: SUCCESS. Stands count:', count);
       } catch (err: any) {
-        console.error('[Startup Test] MongoDB CRUD validation failed details:', err.message || err);
+        console.error('[Startup Test] Postgres CRUD validation failed details:', err.message || err);
       }
     }
   } else {
-    console.warn('[Startup Test] MongoDB database initialisation check: FAILED/OFFLINE.');
+    console.warn('[Startup Test] Postgres database initialisation check: FAILED/OFFLINE.');
   }
   return result;
 }
@@ -49,7 +50,7 @@ export async function resetDatabaseSchema(force = false): Promise<boolean> {
  * 2. Bridge load operation
  */
 export async function loadUserDataFromDatabase() {
-  return loadUserDataFromMongo();
+  return loadUserDataFromPostgres();
 }
 
 /**
@@ -62,12 +63,12 @@ export async function saveUserDataToDatabase(data: {
   campaigns: Campaign[];
   tasks: Task[];
 }) {
-  return saveUserDataToMongo(data);
+  return saveUserDataToPostgres(data);
 }
 
 /**
  * 4. Bridge status check
  */
 export function getDatabaseStatus() {
-  return getMongoStatus();
+  return getPostgresStatus();
 }
