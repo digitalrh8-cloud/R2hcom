@@ -1,15 +1,15 @@
 # 🌐 Portail d'Administration Unified & CRM - R2H Communication
 
-Ce dépôt contient le code source du portail d'administration unifié pour **r2h.ma**, **africapoolspa.com** et **gardenexpo.ma**, connecté à une base de données **MongoDB Atlas** de production et boosté par l'IA de **Google Gemini**.
+Ce dépôt contient le code source du portail d'administration unifié pour **r2h.ma**, **africapoolspa.com** et **gardenexpo.ma**, connecté à une base de données **PostgreSQL** de production et boosté par l'IA de **Google Gemini**.
 
 ---
 
 ## 🛠️ Connexion Directe avec GitHub & Déploiement
 
-Pour connecter et synchroniser automatiquement votre base de données MongoDB avec votre dépôt GitHub pour le déploiement cloud (Vercel, Render, Railway, Google Cloud Run, etc.), suivez ce guide étape par étape :
+Pour connecter et synchroniser automatiquement votre base de données PostgreSQL avec votre dépôt GitHub pour le déploiement cloud (Vercel, Render, Railway, Google Cloud Run, etc.), suivez ce guide étape par étape :
 
 ### 1. Activer les Secrets GitHub (Sécurité des Identifiants)
-Ne commettez **jamais** vos mots de passe MongoDB ou vos clés d'API directement dans le code source visible sur GitHub. Utilisez les **GitHub Secrets** :
+Ne commettez **jamais** vos mots de passe PostgreSQL ou vos clés d'API directement dans le code source visible sur GitHub. Utilisez les **GitHub Secrets** :
 
 1. Allez sur votre dépôt GitHub.
 2. Cliquez sur l'onglet **Settings** (Paramètres).
@@ -19,11 +19,10 @@ Ne commettez **jamais** vos mots de passe MongoDB ou vos clés d'API directement
 
 | Nom du Secret | Description | Exemple de valeur |
 | :--- | :--- | :--- |
-| `MONGODB_URI` / `MONGO_URL` | Chaîne de connexion complète ou URL d'accès MongoDB. | `mongodb+srv://user:pass@host/db` ou la variable `MONGO_PUBLIC_URL` de Railway. |
+| `DATABASE_URL` / `DATABASE_PUBLIC_URL` | Chaîne de connexion complète ou URL d'accès PostgreSQL. | `postgresql://user:pass@host:5432/db` ou la variable de Railway. |
 | `GEMINI_API_KEY` | Clé secrète de l'API Google Gemini pour la génération marketing | `al-9h46TwciYmr_nJg0xRgHn8oNvmRSoZJZ1MjtHEa79Ib` |
-| `MONGO_DATABASE_NAME` | Le nom de la base de données cible dans MongoDB | `r2h` |
 
-> 💡 **Spécificité Railway :** Vous pouvez connecter directement votre base de données MongoDB Railway en définissant soit de manière globale la variable `MONGODB_URI` (ou `MONGO_URL` / `MONGO_PUBLIC_URL`), soit en injectant les variables individuelles fournies par Railway : `MONGO_INITDB_ROOT_USERNAME`, `MONGO_INITDB_ROOT_PASSWORD`, `MONGOHOST`, `MONGOPORT` etc. Le portail se charge d'assembler la chaîne de connexion automatiquement de façon transparente.
+> 💡 **Spécificité Railway :** Vous pouvez connecter directement votre base de données PostgreSQL Railway en définissant soit de manière globale la variable `DATABASE_URL` (ou `DATABASE_PUBLIC_URL`), soit en injectant les variables individuelles fournies par Railway : `PGUSER`, `PGPASSWORD`, `PGDATABASE`, `PGHOST`, `PGPORT` etc. Le portail se charge de résoudre la chaîne de connexion automatiquement de façon transparente.
 
 ---
 
@@ -40,9 +39,8 @@ Grâce au fichier de configuration de flux de travail intégré (`.github/workfl
 1. Créez un compte sur [Vercel](https://vercel.com).
 2. Cliquez sur **Add New** > **Project** et importez votre dépôt GitHub.
 3. Dans la section **Environment Variables**, renseignez la variable :
-   - `MONGODB_URI` : *(votre chaîne de connexion Atlas)*
+   - `DATABASE_URL` : *(votre chaîne de connexion PostgreSQL)*
    - `GEMINI_API_KEY` : *(votre clé d'API)*
-   - `MONGO_DATABASE_NAME` : `r2h`
 4. Cliquez sur **Deploy**. Vercel gèrera l'installation et le démarrage automatique.
 
 #### Option B : Déploiement sur Render ou Railway (Solution Full-Stack standard)
@@ -65,13 +63,13 @@ L'application utilise une architecture full-stack robuste pour assurer un maximu
                 [ Back-End Serveur (Express.js on Node) ]
                     │                              │
                     ▼                              ▼
-          [ Google Gemini AI API ]      [ MongoDB Atlas Database ]
+          [ Google Gemini AI API ]      [ PostgreSQL Database ]
             (Génération d'emails)         (Stands, CRM & Transactions)
 ```
 
 1. **Front-End client (`src/`)** : propulsé par React, Tailwind CSS pour des interfaces modernes ultra-rapides, et Lucide React pour les icônes.
-2. **API Proxy Backend (`server.ts` & `db.ts`)** : les clés d'API (Gemini, MongoDB) restent uniquement du côté serveur et ne sont jamais exposées à l'utilisateur final dans son navigateur.
-3. **Modèle de Données (`lib/mongodb.ts`)** : gère l'initialisation automatique, le seeding par défaut des stands, des prospects et des campagnes, et la synchronisation en temps réel.
+2. **API Proxy Backend (`server.ts` & `db.ts`)** : les clés d'API (Gemini, PostgreSQL) restent uniquement du côté serveur et ne sont jamais exposées à l'utilisateur final dans son navigateur.
+3. **Modèle de Données (`lib/postgres.ts`)** : gère l'initialisation automatique, le seeding par défaut des stands, des prospects et des campagnes, et la synchronisation en temps réel sur PostgreSQL.
 
 ---
 
@@ -93,9 +91,8 @@ Pour faire tourner le portail en local sur votre ordinateur :
 3. **Créer votre fichier local `.env`** :
    Remplissez les variables d'environnement locales (ce fichier est listé dans `.gitignore` et ne sera pas poussé en ligne) :
    ```env
-   MONGODB_URI="votre_uri_mongodb_atlas"
+   DATABASE_URL="votre_uri_postgresql"
    GEMINI_API_KEY="votre_cle_gemini"
-   MONGO_DATABASE_NAME="r2h"
    ```
 
 4. **Lancer le serveur de développement local** :

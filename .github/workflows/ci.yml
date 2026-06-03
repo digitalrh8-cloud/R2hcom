@@ -1,5 +1,5 @@
-# Workflow d'Intégration Continue (CI) - Portail R2H & MongoDB
-name: MongoDB Integration CI
+# Workflow d'Intégration Continue (CI) - Portail R2H & PostgreSQL
+name: PostgreSQL Integration CI
 
 on:
   push:
@@ -14,13 +14,6 @@ jobs:
     strategy:
       matrix:
         node-version: [20.x]
-
-    services:
-      # Lance un service temporaire MongoDB local pour valider les tests d'intégration éventuels
-      mongodb:
-        image: mongo:latest
-        ports:
-          - 27017:27017
 
     steps:
     - uses: actions/checkout@v4
@@ -42,5 +35,5 @@ jobs:
       env:
         NODE_ENV: production
         # Configuration des variables d'environnement de simulation pour la compilation
-        MONGODB_URI: mongodb://localhost:27017/r2h_test
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/railway
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
