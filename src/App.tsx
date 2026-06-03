@@ -69,11 +69,11 @@ export default function App() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  // MongoDB Database sync states
+  // Database sync states
   const [dbStatus, setDbStatus] = useState<{ isConfigured: boolean; dbInitialized: boolean; error: string | null; maskedUrl: string | null } | null>(null);
   const [isInitiallyLoaded, setIsInitiallyLoaded] = useState<boolean>(false);
 
-  // Load connection status and hydrate data from master MongoDB database or static memory sandbox
+  // Load connection status and hydrate data from PostgreSQL database or static memory sandbox
   useEffect(() => {
     async function loadInitialData() {
       try {
@@ -82,12 +82,12 @@ export default function App() {
         setDbStatus(status);
 
         if (status.isConfigured) {
-          console.log('[MongoDB Sync] Database is configured. Executing load...');
+          console.log('[Database Sync] Database is configured. Executing load...');
           const loadResp = await fetch('/api/db/load');
           const result = await loadResp.json();
           
           if (result.success && result.data) {
-            console.log('[MongoDB Sync] Loaded data successfully from MongoDB database.');
+            console.log('[Database Sync] Loaded data successfully from database.');
             const { stands: dbS, contacts: dbC, transactions: dbT, campaigns: dbM, tasks: dbK } = result.data;
             setStands(dbS);
             setContacts(dbC);
@@ -98,13 +98,13 @@ export default function App() {
             setIsInitiallyLoaded(true);
             return;
           } else {
-            console.warn('[MongoDB Sync] Collections load failed, falling back to static sandbox state:', result.error);
+            console.warn('[Database Sync] Collections load failed, falling back to static sandbox state:', result.error);
           }
         } else {
-          console.log('[MongoDB Sync] Database not configured. Running default static sandbox memory mode.');
+          console.log('[Database Sync] Database not configured. Running default static sandbox memory mode.');
         }
       } catch (err) {
-        console.error('[MongoDB Sync] Failed to communicate with database API:', err);
+        console.error('[Database Sync] Failed to communicate with database API:', err);
       }
 
       // Memory sandboxing fallback (No localStorage)
@@ -141,12 +141,12 @@ export default function App() {
         }
       }
     } catch (err) {
-      console.error('[MongoDB Manual Refresh] Error refreshing DB state:', err);
+      console.error('[Database Manual Refresh] Error refreshing DB state:', err);
     }
   };
 
-  // Sync state snapshot to MongoDB if active
-  const saveToMongoDB = async (
+  // Sync state snapshot to database if active
+  const saveToDatabase = async (
     currentStands: Stand[],
     currentContacts: Contact[],
     currentTransactions: Transaction[],
@@ -167,43 +167,43 @@ export default function App() {
         })
       });
     } catch (err) {
-      console.error('[MongoDB Sync] Auto-save database fail:', err);
+      console.error('[Database Sync] Auto-save database fail:', err);
     }
   };
 
-  // Synchronise state changes to MongoDB database without any LocalStorage
+  // Synchronise state changes to database without any LocalStorage
   useEffect(() => {
     if (!isInitiallyLoaded) return;
     if (stands.length > 0) {
-      saveToMongoDB(stands, contacts, transactions, campaigns, tasks);
+      saveToDatabase(stands, contacts, transactions, campaigns, tasks);
     }
   }, [stands, isInitiallyLoaded]);
 
   useEffect(() => {
     if (!isInitiallyLoaded) return;
     if (contacts.length > 0) {
-      saveToMongoDB(stands, contacts, transactions, campaigns, tasks);
+      saveToDatabase(stands, contacts, transactions, campaigns, tasks);
     }
   }, [contacts, isInitiallyLoaded]);
 
   useEffect(() => {
     if (!isInitiallyLoaded) return;
     if (transactions.length > 0) {
-      saveToMongoDB(stands, contacts, transactions, campaigns, tasks);
+      saveToDatabase(stands, contacts, transactions, campaigns, tasks);
     }
   }, [transactions, isInitiallyLoaded]);
 
   useEffect(() => {
     if (!isInitiallyLoaded) return;
     if (campaigns.length > 0) {
-      saveToMongoDB(stands, contacts, transactions, campaigns, tasks);
+      saveToDatabase(stands, contacts, transactions, campaigns, tasks);
     }
   }, [campaigns, isInitiallyLoaded]);
 
   useEffect(() => {
     if (!isInitiallyLoaded) return;
     if (tasks.length > 0) {
-      saveToMongoDB(stands, contacts, transactions, campaigns, tasks);
+      saveToDatabase(stands, contacts, transactions, campaigns, tasks);
     }
   }, [tasks, isInitiallyLoaded]);
 

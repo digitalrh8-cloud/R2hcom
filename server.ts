@@ -40,7 +40,7 @@ app.get('/api/db/status', (req, res) => {
   }
 });
 
-// Load all datasets from MongoDB
+// Load all datasets from PostgreSQL
 app.get('/api/db/load', async (req, res) => {
   try {
     const status = getDatabaseStatus();
@@ -59,7 +59,7 @@ app.get('/api/db/load', async (req, res) => {
   }
 });
 
-// Save / sync full state to MongoDB
+// Save / sync full state to PostgreSQL
 app.post('/api/db/save', async (req, res) => {
   try {
     const status = getDatabaseStatus();
