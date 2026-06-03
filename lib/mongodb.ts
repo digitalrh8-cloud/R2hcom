@@ -39,14 +39,17 @@ function resolveEnvValue(key: string): string {
   return cleanEnv(resolved);
 }
 
-// Extract database name from connection string
+// Extract database name from connection string safely
 export function getDatabaseNameFromUri(uri: string): string {
   try {
-    const cleanUri = uri.split('?')[0];
-    const lastSlashIdx = cleanUri.lastIndexOf('/');
-    if (lastSlashIdx !== -1) {
-      const dbPart = cleanUri.substring(lastSlashIdx + 1);
-      if (dbPart && !uri.startsWith(dbPart) && dbPart !== 'mongodb:' && dbPart !== 'mongodb+srv:') {
+    // Strip protocol prefix (e.g. mongodb:// or mongodb+srv://)
+    const withoutProtocol = uri.replace(/^mongodb(\+srv)?:\/\//i, '');
+    const cleanUri = withoutProtocol.split('?')[0];
+    const slashIdx = cleanUri.indexOf('/');
+    if (slashIdx !== -1) {
+      const dbPart = cleanUri.substring(slashIdx + 1);
+      // Ensure dbPart doesn't contain nested slashes or option query structures
+      if (dbPart && !dbPart.includes('/')) {
         return dbPart;
       }
     }
