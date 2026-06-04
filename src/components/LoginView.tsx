@@ -35,7 +35,7 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
         (cleanEmail === 'digitalrh8@gmail.com' && cleanPassword === 'admin')
       ) {
         setIsLoading(false);
-        onLoginSuccess('Youssef Admin');
+        onLoginSuccess('Mehdi Rahho');
       } else {
         setIsLoading(false);
         setError('Adresse e-mail ou mot de passe incorrect. Veuillez vérifier vos identifiants de connexion.');

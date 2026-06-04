@@ -212,15 +212,15 @@ export default function Sidebar({
       <div className="p-5 border-t border-[#25352E] bg-[#25352E] flex items-center gap-3">
         <div className="relative">
           <img 
-            src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=faces" 
-            alt="Youssef" 
+            src="/src/assets/images/mehdi_profile_1780566080143.png" 
+            alt="Mehdi Rahho" 
             referrerPolicy="no-referrer"
-            className="w-10 h-10 rounded-full border border-[#3F594F]"
+            className="w-10 h-10 rounded-full border border-[#3F594F] object-cover"
           />
           <div className="absolute right-0 bottom-0 w-2.5 h-2.5 bg-[#A68A64] border-2 border-[#25352E] rounded-full"></div>
         </div>
         <div className="flex-1 overflow-hidden font-sans">
-          <h4 className="text-xs font-semibold text-white truncate">Youssef Admin</h4>
+          <h4 className="text-xs font-semibold text-white truncate">Mehdi Rahho</h4>
           <p className="text-[10px] text-[#93A392] truncate">Directeur Général</p>
         </div>
         {onLogout && (
