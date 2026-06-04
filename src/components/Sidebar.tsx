@@ -44,6 +44,7 @@ interface SidebarProps {
   onLogout?: () => void;
   isMobileOpen?: boolean;
   onClose?: () => void;
+  currentUser?: { name: string; role: string; title: string; avatarUrl: string };
 }
 
 export default function Sidebar({ 
@@ -52,7 +53,13 @@ export default function Sidebar({
   selectedSite, 
   onLogout,
   isMobileOpen = false,
-  onClose
+  onClose,
+  currentUser = {
+    name: 'Mehdi Rahho',
+    role: 'admin',
+    title: 'Directeur Général',
+    avatarUrl: '/src/assets/images/mehdi_profile_1780566080143.png'
+  }
 }: SidebarProps) {
   
   // Helper to change tabs and close drawer on mobile automatically
@@ -145,24 +152,28 @@ export default function Sidebar({
             <UserSquare2 className="w-4 h-4 text-[#A68A64]" />
             <span>Clients & Exposants</span>
           </button>
-          <button 
-            type="button"
-            id="nav-devis"
-            onClick={() => handleTabSelect('devis')} 
-            className={getLinkClass('devis')}
-          >
-            <FileText className="w-4 h-4 text-[#A68A64]" />
-            <span>Devis récents</span>
-          </button>
-          <button 
-            type="button"
-            id="nav-factures"
-            onClick={() => handleTabSelect('factures')} 
-            className={getLinkClass('factures')}
-          >
-            <Receipt className="w-4 h-4 text-[#A68A64]" />
-            <span>Factures & TVA</span>
-          </button>
+          {currentUser.role !== 'commercial' && (
+            <>
+              <button 
+                type="button"
+                id="nav-devis"
+                onClick={() => handleTabSelect('devis')} 
+                className={getLinkClass('devis')}
+              >
+                <FileText className="w-4 h-4 text-[#A68A64]" />
+                <span>Devis récents</span>
+              </button>
+              <button 
+                type="button"
+                id="nav-factures"
+                onClick={() => handleTabSelect('factures')} 
+                className={getLinkClass('factures')}
+              >
+                <Receipt className="w-4 h-4 text-[#A68A64]" />
+                <span>Factures & TVA</span>
+              </button>
+            </>
+          )}
         </div>
 
         {/* Shows & Salons and Floor plans */}
@@ -194,34 +205,36 @@ export default function Sidebar({
         </div>
 
         {/* Settings Group */}
-        <div className="space-y-1">
-          <p className="px-3 text-[10px] font-bold text-[#6E8B7E] uppercase tracking-widest pb-1">Paramètres</p>
-          <button 
-            type="button"
-            id="nav-parametres"
-            onClick={() => handleTabSelect('parametres')} 
-            className={getLinkClass('parametres')}
-          >
-            <Settings className="w-4 h-4 text-[#93A392]" />
-            <span>Configuration</span>
-          </button>
-        </div>
+        {currentUser.role !== 'commercial' && (
+          <div className="space-y-1">
+            <p className="px-3 text-[10px] font-bold text-[#6E8B7E] uppercase tracking-widest pb-1">Paramètres</p>
+            <button 
+              type="button"
+              id="nav-parametres"
+              onClick={() => handleTabSelect('parametres')} 
+              className={getLinkClass('parametres')}
+            >
+              <Settings className="w-4 h-4 text-[#93A392]" />
+              <span>Configuration</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* User profile footer */}
       <div className="p-5 border-t border-[#25352E] bg-[#25352E] flex items-center gap-3">
         <div className="relative">
           <img 
-            src="/src/assets/images/mehdi_profile_1780566080143.png" 
-            alt="Mehdi Rahho" 
+            src={currentUser.avatarUrl || "/src/assets/images/mehdi_profile_1780566080143.png"} 
+            alt={currentUser.name} 
             referrerPolicy="no-referrer"
             className="w-10 h-10 rounded-full border border-[#3F594F] object-cover"
           />
           <div className="absolute right-0 bottom-0 w-2.5 h-2.5 bg-[#A68A64] border-2 border-[#25352E] rounded-full"></div>
         </div>
         <div className="flex-1 overflow-hidden font-sans">
-          <h4 className="text-xs font-semibold text-white truncate">Mehdi Rahho</h4>
-          <p className="text-[10px] text-[#93A392] truncate">Directeur Général</p>
+          <h4 className="text-xs font-semibold text-white truncate">{currentUser.name}</h4>
+          <p className="text-[10px] text-[#93A392] truncate">{currentUser.title}</p>
         </div>
         {onLogout && (
           <button 

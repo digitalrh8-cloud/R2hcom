@@ -27,6 +27,7 @@ export interface Contact {
   dateAdded: string;
   notes?: string;
   standNumber?: string;
+  prospectStatus?: 'interesse' | 'pas_interesse' | 'a_rappeler' | 'relance' | 'demande_devis';
 }
 
 export type StandStatus = 'disponible' | 'reserve' | 'vendu' | 'sponsorise';

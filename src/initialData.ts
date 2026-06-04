@@ -108,7 +108,8 @@ export const initialContacts: Contact[] = [
     role: 'prospect',
     dateAdded: '2024-04-12',
     notes: 'Prospect chaud. A visité l\'édition précédente, hésite encore pour l\'emplacement.',
-    standNumber: 'A04'
+    standNumber: 'A04',
+    prospectStatus: 'interesse'
   },
   {
     id: 'c7',
@@ -167,7 +168,8 @@ export const initialContacts: Contact[] = [
     role: 'prospect',
     dateAdded: '2024-05-02',
     notes: 'Dossier d’option de réservation pour le stand D-5B (Génie climatique).',
-    standNumber: 'D-5B'
+    standNumber: 'D-5B',
+    prospectStatus: 'a_rappeler'
   },
   {
     id: 'c-ap-4',
@@ -275,7 +277,8 @@ export const initialContacts: Contact[] = [
     role: 'prospect',
     dateAdded: '2024-05-10',
     notes: 'Option posée pour le stand C-4A (spa résidentiel).',
-    standNumber: 'C-4A'
+    standNumber: 'C-4A',
+    prospectStatus: 'demande_devis'
   },
   {
     id: 'c-ap-14',
@@ -287,7 +290,8 @@ export const initialContacts: Contact[] = [
     role: 'prospect',
     dateAdded: '2024-05-12',
     notes: 'Option temporaire sur l’îlot central D-3A (Traitement de l’eau).',
-    standNumber: 'D-3A'
+    standNumber: 'D-3A',
+    prospectStatus: 'relance'
   },
   {
     id: 'c-ap-15',
@@ -371,7 +375,8 @@ export const initialContacts: Contact[] = [
     role: 'prospect',
     dateAdded: '2024-05-14',
     notes: 'Option d’emplacement réservé WG sur le stand D-1A.',
-    standNumber: 'D-1A'
+    standNumber: 'D-1A',
+    prospectStatus: 'pas_interesse'
   },
   {
     id: 'c-ap-22',

@@ -43,6 +43,28 @@ interface CrmViewProps {
   sites?: SiteConfig[];
 }
 
+export const getProspectStatusLabel = (status?: string) => {
+  switch (status) {
+    case 'interesse': return 'Intéressé';
+    case 'pas_interesse': return 'Pas intéressé';
+    case 'a_rappeler': return 'À rappeler';
+    case 'relance': return 'Relance';
+    case 'demande_devis': return 'Demande de devis';
+    default: return 'Nouveau';
+  }
+};
+
+export const getProspectStatusColorClass = (status?: string) => {
+  switch (status) {
+    case 'interesse': return 'bg-emerald-50 text-emerald-700 border-emerald-200/80';
+    case 'pas_interesse': return 'bg-rose-50 text-rose-700 border-rose-200/80';
+    case 'a_rappeler': return 'bg-amber-50 text-amber-700 border-amber-250/80';
+    case 'relance': return 'bg-cyan-50 text-cyan-700 border-cyan-200/80';
+    case 'demande_devis': return 'bg-purple-50 text-purple-700 border-purple-200/80';
+    default: return 'bg-slate-50 text-slate-600 border-slate-200/80';
+  }
+};
+
 export default function CrmView({ 
   selectedSite, 
   contacts, 
@@ -70,6 +92,7 @@ export default function CrmView({
   const [newRole, setNewRole] = useState<'prospect' | 'client'>('prospect');
   const [newNotes, setNewNotes] = useState('');
   const [newStandNumber, setNewStandNumber] = useState('');
+  const [newProspectStatus, setNewProspectStatus] = useState<'interesse' | 'pas_interesse' | 'a_rappeler' | 'relance' | 'demande_devis'>('interesse');
 
   // Calculate sorted free stands for the selected site
   const freeStands = stands
@@ -86,6 +109,7 @@ export default function CrmView({
   const [editRole, setEditRole] = useState<'prospect' | 'client' | 'fournisseur' | 'partner'>('prospect');
   const [editNotes, setEditNotes] = useState('');
   const [editStandNumber, setEditStandNumber] = useState('');
+  const [editProspectStatus, setEditProspectStatus] = useState<'interesse' | 'pas_interesse' | 'a_rappeler' | 'relance' | 'demande_devis'>('interesse');
 
   // Calculate sorted free stands for editing site, including the contact's current stand
   const editFreeStands = stands
@@ -372,7 +396,8 @@ export default function CrmView({
       role: newRole,
       dateAdded: new Date().toISOString().split('T')[0],
       notes: newNotes,
-      standNumber: formattedStandNumber || undefined
+      standNumber: formattedStandNumber || undefined,
+      prospectStatus: newRole === 'prospect' ? newProspectStatus : undefined
     };
 
     setContacts(prev => [newContact, ...prev]);
@@ -411,7 +436,7 @@ export default function CrmView({
   const handleConvertProspectToClient = (contactId: string) => {
     setContacts(prev => prev.map(c => {
       if (c.id === contactId) {
-        return { ...c, role: 'client' };
+        return { ...c, role: 'client', prospectStatus: undefined };
       }
       return c;
     }));
@@ -478,6 +503,7 @@ export default function CrmView({
     setEditRole(contact.role);
     setEditNotes(contact.notes || '');
     setEditStandNumber(contact.standNumber || '');
+    setEditProspectStatus(contact.prospectStatus || 'interesse');
   };
 
   // Save changes from Edit modal
@@ -502,7 +528,8 @@ export default function CrmView({
           site: editSite,
           role: editRole,
           notes: editNotes.trim(),
-          standNumber: newStandNum || undefined
+          standNumber: newStandNum || undefined,
+          prospectStatus: editRole === 'prospect' ? editProspectStatus : undefined
         };
       }
       return c;
@@ -519,7 +546,8 @@ export default function CrmView({
         site: editSite,
         role: editRole,
         notes: editNotes.trim(),
-        standNumber: newStandNum || undefined
+        standNumber: newStandNum || undefined,
+        prospectStatus: editRole === 'prospect' ? editProspectStatus : undefined
       });
     }
 
@@ -691,13 +719,20 @@ export default function CrmView({
                             {sitesList.find(s => s.id === contact.site)?.domain || 'r2h.ma'}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 uppercase font-mono text-[9px] font-bold">
-                          <span className={`px-2 py-0.5 rounded-xl ${
-                            contact.role === 'client' ? 'bg-[#7E8F7A]/15 text-[#4D5E4A] border border-[#7E8F7A]/30' :
-                            contact.role === 'prospect' ? 'bg-[#A68A64]/15 text-[#2D2D2D] border border-[#A68A64]/30' : 'bg-[#F0EEE6] text-[#7A7667] border border-[#E8E6DE]'
-                          }`}>
-                            {contact.role === 'client' ? 'Exposant' : contact.role === 'prospect' ? 'Prospect' : 'Fournisseur'}
-                          </span>
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          <div className="flex flex-col gap-1.5 items-start font-sans">
+                            <span className={`px-2 py-0.5 rounded-xl uppercase font-mono text-[8px] font-bold ${
+                              contact.role === 'client' ? 'bg-[#7E8F7A]/15 text-[#4D5E4A] border border-[#7E8F7A]/30' :
+                              contact.role === 'prospect' ? 'bg-[#A68A64]/15 text-[#2D2D2D] border border-[#A68A64]/30' : 'bg-[#F0EEE6] text-[#7A7667] border border-[#E8E6DE]'
+                            }`}>
+                              {contact.role === 'client' ? 'Exposant' : contact.role === 'prospect' ? 'Prospect' : 'Fournisseur'}
+                            </span>
+                            {contact.role === 'prospect' && (
+                              <span className={`text-[9.5px] px-2 py-0.5 rounded-md font-bold border leading-none shadow-3xs ${getProspectStatusColorClass(contact.prospectStatus)}`}>
+                                {getProspectStatusLabel(contact.prospectStatus)}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-5 py-3.5 text-right font-sans" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1.5 flex-wrap">
@@ -860,6 +895,27 @@ export default function CrmView({
                     </select>
                   </div>
 
+                  {newRole === 'prospect' && (
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Qualification du Prospect</label>
+                      <select
+                        value={newProspectStatus}
+                        onChange={(e) => setNewProspectStatus(e.target.value as any)}
+                        className="w-full p-2.5 border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-[11px] font-bold cursor-pointer"
+                        style={{
+                          backgroundColor: newProspectStatus === 'interesse' ? '#ECFDF5' : newProspectStatus === 'pas_interesse' ? '#FEF2F2' : newProspectStatus === 'a_rappeler' ? '#FFFBEB' : newProspectStatus === 'relance' ? '#ECFEFF' : '#F5F3FF',
+                          color: newProspectStatus === 'interesse' ? '#047857' : newProspectStatus === 'pas_interesse' ? '#B91C1C' : newProspectStatus === 'a_rappeler' ? '#B45309' : newProspectStatus === 'relance' ? '#0891B2' : '#6D28D9'
+                        }}
+                      >
+                        <option value="interesse" style={{ backgroundColor: '#fff', color: '#047857' }}>✓ Intéressé</option>
+                        <option value="pas_interesse" style={{ backgroundColor: '#fff', color: '#B91C1C' }}>✗ Pas intéressé</option>
+                        <option value="a_rappeler" style={{ backgroundColor: '#fff', color: '#B45309' }}>☎ À rappeler</option>
+                        <option value="relance" style={{ backgroundColor: '#fff', color: '#0891B2' }}>↻ Relance</option>
+                        <option value="demande_devis" style={{ backgroundColor: '#fff', color: '#6D28D9' }}>✎ Demande de devis</option>
+                      </select>
+                    </div>
+                  )}
+
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">N° Stand (dans le plan)</label>
                     <select
@@ -934,7 +990,14 @@ export default function CrmView({
                   </div>
                   <div>
                     <h5 className="font-serif font-black text-[#2D2D2D] text-sm leading-tight">{selectedContact.company}</h5>
-                    <p className="text-[9px] text-[#A68A64] uppercase font-bold tracking-wider mt-1">{selectedContact.role === 'client' ? 'Exposant Officiel' : 'Prospect Enregistré'}</p>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap font-sans">
+                      <span className="text-[9px] text-[#A68A64] uppercase font-bold tracking-wider">{selectedContact.role === 'client' ? 'Exposant Officiel' : 'Prospect Enregistré'}</span>
+                      {selectedContact.role === 'prospect' && (
+                        <span className={`text-[9.5px] px-2 py-0.5 rounded-md font-bold border leading-tight ${getProspectStatusColorClass(selectedContact.prospectStatus)}`}>
+                          {getProspectStatusLabel(selectedContact.prospectStatus)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1335,6 +1398,27 @@ export default function CrmView({
                   <option value="fournisseur">Fournisseur / Prestataire</option>
                 </select>
               </div>
+
+              {editRole === 'prospect' && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Qualification / Évolution Prospect</label>
+                  <select
+                    value={editProspectStatus}
+                    onChange={(e) => setEditProspectStatus(e.target.value as any)}
+                    className="w-full p-2.5 border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] font-bold cursor-pointer"
+                    style={{
+                      backgroundColor: editProspectStatus === 'interesse' ? '#ECFDF5' : editProspectStatus === 'pas_interesse' ? '#FEF2F2' : editProspectStatus === 'a_rappeler' ? '#FFFBEB' : editProspectStatus === 'relance' ? '#ECFEFF' : '#F5F3FF',
+                      color: editProspectStatus === 'interesse' ? '#047857' : editProspectStatus === 'pas_interesse' ? '#B91C1C' : editProspectStatus === 'a_rappeler' ? '#B45309' : editProspectStatus === 'relance' ? '#0891B2' : '#6D28D9'
+                    }}
+                  >
+                    <option value="interesse" style={{ backgroundColor: '#fff', color: '#047857' }}>✓ Intéressé</option>
+                    <option value="pas_interesse" style={{ backgroundColor: '#fff', color: '#B91C1C' }}>✗ Pas intéressé</option>
+                    <option value="a_rappeler" style={{ backgroundColor: '#fff', color: '#B45309' }}>☎ À rappeler</option>
+                    <option value="relance" style={{ backgroundColor: '#fff', color: '#0891B2' }}>↻ Relance</option>
+                    <option value="demande_devis" style={{ backgroundColor: '#fff', color: '#6D28D9' }}>✎ Demande de devis</option>
+                  </select>
+                </div>
+              )}
 
               <div className="space-y-1 sm:col-span-2">
                 <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">

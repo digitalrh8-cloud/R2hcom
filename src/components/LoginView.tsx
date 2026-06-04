@@ -8,7 +8,7 @@ import { Lock, Mail, ArrowRight, Eye, EyeOff, ShieldCheck, Sparkles, Building2 }
 import R2HLogo from './R2HLogo';
 
 interface LoginViewProps {
-  onLoginSuccess: (adminName: string) => void;
+  onLoginSuccess: (adminName: string, role: string, title: string, avatarUrl: string) => void;
 }
 
 export default function LoginView({ onLoginSuccess }: LoginViewProps) {
@@ -35,11 +35,53 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
         (cleanEmail === 'digitalrh8@gmail.com' && cleanPassword === 'admin')
       ) {
         setIsLoading(false);
-        onLoginSuccess('Mehdi Rahho');
-      } else {
-        setIsLoading(false);
-        setError('Adresse e-mail ou mot de passe incorrect. Veuillez vérifier vos identifiants de connexion.');
+        onLoginSuccess('Mehdi Rahho', 'admin', 'Directeur Général', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200');
+        return;
       }
+
+      // 4 Commercial admins accounts (login using email or just direct tag)
+      // 1. Amira Alami
+      if (
+        (cleanEmail === 'amira@r2h.ma' || cleanEmail === 'amira') &&
+        (cleanPassword === 'amira' || cleanPassword === 'commercial')
+      ) {
+        setIsLoading(false);
+        onLoginSuccess('Amira Alami', 'commercial', 'Responsable Commerciale', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200');
+        return;
+      }
+
+      // 2. Yassine Naciri
+      if (
+        (cleanEmail === 'yassine@r2h.ma' || cleanEmail === 'yassine') &&
+        (cleanPassword === 'yassine' || cleanPassword === 'commercial')
+      ) {
+        setIsLoading(false);
+        onLoginSuccess('Yassine Naciri', 'commercial', 'Commercial Senior', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200');
+        return;
+      }
+
+      // 3. Fatima Zahra
+      if (
+        (cleanEmail === 'fatima@r2h.ma' || cleanEmail === 'fatima') &&
+        (cleanPassword === 'fatima' || cleanPassword === 'commercial')
+      ) {
+        setIsLoading(false);
+        onLoginSuccess('Fatima Zahra', 'commercial', 'Chargée de Clientèle', 'https://images.unsplash.com/photo-1534751516642-a131ffd103fd?auto=format&fit=crop&q=80&w=200');
+        return;
+      }
+
+      // 4. Karim Tazi
+      if (
+        (cleanEmail === 'karim@r2h.ma' || cleanEmail === 'karim') &&
+        (cleanPassword === 'karim' || cleanPassword === 'commercial')
+      ) {
+        setIsLoading(false);
+        onLoginSuccess('Karim Tazi', 'commercial', 'Négociateur Événementiel', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200');
+        return;
+      }
+
+      setIsLoading(false);
+      setError('Adresse e-mail ou mot de passe incorrect. Pour vous connecter, utilisez soit : admin/admin ou un des commerciaux (amira, yassine, fatima ou karim) avec leur prénom comme mot de passe.');
     }, 800);
   };
 
