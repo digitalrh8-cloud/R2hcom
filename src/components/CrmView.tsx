@@ -28,7 +28,7 @@ import {
   RefreshCw,
   Edit
 } from 'lucide-react';
-import { SiteId, Contact, Stand, Transaction, TransactionItem } from '../types';
+import { SiteId, SiteConfig, Contact, Stand, Transaction, TransactionItem } from '../types';
 import { initialSites } from '../initialData';
 
 interface CrmViewProps {
@@ -40,6 +40,7 @@ interface CrmViewProps {
   transactions?: Transaction[];
   setTransactions?: React.Dispatch<React.SetStateAction<Transaction[]>>;
   setCurrentTab?: (tab: string) => void;
+  sites?: SiteConfig[];
 }
 
 export default function CrmView({ 
@@ -50,8 +51,11 @@ export default function CrmView({
   setStands,
   transactions = [],
   setTransactions,
-  setCurrentTab
+  setCurrentTab,
+  sites
 }: CrmViewProps) {
+  const sitesList = sites || initialSites;
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -245,8 +249,9 @@ export default function CrmView({
         unitPrice: item.unitPrice
       }));
     } else {
-      const siteTag = contact.site === 'africapool' ? 'Africa Pool' : contact.site === 'gardenexpo' ? 'Garden Expo' : 'R2H Event';
-      const rate = contact.site === 'africapool' ? 2800 : contact.site === 'gardenexpo' ? 2500 : 2500;
+      const selectedSiteConfig = sitesList.find(s => s.id === contact.site);
+      const siteTag = selectedSiteConfig ? selectedSiteConfig.logoText : 'R2H Event';
+      const rate = selectedSiteConfig && selectedSiteConfig.id === 'africapool' ? 2800 : 2500;
       initialItems = [
         {
           id: `item_df_${Date.now()}`,
@@ -259,7 +264,7 @@ export default function CrmView({
 
     setCustomInvoiceItems(initialItems);
     setInvoiceNotes(`Facture d'exposant formulée en fonction des tarifs et des emplacements validés pour le salon ${
-      contact.site === 'africapool' ? 'Africa Pool 2025' : contact.site === 'gardenexpo' ? 'Garden Expo 2025' : 'R2H Communication'
+      sitesList.find(s => s.id === contact.site)?.name || 'R2H Communication'
     }.`);
     setInvoiceModalContact(contact);
   };
@@ -683,7 +688,7 @@ export default function CrmView({
                         </td>
                         <td className="px-5 py-3.5 font-medium">
                           <span className="text-[11px] px-2.5 py-0.5 rounded-xl bg-[#F8F7F2] border border-[#E8E6DE] text-[#7A7667] max-w-max block">
-                            {contact.site === 'africapool' ? 'africapoolspa.com' : contact.site === 'gardenexpo' ? 'gardenexpo.ma' : 'r2h.ma'}
+                            {sitesList.find(s => s.id === contact.site)?.domain || 'r2h.ma'}
                           </span>
                         </td>
                         <td className="px-5 py-3.5 uppercase font-mono text-[9px] font-bold">
@@ -835,9 +840,9 @@ export default function CrmView({
                       onChange={(e) => setNewSite(e.target.value as SiteId)}
                       className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-[11px] font-semibold"
                     >
-                      <option value="gardenexpo">Garden Expo 2025</option>
-                      <option value="africapool">Africa Pool 2025</option>
-                      <option value="r2h">R2H Communication</option>
+                      {sitesList.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -961,7 +966,7 @@ export default function CrmView({
                   <div className="flex items-center gap-2.5">
                     <Building className="w-4 h-4 text-[#7A7667]" />
                     <div>
-                      <p className="font-bold text-[#2D2D2D]">{selectedContact.site === 'africapool' ? 'africapoolspa.com' : 'gardenexpo.ma'}</p>
+                      <p className="font-bold text-[#2D2D2D]">{sitesList.find(s => s.id === selectedContact.site)?.domain || 'r2h.ma'}</p>
                       <p className="text-[9px] text-[#7A7667]">Salon référencé</p>
                     </div>
                   </div>
@@ -1070,10 +1075,10 @@ export default function CrmView({
               <div>
                 <p className="text-[9px] uppercase tracking-wider font-bold text-[#7A7667]">Salon & Destination</p>
                 <p className="font-bold text-[#2D2D2D] mt-0.5">
-                  {invoiceModalContact.site === 'africapool' ? 'Africa Pool & Spa Expo 2025' : invoiceModalContact.site === 'gardenexpo' ? 'Garden Expo Africa 2025' : 'R2H Communication'}
+                  {sitesList.find(s => s.id === invoiceModalContact.site)?.name || 'R2H Communication'}
                 </p>
                 <span className="inline-block text-[9px] px-2 py-0.5 bg-[#4D5E4A]/10 text-[#4D5E4A] font-bold rounded-md mt-1 border border-[#7E8F7A]/20 uppercase">
-                  {invoiceModalContact.site === 'africapool' ? 'africapoolspa.com' : invoiceModalContact.site === 'gardenexpo' ? 'gardenexpo.ma' : 'r2h.ma'}
+                  {sitesList.find(s => s.id === invoiceModalContact.site)?.domain || 'r2h.ma'}
                 </span>
               </div>
             </div>
@@ -1311,8 +1316,9 @@ export default function CrmView({
                   }}
                   className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] font-semibold"
                 >
-                  <option value="africapool">africapoolspa.com (Africa Pool)</option>
-                  <option value="gardenexpo">gardenexpo.ma (Garden Expo)</option>
+                  {sitesList.map(s => (
+                    <option key={s.id} value={s.id}>{s.domain} ({s.name})</option>
+                  ))}
                 </select>
               </div>
 

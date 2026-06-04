@@ -4,8 +4,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { SiteId, Stand, Contact, Transaction, Campaign, Task } from './types';
+import { SiteId, SiteConfig, Stand, Contact, Transaction, Campaign, Task } from './types';
 import { 
+  initialSites,
   initialStands, 
   initialContacts, 
   initialTransactions, 
@@ -41,6 +42,19 @@ function eraseCookie(name: string) {
 }
 
 export default function App() {
+  // Global sites list
+  const [sites, setSites] = useState<SiteConfig[]>(() => {
+    const saved = getCookie('r2h_portal_sites');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parsing sites cookie:', e);
+      }
+    }
+    return initialSites;
+  });
+
   // Global site context switcher, defaulting to R2H consolidator in Moroccan workspace
   const [selectedSite, setSelectedSite] = useState<SiteId>('r2h');
   
@@ -242,6 +256,7 @@ export default function App() {
             tasks={tasks}
             setTasks={setTasks}
             setCurrentTab={setCurrentTab}
+            sites={sites}
           />
         );
       case 'prospects':
@@ -255,6 +270,7 @@ export default function App() {
             transactions={transactions}
             setTransactions={setTransactions}
             setCurrentTab={setCurrentTab}
+            sites={sites}
           />
         );
       case 'clients':
@@ -268,6 +284,7 @@ export default function App() {
             transactions={transactions}
             setTransactions={setTransactions}
             setCurrentTab={setCurrentTab}
+            sites={sites}
           />
         );
       case 'devis':
@@ -347,6 +364,31 @@ export default function App() {
           setSelectedSite={setSelectedSite}
           title={getHeaderTitle()}
           onMenuToggle={() => setIsMobileSidebarOpen(true)}
+          sites={sites}
+          onAddSite={(newSite, numStandsToCreate) => {
+            const updatedSites = [...sites, newSite];
+            setSites(updatedSites);
+            setCookie('r2h_portal_sites', JSON.stringify(updatedSites));
+            
+            // Add custom stands for the newly created salon
+            const newStands: Stand[] = [];
+            for (let i = 1; i <= numStandsToCreate; i++) {
+              const numStr = `S-${i < 10 ? '0' + i : i}`;
+              // Alternating properties
+              const area = i % 3 === 0 ? 36 : i % 2 === 0 ? 18 : 9;
+              newStands.push({
+                id: `${newSite.id}-${numStr.toLowerCase()}`,
+                site: newSite.id,
+                num: numStr,
+                hall: 'Hall Principal',
+                area: area,
+                pricePerM2: 2500,
+                status: 'disponible'
+              });
+            }
+            setStands(prev => [...prev, ...newStands]);
+            setSelectedSite(newSite.id);
+          }}
         />
 
         {/* Dynamic active sub-view */}

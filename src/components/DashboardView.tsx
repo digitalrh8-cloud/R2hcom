@@ -18,9 +18,10 @@ import {
   Building2,
   Euro,
   FileSpreadsheet,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
-import { SiteId, Stand, Contact, Transaction, Task } from '../types';
+import { SiteId, SiteConfig, Stand, Contact, Transaction, Task } from '../types';
 import { initialSites } from '../initialData';
 
 interface DashboardViewProps {
@@ -33,6 +34,7 @@ interface DashboardViewProps {
   tasks: Task[];
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
   setCurrentTab: (tab: string) => void;
+  sites?: SiteConfig[];
 }
 
 export default function DashboardView({
@@ -44,8 +46,11 @@ export default function DashboardView({
   transactions,
   tasks,
   setTasks,
-  setCurrentTab
+  setCurrentTab,
+  sites
 }: DashboardViewProps) {
+  const sitesList = sites || initialSites;
+
   // Local states for the stand reservation modal
   const [selectedStand, setSelectedStand] = useState<Stand | null>(null);
   const [editCompany, setEditCompany] = useState('');
@@ -56,13 +61,13 @@ export default function DashboardView({
   const [showNotification, setShowNotification] = useState<string | null>(null);
 
   // Determine current floor plan site (since R2H aggregates, default floor plan view is Garden Expo)
-  const [activeFloorPlanSite, setActiveFloorPlanSite] = useState<'gardenexpo' | 'africapool'>(
-    selectedSite === 'africapool' ? 'africapool' : 'gardenexpo'
+  const [activeFloorPlanSite, setActiveFloorPlanSite] = useState<string>(
+    selectedSite === 'r2h' ? 'gardenexpo' : selectedSite
   );
 
   // Sync state if chosen site changes
   React.useEffect(() => {
-    if (selectedSite === 'africapool' || selectedSite === 'gardenexpo') {
+    if (selectedSite !== 'r2h') {
       setActiveFloorPlanSite(selectedSite);
     }
   }, [selectedSite]);
@@ -103,6 +108,319 @@ export default function DashboardView({
       }
       return t;
     }));
+  };
+
+  // Export and download floor plan as a high-fidelity vector SVG blueprint file
+  const downloadPlanAsSvg = (site: 'gardenexpo' | 'africapool') => {
+    let svgContent = '';
+    const dateStr = new Date().toLocaleDateString('fr-FR');
+    
+    if (site === 'gardenexpo') {
+      const siteStands = stands.filter(s => s.site === 'gardenexpo');
+      const total = siteStands.length;
+      const sold = siteStands.filter(s => s.status === 'vendu').length;
+      const reserved = siteStands.filter(s => s.status === 'reserve').length;
+      const sponsored = siteStands.filter(s => s.status === 'sponsorise').length;
+      const free = siteStands.filter(s => s.status === 'disponible').length;
+      
+      svgContent = `<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 780" width="100%" height="100%" style="background-color: #F8F7F2; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+  <style>
+    .title { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 900; fill: #2D2D2D; }
+    .subtitle { font-size: 11px; fill: #7A7667; letter-spacing: 1px; font-weight: bold; text-transform: uppercase; }
+    .meta-box { font-size: 10px; font-weight: bold; }
+    .hall-label { font-family: 'Playfair Display', serif; font-size: 12px; font-weight: bold; fill: #7E8F7A; letter-spacing: 2px; }
+    .stand-label { font-size: 11px; font-weight: bold; font-family: monospace; }
+    .stand-sub { font-size: 8px; font-weight: bold; }
+    .legend-text { font-size: 10px; font-weight: bold; fill: #2D2D2D; }
+  </style>
+
+  <rect x="0" y="0" width="1000" height="780" fill="#F8F7F2"/>
+  <rect x="30" y="30" width="940" height="720" rx="20" fill="#FFFFFF" stroke="#E8E6DE" stroke-width="1.5"/>
+  
+  <text x="60" y="75" class="title">GARDEN EXPO AFRICA 2025</text>
+  <text x="60" y="95" class="subtitle">PLAN D'EXPOSITION OFFICIEL — CASABLANCA</text>
+  
+  <g transform="translate(620, 55)">
+    <rect x="0" y="0" width="320" height="55" rx="8" fill="#F8F7F2" stroke="#E8E6DE" stroke-width="1"/>
+    <text x="15" y="20" class="meta-box" fill="#2D2D2D">Stands de l'exposition :</text>
+    <text x="15" y="40" class="meta-box" fill="#065F46">● Libre : ${free}</text>
+    <text x="100" y="40" class="meta-box" fill="#92400E">● Réservé : ${reserved}</text>
+    <text x="195" y="40" class="meta-box" fill="#991B1B">● Vendu : ${sold}</text>
+    <text x="270" y="40" class="meta-box" fill="#6B21A8">● Spons. : ${sponsored}</text>
+    <text x="240" y="20" class="meta-box" fill="#2D2D2D">Export : ${dateStr}</text>
+  </g>
+
+  <text x="500" y="145" class="hall-label" text-anchor="middle">- Hall A - Pôle Principal Expo -</text>
+  
+  <g transform="translate(60, 160)">
+    ${rowTop.map((s, idx) => {
+      const cx = idx * 98;
+      const cy = 10;
+      const fill = s.status === 'disponible' ? '#E6F4EA' : s.status === 'reserve' ? '#FEF3C7' : s.status === 'vendu' ? '#FEE2E2' : '#F3E8FF';
+      const stroke = s.status === 'disponible' ? '#A3E635' : s.status === 'reserve' ? '#FBBF24' : s.status === 'vendu' ? '#F87171' : '#C084FC';
+      const textCol = s.status === 'disponible' ? '#065F46' : s.status === 'reserve' ? '#92400E' : s.status === 'vendu' ? '#991B1B' : '#6B21A8';
+      const details = s.companyName ? (s.companyName.length > 12 ? s.companyName.substring(0, 11) + '..' : s.companyName) : 'Disponible';
+      return `
+    <g transform="translate(${cx}, ${cy})">
+      <rect x="0" y="0" width="88" height="90" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+      <text x="44" y="25" class="stand-label" fill="${textCol}" text-anchor="middle">${s.num}</text>
+      <circle cx="44" cy="40" r="3" fill="${textCol}"/>
+      <text x="44" y="65" class="stand-sub" fill="#4B5563" text-anchor="middle">${details}</text>
+      <text x="44" y="78" class="stand-sub" fill="#9CA3AF" text-anchor="middle">${s.area}m²</text>
+    </g>`;
+    }).join('')}
+
+    ${rowLeft.map((s, idx) => {
+      const cx = 0;
+      const cy = 120 + idx * 78;
+      const fill = s.status === 'disponible' ? '#E6F4EA' : s.status === 'reserve' ? '#FEF3C7' : s.status === 'vendu' ? '#FEE2E2' : '#F3E8FF';
+      const stroke = s.status === 'disponible' ? '#A3E635' : s.status === 'reserve' ? '#FBBF24' : s.status === 'vendu' ? '#F87171' : '#C084FC';
+      const textCol = s.status === 'disponible' ? '#065F46' : s.status === 'reserve' ? '#92400E' : s.status === 'vendu' ? '#991B1B' : '#6B21A8';
+      const details = s.companyName ? (s.companyName.length > 20 ? s.companyName.substring(0, 18) + '..' : s.companyName) : 'Disponible';
+      return `
+    <g transform="translate(${cx}, ${cy})">
+      <rect x="0" y="0" width="130" height="66" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+      <text x="65" y="25" class="stand-label" fill="${textCol}" text-anchor="middle">${s.num}</text>
+      <text x="65" y="45" class="stand-sub" fill="#4B5563" text-anchor="middle">${details}</text>
+      <text x="65" y="56" class="stand-sub" fill="#9CA3AF" text-anchor="middle">${s.area}m²</text>
+    </g>`;
+    }).join('')}
+
+    ${rowRight.map((s, idx) => {
+      const cx = 750;
+      const cy = 120 + idx * 115;
+      const fill = s.status === 'disponible' ? '#E6F4EA' : s.status === 'reserve' ? '#FEF3C7' : s.status === 'vendu' ? '#FEE2E2' : '#F3E8FF';
+      const stroke = s.status === 'disponible' ? '#A3E635' : s.status === 'reserve' ? '#FBBF24' : s.status === 'vendu' ? '#F87171' : '#C084FC';
+      const textCol = s.status === 'disponible' ? '#065F46' : s.status === 'reserve' ? '#92400E' : s.status === 'vendu' ? '#991B1B' : '#6B21A8';
+      const details = s.companyName ? (s.companyName.length > 20 ? s.companyName.substring(0, 18) + '..' : s.companyName) : 'Disponible';
+      return `
+    <g transform="translate(${cx}, ${cy})">
+      <rect x="0" y="0" width="130" height="95" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+      <text x="65" y="30" class="stand-label" fill="${textCol}" text-anchor="middle">${s.num}</text>
+      <text x="65" y="55" class="stand-sub" fill="#4B5563" text-anchor="middle">${details}</text>
+      <text x="65" y="75" class="stand-sub" fill="#9CA3AF" text-anchor="middle">${s.area}m²</text>
+    </g>`;
+    }).join('')}
+
+    ${midCluster1.map((s, idx) => {
+      const cx = 170;
+      const cy = 120 + idx * 115;
+      const fill = s.status === 'disponible' ? '#E6F4EA' : s.status === 'reserve' ? '#FEF3C7' : s.status === 'vendu' ? '#FEE2E2' : '#F3E8FF';
+      const stroke = s.status === 'disponible' ? '#A3E635' : s.status === 'reserve' ? '#FBBF24' : s.status === 'vendu' ? '#F87171' : '#C084FC';
+      const textCol = s.status === 'disponible' ? '#065F46' : s.status === 'reserve' ? '#92400E' : s.status === 'vendu' ? '#991B1B' : '#6B21A8';
+      const details = s.companyName ? (s.companyName.length > 24 ? s.companyName.substring(0, 22) + '..' : s.companyName) : 'Disponible';
+      return `
+    <g transform="translate(${cx}, ${cy})">
+      <rect x="0" y="0" width="160" height="95" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+      <text x="80" y="30" class="stand-label" fill="${textCol}" text-anchor="middle">${s.num}</text>
+      <text x="80" y="55" class="stand-sub" fill="#4B5563" text-anchor="middle">${details}</text>
+      <text x="80" y="75" class="stand-sub" fill="#9CA3AF" text-anchor="middle">${s.area}m²</text>
+    </g>`;
+    }).join('')}
+
+    ${midCluster2.map((s, idx) => {
+      const cx = 360 + idx * 122;
+      const cy = 120;
+      const fill = s.status === 'disponible' ? '#E6F4EA' : s.status === 'reserve' ? '#FEF3C7' : s.status === 'vendu' ? '#FEE2E2' : '#F3E8FF';
+      const stroke = s.status === 'disponible' ? '#A3E635' : s.status === 'reserve' ? '#FBBF24' : s.status === 'vendu' ? '#F87171' : '#C084FC';
+      const textCol = s.status === 'disponible' ? '#065F46' : s.status === 'reserve' ? '#92400E' : s.status === 'vendu' ? '#991B1B' : '#6B21A8';
+      const details = s.companyName ? (s.companyName.length > 15 ? s.companyName.substring(0, 13) + '..' : s.companyName) : 'Disponible';
+      return `
+    <g transform="translate(${cx}, ${cy})">
+      <rect x="0" y="0" width="112" height="95" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+      <text x="56" y="30" class="stand-label" fill="${textCol}" text-anchor="middle">${s.num}</text>
+      <text x="56" y="55" class="stand-sub" fill="#4B5563" text-anchor="middle">${details}</text>
+      <text x="56" y="75" class="stand-sub" fill="#9CA3AF" text-anchor="middle">${s.area}m²</text>
+    </g>`;
+    }).join('')}
+
+    ${specialMid.map((s, idx) => {
+      const cx = 360 + idx * 185;
+      const cy = 235;
+      const fill = s.status === 'disponible' ? '#E6F4EA' : s.status === 'reserve' ? '#FEF3C7' : s.status === 'vendu' ? '#FEE2E2' : '#F3E8FF';
+      const stroke = s.status === 'disponible' ? '#A3E635' : s.status === 'reserve' ? '#FBBF24' : s.status === 'vendu' ? '#F87171' : '#C084FC';
+      const textCol = s.status === 'disponible' ? '#065F46' : s.status === 'reserve' ? '#92400E' : s.status === 'vendu' ? '#991B1B' : '#6B21A8';
+      const details = s.companyName ? (s.companyName.length > 24 ? s.companyName.substring(0, 22) + '..' : s.companyName) : 'Disponible';
+      return `
+    <g transform="translate(${cx}, ${cy})">
+      <rect x="0" y="0" width="175" height="110" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+      <text x="87.5" y="35" class="stand-label" fill="${textCol}" text-anchor="middle">${s.num}</text>
+      <text x="87.5" y="65" class="stand-sub" fill="#4B5563" text-anchor="middle">${details}</text>
+      <text x="87.5" y="85" class="stand-sub" fill="#9CA3AF" text-anchor="middle">${s.area}m²</text>
+    </g>`;
+    }).join('')}
+
+    ${rowBottom.map((s, idx) => {
+      const cx = idx * 125;
+      const cy = 370;
+      const fill = s.status === 'disponible' ? '#E6F4EA' : s.status === 'reserve' ? '#FEF3C7' : s.status === 'vendu' ? '#FEE2E2' : '#F3E8FF';
+      const stroke = s.status === 'disponible' ? '#A3E635' : s.status === 'reserve' ? '#FBBF24' : s.status === 'vendu' ? '#F87171' : '#C084FC';
+      const textCol = s.status === 'disponible' ? '#065F46' : s.status === 'reserve' ? '#92400E' : s.status === 'vendu' ? '#991B1B' : '#6B21A8';
+      const details = s.companyName ? (s.companyName.length > 18 ? s.companyName.substring(0, 16) + '..' : s.companyName) : 'Disponible';
+      return `
+    <g transform="translate(${cx}, ${cy})">
+      <rect x="0" y="0" width="112" height="95" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+      <text x="56" y="30" class="stand-label" fill="${textCol}" text-anchor="middle">${s.num}</text>
+      <text x="56" y="55" class="stand-sub" fill="#4B5563" text-anchor="middle">${details}</text>
+      <text x="56" y="75" class="stand-sub" fill="#9CA3AF" text-anchor="middle">${s.area}m²</text>
+    </g>`;
+    }).join('')}
+  </g>
+
+  <g transform="translate(60, 670)">
+    <line x1="0" y1="0" x2="880" y2="0" stroke="#E8E6DE" stroke-dasharray="2,2"/>
+    
+    <rect x="0" y="20" width="15" height="15" rx="3" fill="#E6F4EA" stroke="#A3E635"/>
+    <text x="22" y="32" class="legend-text">Libre (Sols Intérieurs / Pépinière)</text>
+
+    <rect x="250" y="20" width="15" height="15" rx="3" fill="#FEF3C7" stroke="#FBBF24"/>
+    <text x="272" y="32" class="legend-text">Option Réservée (Option client)</text>
+
+    <rect x="500" y="20" width="15" height="15" rx="3" fill="#FEE2E2" stroke="#F87171"/>
+    <text x="522" y="32" class="legend-text">Vendu officiel (Exposant)</text>
+
+    <rect x="730" y="20" width="15" height="15" rx="3" fill="#F3E8FF" stroke="#C084FC"/>
+    <text x="752" y="32" class="legend-text">Sponsorisé / Partenariat</text>
+    
+    <text x="440" y="60" font-size="8.5" fill="#7A7667" text-anchor="middle" font-weight="semibold">R2H COMMUNICATION © TOUS DROITS RÉSERVÉS - PORTAIL TECHNIQUE WORKSPACE DU SALON</text>
+  </g>
+</svg>
+`;
+    } else {
+      const siteStands = stands.filter(s => s.site === 'africapool');
+      const total = siteStands.length;
+      const sold = siteStands.filter(s => s.status === 'vendu').length;
+      const reserved = siteStands.filter(s => s.status === 'reserve').length;
+      const sponsored = siteStands.filter(s => s.status === 'sponsorise').length;
+      const free = siteStands.filter(s => s.status === 'disponible').length;
+
+      const cols = {
+        A: poolColA,
+        B: poolColB,
+        C: poolColC,
+        D: poolColD,
+        E: poolColE,
+        F: poolColF,
+        G: poolColG,
+        H: poolColH
+      };
+
+      svgContent = `<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 880" width="100%" height="100%" style="background-color: #F8F7F2; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+  <style>
+    .title { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 900; fill: #2D2D2D; }
+    .subtitle { font-size: 11px; fill: #7A7667; letter-spacing: 1px; font-weight: bold; text-transform: uppercase; }
+    .col-title { font-size: 11px; font-weight: 900; fill: #2D2D2D; text-anchor: middle; font-family: monospace; }
+    .stand-label { font-size: 10px; font-weight: bold; font-family: monospace; }
+    .stand-sub { font-size: 8px; font-weight: bold; }
+    .legend-text { font-size: 10px; font-weight: bold; fill: #2D2D2D; }
+    .meta-box { font-size: 10px; font-weight: bold; }
+    .conf-text-head { font-size: 9px; font-weight: 900; fill: #FFFFFF; font-family: sans-serif; letter-spacing: 1px; }
+    .conf-text-body { font-size: 7.5px; font-weight: bold; fill: #FFFFFF; opacity: 0.95; }
+  </style>
+
+  <rect width="100%" height="100%" fill="#F8F7F2"/>
+  <rect x="30" y="30" width="1220" height="820" rx="20" fill="#FFFFFF" stroke="#E8E6DE" stroke-width="1.5"/>
+
+  <text x="60" y="75" class="title">AFRICA POOL &amp; SPA EXPO 2026</text>
+  <text x="60" y="95" class="subtitle">PLAN INTERACTIF OFFICIEL DE L'EXPOSITION (OFEC CASABLANCA)</text>
+
+  <g transform="translate(860, 55)">
+    <rect x="0" y="0" width="360" height="55" rx="8" fill="#F8F7F2" stroke="#E8E6DE" stroke-width="1"/>
+    <text x="15" y="20" class="meta-box" fill="#2D2D2D">Stands de l'exposition :</text>
+    <text x="15" y="40" class="meta-box" fill="#065F46">● Libre : ${free}</text>
+    <text x="110" y="40" class="meta-box" fill="#92400E">● Réservé : ${reserved}</text>
+    <text x="215" y="40" class="meta-box" fill="#991B1B">● Vendu : ${sold}</text>
+    <text x="300" y="40" class="meta-box" fill="#6B21A8">● Spons : ${sponsored}</text>
+    <text x="255" y="20" class="meta-box" fill="#2D2D2D">Export : ${dateStr}</text>
+  </g>
+
+  <g transform="translate(50, 150)">
+    ${Object.entries(cols).map(([colName, colStands], colIdx) => {
+      const cx = colIdx * 148;
+      let renderStandsSvg = '';
+      let yOffset = 45;
+
+      if (colName === 'B') {
+        renderStandsSvg += `
+        <g transform="translate(10, ${yOffset})">
+          <rect x="0" y="0" width="114" height="150" rx="8" fill="url(#orangeGrad)" stroke="#C2410C" stroke-width="1.5"/>
+          <text x="57" y="55" class="conf-text-head" text-anchor="middle">SALLE</text>
+          <text x="57" y="70" class="conf-text-head" text-anchor="middle">DE CONFÉRENCE</text>
+          <text x="57" y="85" class="conf-text-head" text-anchor="middle">SPA &amp; BIEN-ÊTRE</text>
+          <rect x="33" y="105" width="48" height="18" rx="4" fill="rgba(255,255,255,0.2)"/>
+          <text x="57" y="117" class="conf-text-body" font-family="monospace" text-anchor="middle">60 m²</text>
+        </g>
+        `;
+        yOffset += 160;
+      }
+
+      colStands.forEach((s) => {
+        const fill = s.status === 'disponible' ? '#E6F4EA' : s.status === 'reserve' ? '#FEF3C7' : s.status === 'vendu' ? '#FEE2E2' : '#F3E8FF';
+        const stroke = s.status === 'disponible' ? '#A3E635' : s.status === 'reserve' ? '#FBBF24' : s.status === 'vendu' ? '#F87171' : '#C084FC';
+        const textCol = s.status === 'disponible' ? '#065F46' : s.status === 'reserve' ? '#92400E' : s.status === 'vendu' ? '#991B1B' : '#6B21A8';
+        const height = s.area >= 72 ? 160 : s.area >= 36 ? 85 : 45;
+        const details = s.companyName ? (s.companyName.length > 15 ? s.companyName.substring(0, 13) + '..' : s.companyName) : 'Disponible';
+
+        renderStandsSvg += `
+        <g transform="translate(10, ${yOffset})">
+          <rect x="0" y="0" width="114" height="${height}" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="1.2"/>
+          <text x="57" y="${height > 60 ? 25 : 20}" class="stand-label" fill="${textCol}" text-anchor="middle">${s.num}</text>
+          <text x="57" y="${height > 60 ? 55 : height - 10}" class="stand-sub" fill="#4B5563" text-anchor="middle" font-size="8">${details}</text>
+          \${height > 60 ? \`<text x="57" y="\${height - 20}" class="stand-sub" fill="#9CA3AF" text-anchor="middle">\${s.area}m²</text>\` : ''}
+        </g>
+        `;
+        yOffset += height + 8;
+      });
+
+      return `
+      <g transform="translate(${cx}, 0)">
+        <rect x="0" y="0" width="134" height="600" rx="12" fill="#F3F1E9" fill-opacity="0.5" stroke="#E8E6DE" stroke-width="1"/>
+        <rect x="10" y="10" width="114" height="24" rx="6" fill="#FFFFFF" stroke="#E8E6DE" stroke-width="1"/>
+        <text x="67" y="26" class="col-title">COLONNE ${colName}</text>
+        ${renderStandsSvg}
+      </g>`;
+    }).join('')}
+  </g>
+
+  <defs>
+    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#EA580C" />
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(60, 780)">
+    <line x1="0" y1="0" x2="1160" y2="0" stroke="#E8E6DE" stroke-dasharray="2,2"/>
+    
+    <rect x="0" y="20" width="15" height="15" rx="3" fill="#E6F4EA" stroke="#A3E635"/>
+    <text x="22" y="32" class="legend-text">Disponible (Équipements &amp; Spas)</text>
+
+    <rect x="300" y="20" width="15" height="15" rx="3" fill="#FEF3C7" stroke="#FBBF24"/>
+    <text x="322" y="32" class="legend-text">Option Négociation (Option en cours)</text>
+
+    <rect x="620" y="20" width="15" height="15" rx="3" fill="#FEE2E2" stroke="#F87171"/>
+    <text x="642" y="32" class="legend-text">Acheté &amp; Affecté (Exposant officiel)</text>
+
+    <rect x="940" y="20" width="15" height="15" rx="3" fill="#F3E8FF" stroke="#C084FC"/>
+    <text x="962" y="32" class="legend-text">Partenaire Premium / Sponsorisé</text>
+    
+    <text x="580" y="55" font-size="8.5" fill="#7A7667" text-anchor="middle" font-weight="semibold">PORTAIL TECHNIQUE WORKSPACE DE L'EXPOSITION - R2H COMMUNICATION © TOUS DROITS RÉSERVÉS</text>
+  </g>
+</svg>
+`;
+    }
+
+    const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `plan_${site}_${new Date().toISOString().split('T')[0]}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Click on stand
@@ -417,25 +735,38 @@ export default function DashboardView({
               <div>
                 <h3 className="text-sm font-bold text-[#2D2D2D] font-serif flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#A68A64' }}></span>
-                  <span>Plan Interactif du Salon — {activeFloorPlanSite === 'gardenexpo' ? 'Garden Expo Africa 2025' : 'Africa Pool & Spa Expo 2025'}</span>
+                  <span>Plan Interactif du Salon — {sitesList.find(s => s.id === activeFloorPlanSite)?.name || activeFloorPlanSite.toUpperCase()}</span>
                 </h3>
                 <p className="text-[11px] text-[#7A7667] mt-0.5">Cliquez sur un pavillon de stand pour administrer l'attribution.</p>
               </div>
 
-              {/* Floor Plan site selection dropdown in aggregated mode */}
-              {selectedSite === 'r2h' && (
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-[#7A7667] font-semibold font-sans">SALON :</span>
-                  <select
-                    value={activeFloorPlanSite}
-                    onChange={(e) => setActiveFloorPlanSite(e.target.value as 'gardenexpo' | 'africapool')}
-                    className="text-xs bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl px-3 py-1.5 outline-hidden text-[#2D2D2D] font-medium cursor-pointer"
-                  >
-                    <option value="gardenexpo">Garden Expo 2025</option>
-                    <option value="africapool">Africa Pool & Spa 2025</option>
-                  </select>
-                </div>
-              )}
+              {/* Floor Plan site selection & Download Action */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                {selectedSite === 'r2h' && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-[#7A7667] font-bold font-sans">SALON :</span>
+                    <select
+                      value={activeFloorPlanSite}
+                      onChange={(e) => setActiveFloorPlanSite(e.target.value)}
+                      className="text-xs bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl px-2.5 py-1.5 outline-hidden text-[#2D2D2D] font-bold cursor-pointer transition-all hover:bg-[#F1EFE6]"
+                    >
+                      {sitesList.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                <button
+                  type="button"
+                  onClick={() => downloadPlanAsSvg(activeFloorPlanSite)}
+                  className="px-3.5 py-1.5 bg-[#A68A64] hover:bg-[#917550] text-white text-[11px] font-bold rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5 shrink-0 border border-[#917550]/20"
+                  title="Télécharger le plan vectoriel SVG haute définition"
+                >
+                  <Download className="w-3.5 h-3.5 shrink-0" />
+                  <span>Télécharger Plan (SVG)</span>
+                </button>
+              </div>
             </div>
 
             {/* Simulated Canvas Layout Grid (Hall A/Hall 1 mapping layout) */}
@@ -585,7 +916,7 @@ export default function DashboardView({
                     })}
                   </div>
                 </div>
-              ) : (
+              ) : activeFloorPlanSite === 'africapool' ? (
                 /* --- HIGH FIDELITY LAYOUT REPRESENTATION OF AFRICA POOL & SPA EXPO FROM PDF --- */
                 <div className="min-w-[1050px] mx-auto space-y-6">
                   {/* Visual Header Grid */}
@@ -1000,6 +1331,53 @@ export default function DashboardView({
                       <span className="text-red-600 font-black text-xs">➔ ➔</span>
                       <h5 className="font-serif font-black text-xs tracking-widest text-[#2D2D2D] uppercase">ENTRÉE EXPOSTION AFRICA POOL & SPA</h5>
                       <span className="text-red-600 font-black text-xs">➔ ➔</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Falling back to dynamic newly created salon stand list */
+                <div className="min-w-[500px] sm:min-w-[620px] max-w-[720px] mx-auto space-y-5 text-center">
+                  <div className="text-center font-serif font-semibold text-[11px] uppercase tracking-wider text-[#A68A64] mb-2 leading-none">
+                    - Pavillon D'Exposition Modulaire Personnalisé -
+                  </div>
+
+                  {filteredStands.length === 0 ? (
+                    <div className="p-12 text-center text-xs text-[#7A7667] bg-white border border-[#E8E6DE] rounded-2xl">
+                      Aucun stand n'est encore initialisé dans ce salon.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2.5">
+                      {filteredStands.map((stand) => {
+                        const colorMap = {
+                          disponible: 'bg-emerald-50 border-emerald-250 text-emerald-800 hover:bg-emerald-100',
+                          reserve: 'bg-amber-50 border-amber-250 text-amber-800 hover:bg-amber-100',
+                          vendu: 'bg-rose-50 border-rose-250 text-rose-800 hover:bg-rose-100',
+                          sponsorise: 'bg-purple-50 border-purple-250 text-purple-800 hover:bg-purple-100'
+                        };
+                        return (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-xl p-2.5 text-center transition-all cursor-pointer ${colorMap[stand.status] || colorMap['disponible']} flex flex-col justify-between items-center h-20 min-w-[55px]`}
+                          >
+                            <span className="text-xs font-mono font-bold tracking-tight">{stand.num}</span>
+                            <div className="w-1.5 h-1.5 rounded-full" style={{
+                              backgroundColor: stand.status === 'disponible' ? '#10B981' : stand.status === 'reserve' ? '#F59E0B' : stand.status === 'vendu' ? '#EF4444' : '#8B5CF6'
+                            }}></div>
+                            <span className="text-[9px] scale-90 truncate w-full text-center text-slate-500 font-sans">{stand.area}m²</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div className="flex justify-center items-center pt-3 select-none">
+                    <div className="flex items-center gap-4 bg-white border-2 border-dashed border-[#A68A64] rounded-2xl px-12 py-3 shadow-md">
+                      <span className="text-[#A68A64] font-black text-xs">➔ ➔</span>
+                      <h5 className="font-serif font-black text-xs tracking-widest text-[#2D2D2D] uppercase leading-none">
+                        ENTRÉE {sitesList.find(s => s.id === activeFloorPlanSite)?.name || activeFloorPlanSite.toUpperCase()}
+                      </h5>
+                      <span className="text-[#A68A64] font-black text-xs">➔ ➔</span>
                     </div>
                   </div>
                 </div>

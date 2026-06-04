@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type SiteId = 'r2h' | 'africapool' | 'gardenexpo';
+export type SiteId = string;
 
 export interface SiteConfig {
   id: SiteId;
@@ -33,7 +33,7 @@ export type StandStatus = 'disponible' | 'reserve' | 'vendu' | 'sponsorise';
 
 export interface Stand {
   id: string; // e.g., 'A01', 'A02'
-  site: 'africapool' | 'gardenexpo';
+  site: SiteId;
   num: string;
   hall: string; // e.g., 'Hall A', 'Hall B'
   area: number; // in m²
