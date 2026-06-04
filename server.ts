@@ -12,7 +12,9 @@ import {
   loadUserDataFromDatabase, 
   saveUserDataToDatabase,
   initializeDatabaseSchema,
-  resetDatabaseSchema
+  resetDatabaseSchema,
+  getRailwayConfig,
+  saveRailwayConfig
 } from './db';
 
 // Load environment variables
@@ -37,6 +39,66 @@ app.get('/api/db/status', (req, res) => {
     res.json(status);
   } catch (err: any) {
     res.status(500).json({ error: err.message || String(err) });
+  }
+});
+
+// Get Railway Domain configuration values
+app.get('/api/railway/config', async (req, res) => {
+  try {
+    const status = getDatabaseStatus();
+    if (!status.isConfigured) {
+      res.json({
+        success: true,
+        domain: '',
+        linkedSince: null,
+        status: 'disconnected'
+      });
+      return;
+    }
+    let domain = await getRailwayConfig('railway_domain');
+    const linkedSince = await getRailwayConfig('railway_linked_since');
+    const configStatus = await getRailwayConfig('railway_api_status');
+
+    if (domain) {
+      // Clean up protocol if stored with https:// or http:// or trailing slashes
+      domain = domain.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+    }
+
+    res.json({
+      success: true,
+      domain: domain || 'r2hcom-production.up.railway.app',
+      linkedSince: linkedSince || null,
+      status: configStatus || 'connected'
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || String(err) });
+  }
+});
+
+// Update Railway Domain configuration
+app.post('/api/railway/config', async (req, res) => {
+  try {
+    let { domain } = req.body || {};
+    if (!domain) {
+      res.status(400).json({ success: false, error: "Domaine non fourni" });
+      return;
+    }
+    
+    // Clean up domain URL formats
+    domain = domain.trim().replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+    
+    await saveRailwayConfig('railway_domain', domain);
+    await saveRailwayConfig('railway_linked_since', new Date().toISOString());
+    await saveRailwayConfig('railway_api_status', 'connected');
+    
+    res.json({ 
+      success: true, 
+      message: "Domaine Railway mis à jour et lié avec succès via l'API !", 
+      domain,
+      linkedSince: new Date().toISOString()
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || String(err) });
   }
 });
 

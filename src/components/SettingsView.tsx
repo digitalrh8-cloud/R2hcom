@@ -13,14 +13,22 @@ import {
   Globe, 
   Trash2, 
   DollarSign,
-  AlertCircle
+  AlertCircle,
+  ExternalLink
 } from 'lucide-react';
 import { SiteId } from '../types';
 import { initialSites } from '../initialData';
 
 interface SettingsViewProps {
   selectedSite: SiteId;
-  dbStatus: { isConfigured: boolean; dbInitialized: boolean; error: string | null; maskedUrl: string | null } | null;
+  dbStatus: { 
+    isConfigured: boolean; 
+    dbInitialized: boolean; 
+    error: string | null; 
+    maskedUrl: string | null;
+    dbName?: string;
+    apiKey?: string;
+  } | null;
   refreshDbState?: () => Promise<void>;
 }
 
@@ -33,6 +41,65 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
     type: null,
     message: null
   });
+
+  // Railway Domain Link integration states
+  const [railwayDomain, setRailwayDomain] = useState('r2h.ma');
+  const [railwayLinkedSince, setRailwayLinkedSince] = useState<string | null>(null);
+  const [railwayStatus, setRailwayStatus] = useState<'connected' | 'disconnected'>('connected');
+  const [savingDomain, setSavingDomain] = useState(false);
+  const [domainMessage, setDomainMessage] = useState<{ type: 'success' | 'err' | null; text: string | null }>({ type: null, text: null });
+
+  // Load configured Railway Domain on component mount
+  React.useEffect(() => {
+    async function loadRailwayConfig() {
+      try {
+        const res = await fetch('/api/railway/config');
+        const data = await res.json();
+        if (data.success) {
+          if (data.domain) {
+            setRailwayDomain(data.domain);
+          }
+          if (data.linkedSince) {
+            setRailwayLinkedSince(data.linkedSince);
+          }
+          if (data.status) {
+            setRailwayStatus(data.status);
+          }
+        }
+      } catch (err) {
+        console.warn("Impossible de charger la configuration Railway:", err);
+      }
+    }
+    loadRailwayConfig();
+  }, []);
+
+  const handleSaveDomain = async () => {
+    if (!railwayDomain.trim()) {
+      setDomainMessage({ type: 'err', text: "Le domaine ne peut pas être vide." });
+      return;
+    }
+    setSavingDomain(true);
+    setDomainMessage({ type: null, text: null });
+    try {
+      const res = await fetch('/api/railway/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: railwayDomain.trim() })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDomainMessage({ type: 'success', text: data.message || 'Domaine et API liés avec succès !' });
+        setRailwayLinkedSince(data.linkedSince);
+        setRailwayStatus('connected');
+      } else {
+        setDomainMessage({ type: 'err', text: data.error || 'Une erreur est survenue lors de la liaison.' });
+      }
+    } catch (err: any) {
+      setDomainMessage({ type: 'err', text: err.message || String(err) });
+    } finally {
+      setSavingDomain(false);
+    }
+  };
 
   const activeSite = initialSites.find(s => s.id === selectedSite) || initialSites[0];
 
@@ -173,6 +240,20 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
                       {dbStatus.maskedUrl}
                     </span>
                   </div>
+                  {dbStatus.dbName && (
+                    <div className="flex justify-between border-t border-slate-200/50 pt-1 mt-1">
+                      <span className="text-slate-400">Nom API / Base :</span>
+                      <span className="font-bold text-emerald-800">{dbStatus.dbName}</span>
+                    </div>
+                  )}
+                  {dbStatus.apiKey && (
+                    <div className="flex justify-between border-t border-slate-200/50 pt-1 mt-1">
+                      <span className="text-slate-400">Clé d'API :</span>
+                      <span className="font-bold text-slate-700 select-all" title={dbStatus.apiKey}>
+                        {dbStatus.apiKey.substring(0, 10)}...{dbStatus.apiKey.substring(dbStatus.apiKey.length - 10)}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between border-t border-slate-200/50 pt-1 mt-1">
                     <span className="text-slate-400">Tables Liées :</span>
                     <span className="font-bold text-slate-700">stands, contacts, transactions, campaigns, tasks</span>
@@ -278,11 +359,11 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
         <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-display flex items-center gap-1.5">
             <Globe className="w-4 h-4 text-cyan-500" />
-            <span>Serveurs DNS & Sites Web liés</span>
+            <span>Serveurs DNS, Sites Web & Railway Link</span>
           </h3>
 
           <div className="space-y-3 font-sans text-xs text-slate-700">
-            <div className="flex justify-between items-center p-2.5 bg-slate-50 rounded-lg border">
+            <div className="flex justify-between items-center p-2.5 bg-slate-50 rounded-lg border border-slate-200/60">
               <div>
                 <p className="font-bold text-slate-800">africapoolspa.com</p>
                 <p className="text-[10px] text-slate-400">Hébergé sur Cloud VPS • CDN Actif</p>
@@ -290,7 +371,7 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
               <span className="text-[9px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full">En ligne</span>
             </div>
 
-            <div className="flex justify-between items-center p-2.5 bg-slate-50 rounded-lg border">
+            <div className="flex justify-between items-center p-2.5 bg-slate-50 rounded-lg border border-slate-200/60">
               <div>
                 <p className="font-bold text-slate-800">gardenexpo.ma</p>
                 <p className="text-[10px] text-slate-400">Hébergé sur Cloud VPS • CDN Actif</p>
@@ -298,12 +379,69 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
               <span className="text-[9px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full">En ligne</span>
             </div>
 
-            <div className="flex justify-between items-center p-2.5 bg-slate-50 rounded-lg border">
+            <div className="flex justify-between items-center p-2.5 bg-slate-50/70 rounded-lg border border-slate-200/60">
               <div>
-                <p className="font-bold text-slate-800">r2h.ma</p>
-                <p className="text-[10px] text-slate-400">Hébergé sur Cloud VPS • DNS OK</p>
+                <a 
+                  href={`https://${railwayDomain || 'r2hcom-production.up.railway.app'}`}
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="font-bold text-sky-700 hover:text-sky-800 hover:underline flex items-center gap-1"
+                >
+                  <span>{railwayDomain || 'r2hcom-production.up.railway.app'}</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+                <p className="text-[10px] text-slate-400">Domaine Railway Actif • API Connectée</p>
               </div>
-              <span className="text-[9px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full">En ligne</span>
+              <span className="text-[9px] font-bold px-2 py-0.5 bg-sky-50 text-sky-600 rounded-full flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-pulse"></span>
+                Lié via API
+              </span>
+            </div>
+
+            {/* Link Custom Domain configuration form */}
+            <div className="pt-3 border-t border-slate-100 space-y-2.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Gérer votre Domaine Railway</label>
+              
+              <div className="flex items-center gap-1.5">
+                <div className="relative flex-1">
+                  <span className="absolute left-2.5 top-2 py-0.5 text-slate-400 text-[11px] font-mono">https://</span>
+                  <input
+                    type="text"
+                    value={railwayDomain}
+                    onChange={(e) => setRailwayDomain(e.target.value)}
+                    placeholder="r2h.ma"
+                    className="w-full pl-14 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-hidden text-slate-700 font-mono text-[11px]"
+                  />
+                </div>
+                <button
+                  onClick={handleSaveDomain}
+                  disabled={savingDomain}
+                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg font-semibold text-xs transition-all duration-150 shrink-0 select-none cursor-pointer"
+                >
+                  {savingDomain ? 'Liaison...' : 'Lier'}
+                </button>
+              </div>
+
+              {railwayLinkedSince && (
+                <p className="text-[9px] text-slate-400">
+                  Liaison établie avec succès le : <span className="font-mono">{new Date(railwayLinkedSince).toLocaleString('fr-FR')}</span>
+                </p>
+              )}
+
+              {domainMessage.text && (
+                <div className={`p-2 rounded-lg text-[10px] leading-relaxed flex items-start gap-1.5 border ${
+                  domainMessage.type === 'success'
+                    ? 'bg-emerald-50/50 border-emerald-100 text-emerald-800'
+                    : 'bg-rose-50/50 border-rose-100 text-rose-800'
+                }`}>
+                  {domainMessage.type === 'success' ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                  )}
+                  <span className="font-medium">{domainMessage.text}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { Lock, Mail, ArrowRight, Eye, EyeOff, ShieldCheck, Sparkles, Building2 } from 'lucide-react';
+import R2HLogo from './R2HLogo';
 
 interface LoginViewProps {
   onLoginSuccess: (adminName: string) => void;
@@ -52,8 +53,8 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
         
         {/* R2H Branched Header Icon */}
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-14 h-14 bg-[#2C3E36] rounded-2xl flex items-center justify-center mb-4 shadow-sm">
-            <span className="font-serif font-black text-white text-xl tracking-tight select-none">R2H</span>
+          <div className="w-18 h-18 text-[#0c5494] flex items-center justify-center mb-4 select-none">
+            <R2HLogo className="w-full h-full" />
           </div>
           <h1 className="text-2xl font-serif font-black text-[#2D2D2D] tracking-tight">R2H Communication</h1>
           <p className="text-xs text-[#7A7667] mt-1 font-medium">Portail de Gestion & Back-Office Multi-Salons</p>

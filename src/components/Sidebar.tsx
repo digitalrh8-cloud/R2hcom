@@ -33,6 +33,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { SiteId } from '../types';
+import R2HLogo from './R2HLogo';
 
 interface SidebarProps {
   currentTab: string;
@@ -57,8 +58,8 @@ export default function Sidebar({ currentTab, setCurrentTab, selectedSite, onLog
     <aside id="sidebar-panel" className="w-[240px] bg-[#2C3E36] text-white flex flex-col h-full shrink-0 select-none border-r border-[#25352E]/30">
       {/* Brand Header */}
       <div className="h-20 px-4 border-b border-[#25352E] flex items-center gap-2.5">
-        <div className="w-11 h-11 bg-[#A68A64] rounded-xl flex items-center justify-center font-serif font-black text-white text-base tracking-tight select-none shrink-0 leading-none">
-          R2H
+        <div className="w-11 h-11 text-[#A68A64] flex items-center justify-center select-none shrink-0">
+          <R2HLogo className="w-full h-full" />
         </div>
         <div className="flex flex-col min-w-0">
           <span className="font-serif font-black text-white tracking-tight text-xs md:text-sm leading-tight truncate">R2H Communication</span>

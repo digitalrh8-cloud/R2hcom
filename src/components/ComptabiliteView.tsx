@@ -262,7 +262,9 @@ export default function ComptabiliteView({
             <div>
               <span style="font-size: 8.5px; text-transform: uppercase; font-weight: 800; color: #a4a090; letter-spacing: 0.08em; display: block; margin-bottom: 5px;">Émetteur Officiel</span>
               <div style="font-weight: 700; color: #2d2d2d;">R2H Communication SARL a.u.b.m.</div>
-              <div style="color: #7a7667; margin-top: 3px;">N&deg; 45, avenue des FAR, Tour des Habous, Casablanca, Maroc</div>
+              <div style="color: #7a7667; margin-top: 3px;">Résidence Valrose E – 2&ordm; étage, N&deg;8 Angle Place El Yasser, Casablanca – Maroc</div>
+              <div style="color: #7a7667; margin-top: 3px; font-size: 9.5px;">Tél : +212 661 482 497 / +212 5 22 30 59 55</div>
+              <div style="color: #7a7667; font-size: 9.5px;">E-mail : Contact@r2h.ma &bull; Web : www.r2h.ma</div>
               <div style="font-size: 9px; color: #a4a090; font-family: 'JetBrains Mono', monospace; margin-top: 6px; font-weight: 500;">ICE: 00234556111002 &bull; Patente: 3455829</div>
             </div>
             
@@ -704,7 +706,13 @@ export default function ComptabiliteView({
                     <div>
                       <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wide block mb-1">Émetteur</span>
                       <p className="font-bold text-slate-800">R2H Communication SARL au b.m.</p>
-                      <p className="text-slate-500 font-medium mt-0.5">N° 45, avenue des FAR, Tour des Habous, Casablanca, Maroc</p>
+                      <p className="text-slate-500 font-medium mt-0.5 leading-normal">
+                        Résidence Valrose E – 2ᵉ étage, N°8 Angle Place El Yasser, Casablanca – Maroc
+                      </p>
+                      <p className="text-slate-400 text-[10px] mt-1 leading-normal font-medium">
+                        Tél : +212 661 482 497 / +212 5 22 30 59 55<br />
+                        Email : Contact@r2h.ma • Web : www.r2h.ma
+                      </p>
                       <p className="text-[9px] text-slate-400 mt-1 font-mono">ICE: 00234556111002 • CNSS: 4455123</p>
                     </div>
 

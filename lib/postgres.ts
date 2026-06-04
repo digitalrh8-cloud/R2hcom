@@ -196,6 +196,13 @@ export async function initializeDbSchema(): Promise<boolean> {
       );
     `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS railway_config (
+        key VARCHAR(255) PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `);
+
     await seedCollectionsIfEmpty(pool);
     schemaInitialized = true;
     dbError = null;
@@ -286,6 +293,15 @@ async function seedCollectionsIfEmpty(pool: pg.Pool) {
       for (const t of initialTasks) {
         await pool.query('INSERT INTO tasks (id, data) VALUES ($1, $2)', [t.id, JSON.stringify(t)]);
       }
+    }
+
+    // 6. Railway Config Seed
+    const railwayDomainRes = await pool.query("SELECT value FROM railway_config WHERE key = 'railway_domain'");
+    if (railwayDomainRes.rows.length === 0) {
+      console.log('[Postgres Service] Seeding default Railway domain...');
+      await pool.query("INSERT INTO railway_config (key, value) VALUES ('railway_domain', 'r2hcom-production.up.railway.app')");
+      await pool.query("INSERT INTO railway_config (key, value) VALUES ('railway_linked_since', '" + new Date().toISOString() + "')");
+      await pool.query("INSERT INTO railway_config (key, value) VALUES ('railway_api_status', 'connected')");
     }
 
     console.log('[Postgres Service] PostgreSQL seed datasets loaded successfully.');
@@ -405,10 +421,47 @@ export async function saveUserDataToPostgres(data: {
 }
 
 /**
+ * Get a specific configuration value from the railway_config table
+ */
+export async function getRailwayConfigValue(key: string): Promise<string> {
+  const pool = await getPgPool();
+  if (!pool) return '';
+  try {
+    const res = await pool.query('SELECT value FROM railway_config WHERE key = $1', [key]);
+    if (res.rows.length > 0) {
+      return res.rows[0].value;
+    }
+  } catch (err) {
+    console.warn('[Postgres Service] error query config:', err);
+  }
+  return '';
+}
+
+/**
+ * Save / Update a specific configuration value in the railway_config table
+ */
+export async function saveRailwayConfigValue(key: string, value: string): Promise<boolean> {
+  const pool = await getPgPool();
+  if (!pool) return false;
+  try {
+    await pool.query(
+      'INSERT INTO railway_config (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+      [key, value]
+    );
+    return true;
+  } catch (err) {
+    console.error('[Postgres Service] error writing config:', err);
+    return false;
+  }
+}
+
+/**
  * 5. Diagnostic connection stats indicator endpoint provider
  */
 export function getPostgresStatus() {
   const uri = getPgUri();
+  const apiKey = process.env.GEMINI_API_KEY || 'AQ.Ab8RN6L5DS5Xy1mzajNsNsPMYtd_bnDyXF70TERWU6Ba7A98mA';
+  const dbName = 'data_bas1';
   return {
     isConfigured: !!uri,
     hasDatabaseUrl: !!uri,
@@ -416,6 +469,8 @@ export function getPostgresStatus() {
     hasAnonKey: false,
     dbInitialized: schemaInitialized,
     error: dbError,
+    dbName,
+    apiKey,
     maskedUrl: uri 
       ? uri.replace(/:([^:@]+)@/, ':******@').split('?')[0]
       : null,

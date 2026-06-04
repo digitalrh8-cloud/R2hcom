@@ -9,7 +9,9 @@ import {
   saveUserDataToPostgres, 
   initializeDbSchema,
   getPgPool,
-  resetDbSchema
+  resetDbSchema,
+  getRailwayConfigValue,
+  saveRailwayConfigValue
 } from './lib/postgres';
 
 import { Stand, Contact, Transaction, Campaign, Task } from './src/types';
@@ -71,4 +73,15 @@ export async function saveUserDataToDatabase(data: {
  */
 export function getDatabaseStatus() {
   return getPostgresStatus();
+}
+
+/**
+ * 5. Railway Domain and API config helpers
+ */
+export async function getRailwayConfig(key: string): Promise<string> {
+  return getRailwayConfigValue(key);
+}
+
+export async function saveRailwayConfig(key: string, value: string): Promise<boolean> {
+  return saveRailwayConfigValue(key, value);
 }
