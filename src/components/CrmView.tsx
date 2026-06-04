@@ -25,7 +25,8 @@ import {
   X,
   Plus,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Edit
 } from 'lucide-react';
 import { SiteId, Contact, Stand, Transaction, TransactionItem } from '../types';
 import { initialSites } from '../initialData';
@@ -69,6 +70,22 @@ export default function CrmView({
   // Calculate sorted free stands for the selected site
   const freeStands = stands
     .filter(s => s.site === newSite && s.status === 'disponible')
+    .sort((a, b) => a.num.localeCompare(b.num, undefined, { numeric: true, sensitivity: 'base' }));
+
+  // Edit Modal State
+  const [editModalContact, setEditModalContact] = useState<Contact | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editCompany, setEditCompany] = useState('');
+  const [editSite, setEditSite] = useState<SiteId>('gardenexpo');
+  const [editRole, setEditRole] = useState<'prospect' | 'client' | 'fournisseur' | 'partner'>('prospect');
+  const [editNotes, setEditNotes] = useState('');
+  const [editStandNumber, setEditStandNumber] = useState('');
+
+  // Calculate sorted free stands for editing site, including the contact's current stand
+  const editFreeStands = stands
+    .filter(s => s.site === editSite && (s.status === 'disponible' || (editModalContact && s.num.toLowerCase() === editModalContact.standNumber?.toLowerCase() && s.site === editModalContact.site)))
     .sort((a, b) => a.num.localeCompare(b.num, undefined, { numeric: true, sensitivity: 'base' }));
 
   // Toast indicator
@@ -444,6 +461,93 @@ export default function CrmView({
 
     triggerToast(`Le contact ${name} a été supprimé avec succès.`);
   };
+   
+  // Open Edit modal with contact's current info
+  const handleOpenEditModal = (contact: Contact) => {
+    setEditModalContact(contact);
+    setEditName(contact.name);
+    setEditEmail(contact.email);
+    setEditPhone(contact.phone);
+    setEditCompany(contact.company);
+    setEditSite(contact.site);
+    setEditRole(contact.role);
+    setEditNotes(contact.notes || '');
+    setEditStandNumber(contact.standNumber || '');
+  };
+
+  // Save changes from Edit modal
+  const handleSaveContactEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editModalContact || !editName || !editCompany || !editEmail) return;
+
+    const oldStandNum = editModalContact.standNumber?.trim();
+    const oldSite = editModalContact.site;
+    const newStandNum = editStandNumber.trim();
+    const newSite = editSite;
+
+    // 1. Update GRC contacts list
+    setContacts(prev => prev.map(c => {
+      if (c.id === editModalContact.id) {
+        return {
+          ...c,
+          name: editName.trim(),
+          email: editEmail.trim(),
+          phone: editPhone.trim(),
+          company: editCompany.trim(),
+          site: editSite,
+          role: editRole,
+          notes: editNotes.trim(),
+          standNumber: newStandNum || undefined
+        };
+      }
+      return c;
+    }));
+
+    // Update active inspector if focused
+    if (selectedContact?.id === editModalContact.id) {
+      setSelectedContact({
+        ...editModalContact,
+        name: editName.trim(),
+        email: editEmail.trim(),
+        phone: editPhone.trim(),
+        company: editCompany.trim(),
+        site: editSite,
+        role: editRole,
+        notes: editNotes.trim(),
+        standNumber: newStandNum || undefined
+      });
+    }
+
+    // 2. Synchronize to floorplan stands if configured
+    if (setStands) {
+      setStands(prev => prev.map(s => {
+        let updatedStand = { ...s };
+
+        // 2a. Free old stand if it was assigned, and is now removed or changed
+        if (oldStandNum && s.site === oldSite && s.num.toLowerCase() === oldStandNum.toLowerCase()) {
+          const isStillSameStand = (newStandNum && s.site === newSite && s.num.toLowerCase() === newStandNum.toLowerCase());
+          if (!isStillSameStand) {
+            updatedStand.status = 'disponible';
+            updatedStand.companyName = '';
+            updatedStand.clientName = '';
+            updatedStand.category = '';
+          }
+        }
+
+        // 2b. Assign new stand if provided
+        if (newStandNum && s.site === newSite && s.num.toLowerCase() === newStandNum.toLowerCase()) {
+          updatedStand.status = (editRole === 'client' || editRole === 'partner') ? 'vendu' : 'reserve';
+          updatedStand.companyName = editCompany.trim();
+          updatedStand.clientName = editName.trim();
+        }
+
+        return updatedStand;
+      }));
+    }
+
+    triggerToast(`Informations de l'entreprise ${editCompany} mises à jour.`);
+    setEditModalContact(null);
+  };
 
   const triggerToast = (msg: React.ReactNode) => {
     setToastMessage(msg);
@@ -590,52 +694,66 @@ export default function CrmView({
                             {contact.role === 'client' ? 'Exposant' : contact.role === 'prospect' ? 'Prospect' : 'Fournisseur'}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
-                          {contact.role === 'prospect' ? (
-                            <div className="flex items-center justify-end gap-2 text-xs font-sans">
-                              <button
-                                id={`promote-btn-${contact.id}`}
-                                onClick={() => handleConvertProspectToClient(contact.id)}
-                                className="px-2.5 py-1.5 bg-[#7E8F7A] hover:bg-[#6C7D69] text-white rounded-lg text-[10px] font-bold shadow-xs transition cursor-pointer inline-flex items-center gap-1"
-                                title="Convertir en Exposant officiel"
-                              >
-                                <ArrowRight className="w-3 h-3" />
-                                <span>Convertir</span>
-                              </button>
+                        <td className="px-5 py-3.5 text-right font-sans" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                            <button
+                              onClick={() => handleOpenEditModal(contact)}
+                              className="p-1.5 hover:bg-[#A68A64]/10 text-[#A68A64] hover:text-[#917550] rounded-xl transition-all cursor-pointer border border-[#E8E6DE]/40"
+                              title="Modifier les coordonnées"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+
+                            {contact.role === 'prospect' ? (
+                              <>
+                                <button
+                                  id={`promote-btn-${contact.id}`}
+                                  onClick={() => handleConvertProspectToClient(contact.id)}
+                                  className="px-2.5 py-1.5 bg-[#7E8F7A] hover:bg-[#6C7D69] text-white rounded-lg text-[10px] font-bold shadow-xs transition cursor-pointer inline-flex items-center gap-1"
+                                  title="Convertir en Exposant officiel"
+                                >
+                                  <ArrowRight className="w-3 h-3" />
+                                  <span>Convertir</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteContact(contact.id, contact.name)}
+                                  className="p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-lg transition-all cursor-pointer border border-[#E8E6DE]/40"
+                                  title="Supprimer le prospect"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            ) : contact.role === 'client' ? (
+                              <>
+                                <span className="text-[9px] px-2 py-0.5 bg-[#7E8F7A]/15 text-[#4D5E4A] font-black rounded-md uppercase border border-[#7E8F7A]/20">
+                                  ✓ Exposant
+                                </span>
+                                <button
+                                  onClick={() => handleOpenInvoiceGenerator(contact)}
+                                  className="px-2.5 py-1.5 bg-[#A68A64] hover:bg-[#917550] text-white rounded-lg text-[10.5px] font-bold shadow-xs transition cursor-pointer inline-flex items-center gap-1 border border-[#917550]/20"
+                                  title="Générer une facture de stand"
+                                >
+                                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Facturer</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteContact(contact.id, contact.name)}
+                                  className="p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-lg transition-all cursor-pointer border border-[#E8E6DE]/40"
+                                  title="Supprimer l'exposant"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            ) : (
                               <button
                                 onClick={() => handleDeleteContact(contact.id, contact.name)}
                                 className="p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-lg transition-all cursor-pointer border border-[#E8E6DE]/40"
-                                title="Supprimer le prospect"
+                                title="Supprimer"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
-                            </div>
-                          ) : contact.role === 'client' ? (
-                            <div className="flex items-center justify-end gap-2 text-xs font-sans">
-                              <span className="text-[9px] px-2 py-0.5 bg-[#7E8F7A]/15 text-[#4D5E4A] font-black rounded-md uppercase border border-[#7E8F7A]/20">
-                                ✓ Exposant
-                              </span>
-                              <button
-                                onClick={() => handleOpenInvoiceGenerator(contact)}
-                                className="px-2.5 py-1.5 bg-[#A68A64] hover:bg-[#917550] text-white rounded-lg text-[10.5px] font-bold shadow-xs transition cursor-pointer inline-flex items-center gap-1 border border-[#917550]/20"
-                                title="Générer une facture de stand"
-                              >
-                                <FileText className="w-3.5 h-3.5 shrink-0" />
-                                <span>Facturer</span>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteContact(contact.id, contact.name)}
-                                className="p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-lg transition-all cursor-pointer border border-[#E8E6DE]/40"
-                                title="Supprimer l'exposant"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-[10px] text-slate-400 font-bold flex items-center justify-end">
-                              --
-                            </span>
-                          )}
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -788,7 +906,20 @@ export default function CrmView({
 
           {/* Contact detailed Card viewer */}
           <div className="bg-white p-6 rounded-3xl border border-[#E8E6DE] shadow-xs relative">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-[#7A7667] mb-4.5 font-serif">Fiche Prospect / Client</h4>
+            <div className="flex items-center justify-between mb-4.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[#7A7667] font-serif">Fiche Prospect / Client</h4>
+              {selectedContact && (
+                <button
+                  type="button"
+                  onClick={() => handleOpenEditModal(selectedContact)}
+                  className="px-2.5 py-1.5 bg-[#A68A64]/10 hover:bg-[#A68A64]/20 text-[#2D2D2D] hover:text-[#917550] border border-[#A68A64]/20 rounded-xl transition-all font-sans text-[10px] font-bold cursor-pointer flex items-center gap-1.5 shadow-3xs"
+                  title="Modifier les informations"
+                >
+                  <Edit className="w-3.5 h-3.5 text-[#A68A64]" />
+                  <span>Modifier</span>
+                </button>
+              )}
+            </div>
 
             {selectedContact ? (
               <div className="space-y-5 text-xs text-[#2D2D2D]">
@@ -1073,6 +1204,187 @@ export default function CrmView({
             </div>
 
           </div>
+        </div>
+      )}
+
+      {/* Contact Information Edit Modal dialog */}
+      {editModalContact && (
+        <div className="fixed inset-0 bg-[#2D2D2D]/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in-40 duration-200 font-sans">
+          <form 
+            onSubmit={handleSaveContactEdit}
+            className="bg-white rounded-3xl border border-[#E8E6DE] shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-5 animate-in zoom-in-95 duration-200"
+          >
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-[#E8E6DE]/60 pb-4">
+              <div className="flex items-center gap-2.5 text-[#2D2D2D]">
+                <Edit className="w-5.5 h-5.5 text-[#A68A64] shrink-0" />
+                <div>
+                  <h3 className="text-base font-serif font-black tracking-tight">Modifier les coordonnées CRM</h3>
+                  <p className="text-[10px] text-[#7A7667] font-semibold mt-0.5">Identifiant unique : {editModalContact.id}</p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setEditModalContact(null)} 
+                className="p-1.5 hover:bg-[#F8F7F2] rounded-full text-[#7A7667] hover:text-[#2D2D2D] transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans">
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Nom de l'entreprise *</label>
+                <input
+                  type="text"
+                  required
+                  value={editCompany}
+                  onChange={(e) => setEditCompany(e.target.value)}
+                  className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] font-medium"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Représentant Principal *</label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] font-medium"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Téléphone Mobile</label>
+                <input
+                  type="text"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] font-mono font-medium"
+                />
+              </div>
+
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Adresse E-mail *</label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    required
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] font-mono pr-24 font-medium"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!editCompany) return;
+                      const slug = editCompany
+                        .toLowerCase()
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .replace(/[^a-z0-9]/g, '');
+                      setEditEmail(`contact@${slug || 'exposant'}.ma`);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-[#A68A64] hover:underline bg-white px-2 py-1 rounded-md border border-[#E8E6DE] cursor-pointer"
+                    title="Générer un email provisoire basé sur l'entreprise"
+                  >
+                    Générer .ma
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Salon référencé</label>
+                <select
+                  value={editSite}
+                  onChange={(e) => {
+                    const nextSite = e.target.value as SiteId;
+                    setEditSite(nextSite);
+                    if (editModalContact && editModalContact.site !== nextSite) {
+                      setEditStandNumber('');
+                    } else if (editModalContact) {
+                      setEditStandNumber(editModalContact.standNumber || '');
+                    }
+                  }}
+                  className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] font-semibold"
+                >
+                  <option value="africapool">africapoolspa.com (Africa Pool)</option>
+                  <option value="gardenexpo">gardenexpo.ma (Garden Expo)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Statut / Rôle CRM</label>
+                <select
+                  value={editRole}
+                  onChange={(e) => setEditRole(e.target.value as any)}
+                  className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] font-semibold"
+                >
+                  <option value="prospect">Prospect (En cours de démarchage)</option>
+                  <option value="client">Client (Exposant officiel)</option>
+                  <option value="partner">Partenaire officiel</option>
+                  <option value="fournisseur">Fournisseur / Prestataire</option>
+                </select>
+              </div>
+
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">
+                  N° Stand attribué
+                </label>
+                <select
+                  value={editStandNumber}
+                  onChange={(e) => setEditStandNumber(e.target.value)}
+                  className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-[11px] font-semibold"
+                >
+                  <option value="">-- Aucun stand assigné (Détacher) --</option>
+                  {editFreeStands.map(s => {
+                    const isCurrent = editModalContact && s.num.toLowerCase() === editModalContact.standNumber?.toLowerCase() && s.site === editModalContact.site;
+                    return (
+                      <option key={s.id} value={s.num}>
+                        {s.num} ({s.area}m²) {isCurrent ? "★ Stand Actuel" : "✓ Libre"}
+                      </option>
+                    );
+                  })}
+                </select>
+                <p className="text-[9px] text-[#7A7667] font-medium leading-relaxed">
+                  Modifier ce stand mettra à jour automatiquement son statut et ses informations sur le plan interactif correspondant.
+                </p>
+              </div>
+
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Notes de suivi CRM / Commentaires</label>
+                <textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Notes de négociation, avancement, besoins techniques..."
+                  rows={3}
+                  className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] resize-none font-medium text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex gap-3 justify-end border-t border-[#E8E6DE]/60 pt-4.5">
+              <button
+                type="button"
+                onClick={() => setEditModalContact(null)}
+                className="px-4.5 py-2.5 rounded-xl border border-[#E8E6DE] text-[#7A7667] font-semibold hover:bg-[#F8F7F2] cursor-pointer text-xs transition"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2.5 bg-[#2C3E36] hover:bg-[#202E28] text-white font-semibold rounded-xl shadow-md cursor-pointer text-xs transition flex items-center gap-1.5"
+              >
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>Enregistrer les modifications</span>
+              </button>
+            </div>
+
+          </form>
         </div>
       )}
 
