@@ -157,7 +157,7 @@ export default function DashboardView({
   const activeColor = selectedSite === 'africapool' ? '#06B6D4' : selectedSite === 'gardenexpo' ? '#10B981' : '#3B82F6';
 
   return (
-    <div id="dashboard-view" className="flex-1 overflow-y-auto bg-transparent p-8 space-y-8">
+    <div id="dashboard-view" className="flex-1 overflow-y-auto bg-transparent p-4 sm:p-6 md:p-8 space-y-4 md:space-y-8">
       {/* Toast Notification */}
       {showNotification && (
         <div className="fixed top-4 right-4 bg-[#2C3E36] border border-[#3d564b] text-white font-sans text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 z-50 animate-bounce">

@@ -62,6 +62,9 @@ export default function App() {
   // Navigation tabs 'dashboard' | 'prospects' | 'clients' | 'devis' | 'factures' | 'stands' | 'marketing' | 'parametres'
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
 
+  // Mobile sidebar visibility toggle drawer
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
+
   // Database states
   const [stands, setStands] = useState<Stand[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -312,14 +315,24 @@ export default function App() {
   }
 
   return (
-    <div id="root-portal-view" className="h-screen w-screen bg-[#F8F7F2] text-[#2D2D2D] flex overflow-hidden font-sans">
+    <div id="root-portal-view" className="h-screen w-screen bg-[#F8F7F2] text-[#2D2D2D] flex overflow-hidden font-sans relative">
       
+      {/* Mobile backdrop slide overlay */}
+      {isMobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 lg:hidden transition-all duration-300"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar Navigation Panel */}
       <Sidebar 
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
         selectedSite={selectedSite}
         onLogout={handleLogout}
+        isMobileOpen={isMobileSidebarOpen}
+        onClose={() => setIsMobileSidebarOpen(false)}
       />
 
       {/* Primary Workspace viewport */}
@@ -330,6 +343,7 @@ export default function App() {
           selectedSite={selectedSite}
           setSelectedSite={setSelectedSite}
           title={getHeaderTitle()}
+          onMenuToggle={() => setIsMobileSidebarOpen(true)}
         />
 
         {/* Dynamic active sub-view */}

@@ -14,7 +14,8 @@ import {
   Maximize2,
   Sliders,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Menu
 } from 'lucide-react';
 import { SiteId, SiteConfig } from '../types';
 import { initialSites } from '../initialData';
@@ -23,45 +24,72 @@ interface HeaderProps {
   selectedSite: SiteId;
   setSelectedSite: (siteId: SiteId) => void;
   title: string;
+  onMenuToggle?: () => void;
 }
 
-export default function Header({ selectedSite, setSelectedSite, title }: HeaderProps) {
+export default function Header({ selectedSite, setSelectedSite, title, onMenuToggle }: HeaderProps) {
   const [showBellNotification, setShowBellNotification] = useState(false);
   const [showMessageNotification, setShowMessageNotification] = useState(false);
 
   const activeSiteConfig = initialSites.find(s => s.id === selectedSite) || initialSites[0];
 
   return (
-    <header id="header-bar" className="h-20 border-b border-[#E8E6DE] bg-white flex items-center justify-between px-8 shrink-0 relative z-30 shadow-xs">
+    <header id="header-bar" className="h-20 border-b border-[#E8E6DE] bg-white flex items-center justify-between px-4 sm:px-6 md:px-8 shrink-0 relative z-30 shadow-xs">
       {/* Left section: Breadcrumbs / Title & Global search */}
-      <div className="flex items-center gap-6">
-        <div>
-          <h2 className="text-xl font-serif font-bold italic text-[#2D2D2D] tracking-tight flex items-center gap-3">
-            <span>{title}</span>
-            <span className="text-[10px] uppercase tracking-wider font-sans font-bold px-2.5 py-0.5 rounded-full bg-[#F0EEE6] text-[#7A7667]">
+      <div className="flex items-center gap-3 sm:gap-4 md:gap-6 min-w-0">
+        {onMenuToggle && (
+          <button 
+            type="button"
+            onClick={onMenuToggle}
+            className="p-2 -ml-1 text-[#2C3E36] hover:text-black hover:bg-[#F0EEE6] rounded-xl lg:hidden transition-all duration-150 shrink-0"
+            title="Ouvrir le menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+        <div className="min-w-0">
+          <h2 className="text-xs sm:text-base md:text-xl font-serif font-bold italic text-[#2D2D2D] tracking-tight flex items-center gap-1.5 sm:gap-2 md:gap-3">
+            <span className="truncate">{title}</span>
+            <span className="text-[9px] md:text-[10px] uppercase tracking-wider font-sans font-bold px-1.5 py-0.5 sm:px-2.5 rounded-full bg-[#F0EEE6] text-[#7A7667] shrink-0">
               v1.0.0
             </span>
           </h2>
         </div>
 
         {/* Global Search Input */}
-        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#F8F7F2] rounded-xl border border-[#E8E6DE] max-w-[320px] w-full shrink-0">
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-[#F8F7F2] rounded-xl border border-[#E8E6DE] max-w-[200px] xl:max-w-[320px] w-full shrink-0">
           <Search className="w-4 h-4 text-[#7A7667]" />
           <input 
             type="text" 
-            placeholder="Rechercher prospect, devis, stand..." 
+            placeholder="Rechercher..." 
             className="bg-transparent border-none text-xs outline-hidden text-[#2D2D2D] placeholder-[#7A7667]/60 w-full font-sans animate-none"
           />
-          <kbd className="text-[10px] bg-white border border-[#E8E6DE] text-[#7A7667] font-mono px-1.5 rounded-md shadow-2xs">⌘K</kbd>
         </div>
       </div>
 
       {/* Right section: Multi-site selector & action elements */}
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-2 sm:gap-3 md:gap-5 shrink-0">
         {/* Real-time Website Context Switcher */}
-        <div className="flex items-center gap-2">
-          <Globe className="w-4 h-4 text-[#7A7667]" />
-          <div className="flex bg-[#F0EEE6] p-1 rounded-xl border border-[#E8E6DE]/55">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#7A7667] hidden xs:block" />
+          
+          {/* Mobile dropdown context-switcher */}
+          <div className="flex sm:hidden">
+            <select
+              value={selectedSite}
+              onChange={(e) => setSelectedSite(e.target.value as SiteId)}
+              className="bg-[#F0EEE6] text-[#2D2D2D] border border-[#E8E6DE]/55 rounded-xl px-2 py-1 text-[11px] font-bold outline-hidden cursor-pointer"
+            >
+              {initialSites.map((site) => (
+                <option key={site.id} value={site.id}>
+                  {site.domain}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Desktop segmented control list switcher */}
+          <div className="hidden sm:flex bg-[#F0EEE6] p-1 rounded-xl border border-[#E8E6DE]/55">
             {initialSites.map((site) => {
               const worksAsActive = selectedSite === site.id;
               return (
@@ -69,14 +97,15 @@ export default function Header({ selectedSite, setSelectedSite, title }: HeaderP
                   key={site.id}
                   id={`switcher-btn-${site.id}`}
                   onClick={() => setSelectedSite(site.id)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-2.5 py-1.5 rounded-lg text-[10px] md:text-[11px] font-semibold transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
                     worksAsActive 
                       ? 'bg-white text-[#2D2D2D] shadow-xs font-bold' 
                       : 'text-[#7A7667] hover:text-[#2D2D2D] hover:bg-white/40'
                   }`}
                 >
                   <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: site.color }}></span>
-                  <span>{site.domain}</span>
+                  <span className="hidden md:inline">{site.domain}</span>
+                  <span className="md:hidden uppercase">{site.id}</span>
                 </button>
               );
             })}
@@ -84,7 +113,7 @@ export default function Header({ selectedSite, setSelectedSite, title }: HeaderP
         </div>
 
         {/* Action icons */}
-        <div className="flex items-center gap-2.5 border-l border-slate-200 pl-4">
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-2.5 border-l border-slate-200 pl-2 sm:pl-4">
           {/* Calendar Indicator */}
           <button 
             title="Calendrier des Salons"
