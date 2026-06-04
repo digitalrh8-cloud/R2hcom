@@ -253,6 +253,15 @@ export default function CrmView({
     triggerToast("Prospect promu au statut d'exposant officiel !");
   };
 
+  // Delete a prospect or exhibitor/client
+  const handleDeleteContact = (contactId: string, name: string) => {
+    setContacts(prev => prev.filter(c => c.id !== contactId));
+    if (selectedContact?.id === contactId) {
+      setSelectedContact(null);
+    }
+    triggerToast(`Le contact ${name} a été supprimé avec succès.`);
+  };
+
   const triggerToast = (msg: React.ReactNode) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -381,15 +390,24 @@ export default function CrmView({
                         </td>
                         <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                           {contact.role === 'prospect' ? (
-                            <button
-                              id={`promote-btn-${contact.id}`}
-                              onClick={() => handleConvertProspectToClient(contact.id)}
-                              className="px-2.5 py-1.5 bg-[#7E8F7A] hover:bg-[#6C7D69] text-white rounded-lg text-[10px] font-bold shadow-xs transition cursor-pointer inline-flex items-center gap-1"
-                              title="Convertir en Exposant officiel"
-                            >
-                              <ArrowRight className="w-3 h-3" />
-                              <span>Convertir</span>
-                            </button>
+                            <div className="flex items-center justify-end gap-2 text-xs font-sans">
+                              <button
+                                id={`promote-btn-${contact.id}`}
+                                onClick={() => handleConvertProspectToClient(contact.id)}
+                                className="px-2.5 py-1.5 bg-[#7E8F7A] hover:bg-[#6C7D69] text-white rounded-lg text-[10px] font-bold shadow-xs transition cursor-pointer inline-flex items-center gap-1"
+                                title="Convertir en Exposant officiel"
+                              >
+                                <ArrowRight className="w-3 h-3" />
+                                <span>Convertir</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteContact(contact.id, contact.name)}
+                                className="p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-lg transition-all cursor-pointer border border-[#E8E6DE]/40"
+                                title="Supprimer le prospect"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           ) : contact.role === 'client' ? (
                             <div className="flex items-center justify-end gap-2 text-xs font-sans">
                               <span className="text-[9px] px-2 py-0.5 bg-[#7E8F7A]/15 text-[#4D5E4A] font-black rounded-md uppercase border border-[#7E8F7A]/20">
@@ -402,6 +420,13 @@ export default function CrmView({
                               >
                                 <FileText className="w-3.5 h-3.5 shrink-0" />
                                 <span>Facturer</span>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteContact(contact.id, contact.name)}
+                                className="p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-lg transition-all cursor-pointer border border-[#E8E6DE]/40"
+                                title="Supprimer l'exposant"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           ) : (
@@ -578,7 +603,7 @@ export default function CrmView({
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 font-sans">
                   <span className="text-[9px] font-bold text-[#7A7667] uppercase tracking-wider block">Notes de suivi CRM</span>
                   <div className="bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl p-3.5 text-[#7A7667] font-medium leading-relaxed italic text-[11px]">
                     {selectedContact.notes || "Aucune note complémentaire consignée pour le moment. Utilisez le suivi pour relancer."}
@@ -586,23 +611,45 @@ export default function CrmView({
                 </div>
 
                 {selectedContact.role === 'prospect' && (
-                  <button
-                    onClick={() => handleConvertProspectToClient(selectedContact.id)}
-                    className="w-full py-2.5 bg-[#7E8F7A] hover:bg-[#6C7D69] text-white font-semibold rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 text-xs"
-                  >
-                    <UserCheck className="w-4 h-4" />
-                    <span>Valider comme Exposant</span>
-                  </button>
+                  <div className="space-y-2 pt-1 font-sans">
+                    <button
+                      type="button"
+                      onClick={() => handleConvertProspectToClient(selectedContact.id)}
+                      className="w-full py-2.5 bg-[#7E8F7A] hover:bg-[#6C7D69] text-white font-semibold rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 text-xs"
+                    >
+                      <UserCheck className="w-4 h-4" />
+                      <span>Valider comme Exposant</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteContact(selectedContact.id, selectedContact.name)}
+                      className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 font-semibold rounded-xl border border-red-200 transition-all cursor-pointer flex items-center justify-center gap-2 text-xs text-center"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Supprimer le Prospect</span>
+                    </button>
+                  </div>
                 )}
 
                 {selectedContact.role === 'client' && (
-                  <button
-                    onClick={() => handleOpenInvoiceGenerator(selectedContact)}
-                    className="w-full py-2.5 bg-[#A68A64] hover:bg-[#917550] text-white font-semibold rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 text-xs border border-[#917550]/20 font-sans"
-                  >
-                    <FileText className="w-4 h-4 shrink-0" />
-                    <span>Générer Facture R2H</span>
-                  </button>
+                  <div className="space-y-2 pt-1 font-sans">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenInvoiceGenerator(selectedContact)}
+                      className="w-full py-2.5 bg-[#A68A64] hover:bg-[#917550] text-white font-semibold rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 text-xs border border-[#917550]/20"
+                    >
+                      <FileText className="w-4 h-4 shrink-0" />
+                      <span>Générer Facture R2H</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteContact(selectedContact.id, selectedContact.name)}
+                      className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 font-semibold rounded-xl border border-red-200 transition-all cursor-pointer flex items-center justify-center gap-2 text-xs text-center"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Supprimer l'Exposant</span>
+                    </button>
+                  </div>
                 )}
               </div>
             ) : (

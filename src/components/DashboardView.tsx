@@ -153,6 +153,65 @@ export default function DashboardView({
   const rowBottom = filteredStands.filter(s => ['A20', 'A21', 'A22', 'A23', 'A24', 'A25', 'A26'].includes(s.num));
   const specialMid = filteredStands.filter(s => ['A18', 'A19'].includes(s.num));
 
+  // --- AFRICA POOL & SPA FLOORPLAN LOGIC ---
+  // Sort helper for Column A / Column H and others to look perfectly formatted from top to bottom
+  const sortPoolStands = (standsList: Stand[]) => {
+    return [...standsList].sort((a, b) => {
+      // Sort based on numeric row (the number in 'A-1B' or 'H-2B', i.e. 3, 2, 1) to go from top (high) to bottom (low)
+      const aParts = a.num.split('-');
+      const bParts = b.num.split('-');
+      if (aParts.length > 1 && bParts.length > 1) {
+        // e.g. "3A" or "3F"
+        const aCode = aParts[1];
+        const bCode = bParts[1];
+        const aRow = parseInt(aCode.charAt(0), 10) || 1;
+        const bRow = parseInt(bCode.charAt(0), 10) || 1;
+        if (bRow !== aRow) {
+          return bRow - aRow; // Row 6 at the top, row 1 at the bottom
+        }
+        // Sub-letter comparison (F before E before A)
+        const aLetter = aCode.substring(1) || '';
+        const bLetter = bCode.substring(1) || '';
+        return bLetter.localeCompare(aLetter);
+      }
+      return a.num.localeCompare(b.num);
+    });
+  };
+
+  const poolColA = sortPoolStands(filteredStands.filter(s => s.num.startsWith('A-')));
+  const poolColB = sortPoolStands(filteredStands.filter(s => s.num.startsWith('B-')));
+  const poolColC = sortPoolStands(filteredStands.filter(s => s.num.startsWith('C-')));
+  const poolColD = sortPoolStands(filteredStands.filter(s => s.num.startsWith('D-')));
+  const poolColE = sortPoolStands(filteredStands.filter(s => s.num.startsWith('E-')));
+  const poolColF = sortPoolStands(filteredStands.filter(s => s.num.startsWith('F-')));
+  const poolColG = sortPoolStands(filteredStands.filter(s => s.num.startsWith('G-')));
+  const poolColH = sortPoolStands(filteredStands.filter(s => s.num.startsWith('H-')));
+
+  const getStandColorClasses = (status: 'disponible' | 'reserve' | 'vendu' | 'sponsorise') => {
+    switch (status) {
+      case 'disponible':
+        return 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100';
+      case 'reserve':
+        return 'bg-amber-50/90 border-amber-300 text-amber-800 hover:bg-amber-100';
+      case 'vendu':
+        return 'bg-rose-50 border-rose-300 text-rose-800 hover:bg-rose-100';
+      case 'sponsorise':
+        return 'bg-purple-50 border-purple-300 text-purple-800 hover:bg-purple-100';
+      default:
+        return 'bg-slate-50 border-slate-300 text-slate-800 hover:bg-slate-100';
+    }
+  };
+
+  const getStatusDotColor = (status: 'disponible' | 'reserve' | 'vendu' | 'sponsorise') => {
+    switch (status) {
+      case 'disponible': return '#10B981';
+      case 'reserve': return '#F59E0B';
+      case 'vendu': return '#EF4444';
+      case 'sponsorise': return '#8B5CF6';
+      default: return '#6B7280';
+    }
+  };
+
   // Determine site config for presentation colors
   const activeColor = selectedSite === 'africapool' ? '#06B6D4' : selectedSite === 'gardenexpo' ? '#10B981' : '#3B82F6';
 
@@ -311,172 +370,591 @@ export default function DashboardView({
               )}
             </div>
 
-            {/* Simulated Canvas Layout Grid (Hall A mapping layout) */}
-            <div className="bg-[#F8F7F2] border border-[#E8E6DE] rounded-2xl p-6 relative overflow-x-auto">
-              <div className="min-w-[620px] max-w-[720px] mx-auto space-y-5">
-                {/* Visual Header Grid indicating rows */}
-                <div className="text-center font-serif font-semibold text-[11px] uppercase tracking-wider text-[#7A7667] mb-2">
-                  -{activeFloorPlanSite === 'gardenexpo' ? 'Hall A - Pôle Principal Expo Casablanca' : 'Hall 1 - Palais des Congrès Marrakech'}-
-                </div>
+            {/* Simulated Canvas Layout Grid (Hall A/Hall 1 mapping layout) */}
+            <div className="bg-[#F8F7F2] border border-[#E8E6DE] rounded-2xl p-4 sm:p-6 relative overflow-x-auto">
+              {activeFloorPlanSite === 'gardenexpo' ? (
+                <div className="min-w-[620px] max-w-[720px] mx-auto space-y-5">
+                  {/* Visual Header Grid indicating rows */}
+                  <div className="text-center font-serif font-semibold text-[11px] uppercase tracking-wider text-[#7A7667] mb-2">
+                    - Hall A - Pôle Principal Expo Casablanca -
+                  </div>
 
-                {/* ROW 1: stands top horizontal row (A01 - A09) */}
-                <div className="grid grid-cols-9 gap-2">
-                  {rowTop.map((stand) => {
-                    const colorMap = {
-                      disponible: 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100',
-                      reserve: 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100',
-                      vendu: 'bg-rose-50 border-rose-300 text-rose-800 hover:bg-rose-100',
-                      sponsorise: 'bg-purple-50 border-purple-300 text-purple-800 hover:bg-purple-100'
-                    };
-                    return (
-                      <button
-                        key={stand.id}
-                        onClick={() => handleSelectStand(stand)}
-                        className={`border rounded-lg p-2.5 text-center transition-all cursor-pointer ${colorMap[stand.status]} flex flex-col justify-between items-center h-20 min-w-[55px]`}
-                      >
-                        <span className="text-xs font-mono font-bold tracking-tight">{stand.num}</span>
-                        <div className="w-1.5 h-1.5 rounded-full" style={{
-                          backgroundColor: stand.status === 'disponible' ? '#10B981' : stand.status === 'reserve' ? '#F59E0B' : stand.status === 'vendu' ? '#EF4444' : '#8B5CF6'
-                        }}></div>
-                        <span className="text-[9px] scale-90 truncate w-full text-center text-slate-500 font-sans">{stand.area}m²</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* ROW 2: splits left/right column structure & middle displays */}
-                <div className="grid grid-cols-5 gap-4">
-                  
-                  {/* Left Column vertical blocks (A10 - A12) */}
-                  <div className="col-span-1 flex flex-col gap-2">
-                    {rowLeft.map((stand) => {
+                  {/* ROW 1: stands top horizontal row (A01 - A09) */}
+                  <div className="grid grid-cols-9 gap-2">
+                    {rowTop.map((stand) => {
                       const colorMap = {
-                        disponible: 'bg-emerald-50 border-emerald-250 text-emerald-800 hover:bg-emerald-100',
-                        reserve: 'bg-amber-50 border-amber-250 text-amber-800 hover:bg-amber-100',
-                        vendu: 'bg-rose-50 border-rose-250 text-rose-800 hover:bg-rose-100',
-                        sponsorise: 'bg-purple-50 border-purple-250 text-purple-800 hover:bg-purple-100'
+                        disponible: 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100',
+                        reserve: 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100',
+                        vendu: 'bg-rose-50 border-rose-300 text-rose-800 hover:bg-rose-100',
+                        sponsorise: 'bg-purple-50 border-purple-300 text-purple-800 hover:bg-purple-100'
                       };
                       return (
                         <button
                           key={stand.id}
                           onClick={() => handleSelectStand(stand)}
-                          className={`border rounded-lg p-2 text-center transition-all cursor-pointer ${colorMap[stand.status]} flex justify-between items-center h-12`}
+                          className={`border rounded-lg p-2.5 text-center transition-all cursor-pointer ${colorMap[stand.status]} flex flex-col justify-between items-center h-20 min-w-[55px]`}
                         >
-                          <span className="text-[11px] font-mono font-bold">{stand.num}</span>
-                          <span className="text-[9px] text-slate-500">{stand.area}m²</span>
+                          <span className="text-xs font-mono font-bold tracking-tight">{stand.num}</span>
+                          <div className="w-1.5 h-1.5 rounded-full" style={{
+                            backgroundColor: stand.status === 'disponible' ? '#10B981' : stand.status === 'reserve' ? '#F59E0B' : stand.status === 'vendu' ? '#EF4444' : '#8B5CF6'
+                          }}></div>
+                          <span className="text-[9px] scale-90 truncate w-full text-center text-slate-500 font-sans">{stand.area}m²</span>
                         </button>
                       );
                     })}
                   </div>
 
-                  {/* Middle cluster displays (A13, A17 AND Central A14-16, A18-19) */}
-                  <div className="col-span-3 grid grid-cols-2 gap-3 bg-white/40 border border-dashed border-slate-300 rounded-xl p-3">
+                  {/* ROW 2: splits left/right column structure & middle displays */}
+                  <div className="grid grid-cols-5 gap-4">
                     
-                    {/* Middle left inner vertical block (A13, A17) */}
-                    <div className="flex flex-col justify-around gap-2">
-                      {midCluster1.map((stand) => (
-                        <button
-                          key={stand.id}
-                          onClick={() => handleSelectStand(stand)}
-                          className={`border rounded-lg p-2.5 text-center transition-all cursor-pointer flex flex-col justify-between items-center h-16 ${
-                            stand.status === 'disponible' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
-                            stand.status === 'reserve' ? 'bg-amber-50 border-amber-200 text-amber-800' :
-                            stand.status === 'vendu' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-purple-50 border-purple-200 text-purple-800'
-                          }`}
-                        >
-                          <span className="text-[11px] font-mono font-bold">{stand.num}</span>
-                          <span className="text-[9px] text-slate-400 font-sans truncate max-w-full">{stand.companyName || `${stand.area} m²`}</span>
-                        </button>
-                      ))}
+                    {/* Left Column vertical blocks (A10 - A12) */}
+                    <div className="col-span-1 flex flex-col gap-2">
+                      {rowLeft.map((stand) => {
+                        const colorMap = {
+                          disponible: 'bg-emerald-50 border-emerald-250 text-emerald-800 hover:bg-emerald-100',
+                          reserve: 'bg-amber-50 border-amber-250 text-amber-800 hover:bg-amber-100',
+                          vendu: 'bg-rose-50 border-rose-250 text-rose-800 hover:bg-rose-100',
+                          sponsorise: 'bg-purple-50 border-purple-250 text-purple-800 hover:bg-purple-100'
+                        };
+                        return (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-2 text-center transition-all cursor-pointer ${colorMap[stand.status]} flex justify-between items-center h-12`}
+                          >
+                            <span className="text-[11px] font-mono font-bold">{stand.num}</span>
+                            <span className="text-[9px] text-slate-500">{stand.area}m²</span>
+                          </button>
+                        );
+                      })}
                     </div>
 
-                    {/* Middle right blocks (A14 - A16, A18 - A19) */}
-                    <div className="flex flex-col justify-around gap-2">
-                      {specialMid.map((stand) => (
-                        <button
-                          key={stand.id}
-                          onClick={() => handleSelectStand(stand)}
-                          className={`border rounded-lg p-1.5 text-center transition-all cursor-pointer flex items-center justify-between h-10 ${
-                            stand.status === 'disponible' ? 'bg-emerald-50 border-emerald-200' :
-                            stand.status === 'reserve' ? 'bg-amber-50 border-amber-200' :
-                            stand.status === 'vendu' ? 'bg-rose-50 border-rose-200' : 'bg-purple-50 border-purple-200'
-                          }`}
-                        >
-                          <span className="text-[10px] font-mono font-bold shrink-0">{stand.num}</span>
-                          <span className="text-[9px] font-sans truncate text-slate-500 font-medium pl-1">{stand.companyName || `${stand.area}m²`}</span>
-                        </button>
-                      ))}
+                    {/* Middle cluster displays (A13, A17 AND Central A14-16, A18-19) */}
+                    <div className="col-span-3 grid grid-cols-2 gap-3 bg-white/40 border border-dashed border-slate-300 rounded-xl p-3">
+                      
+                      {/* Middle left inner vertical block (A13, A17) */}
+                      <div className="flex flex-col justify-around gap-2">
+                        {midCluster1.map((stand) => (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-2.5 text-center transition-all cursor-pointer flex flex-col justify-between items-center h-16 ${
+                              stand.status === 'disponible' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
+                              stand.status === 'reserve' ? 'bg-amber-50 border-amber-200 text-amber-800' :
+                              stand.status === 'vendu' ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-purple-50 border-purple-200 text-purple-800'
+                            }`}
+                          >
+                            <span className="text-[11px] font-mono font-bold">{stand.num}</span>
+                            <span className="text-[9px] text-slate-400 font-sans truncate max-w-full">{stand.companyName || `${stand.area} m²`}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Middle right blocks (A14 - A16, A18 - A19) */}
+                      <div className="flex flex-col justify-around gap-2">
+                        {specialMid.map((stand) => (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-1.5 text-center transition-all cursor-pointer flex items-center justify-between h-10 ${
+                              stand.status === 'disponible' ? 'bg-emerald-50 border-emerald-200' :
+                              stand.status === 'reserve' ? 'bg-amber-50 border-amber-200' :
+                              stand.status === 'vendu' ? 'bg-rose-50 border-rose-200' : 'bg-purple-50 border-purple-200'
+                            }`}
+                          >
+                            <span className="text-[10px] font-mono font-bold shrink-0">{stand.num}</span>
+                            <span className="text-[9px] font-sans truncate text-slate-500 font-medium pl-1">{stand.companyName || `${stand.area}m²`}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                    </div>
+
+                    {/* Right Column vertical blocks (A27 - A28) */}
+                    <div className="col-span-1 flex flex-col gap-2 justify-start">
+                      {rowRight.map((stand) => {
+                        const colorMap = {
+                          disponible: 'bg-emerald-50 border-emerald-250 text-emerald-800 hover:bg-emerald-100',
+                          reserve: 'bg-amber-50 border-amber-250 text-amber-800 hover:bg-amber-100',
+                          vendu: 'bg-rose-50 border-rose-250 text-rose-800 hover:bg-rose-100',
+                          sponsorise: 'bg-purple-50 border-purple-250 text-purple-800 hover:bg-purple-100'
+                        };
+                        return (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-2 text-center transition-all cursor-pointer ${colorMap[stand.status]} flex flex-col justify-between items-center h-18`}
+                          >
+                            <span className="text-[11px] font-mono font-bold">{stand.num}</span>
+                            <span className="text-[9px] text-slate-500 font-sans">{stand.area}m²</span>
+                          </button>
+                        );
+                      })}
                     </div>
 
                   </div>
 
-                  {/* Right Column vertical blocks (A27 - A28) */}
-                  <div className="col-span-1 flex flex-col gap-2 justify-start">
-                    {rowRight.map((stand) => {
+                  {/* ROW 3: horizontal row bottom (A20 - A26) */}
+                  <div className="grid grid-cols-7 gap-2">
+                    {rowBottom.map((stand) => {
                       const colorMap = {
-                        disponible: 'bg-emerald-50 border-emerald-250 text-emerald-800 hover:bg-emerald-100',
-                        reserve: 'bg-amber-50 border-amber-250 text-amber-800 hover:bg-amber-100',
-                        vendu: 'bg-rose-50 border-rose-250 text-rose-800 hover:bg-rose-100',
-                        sponsorise: 'bg-purple-50 border-purple-250 text-purple-800 hover:bg-purple-100'
+                        disponible: 'bg-emerald-50 border-emerald-350 text-emerald-800 hover:bg-emerald-100',
+                        reserve: 'bg-amber-50 border-amber-350 text-amber-800 hover:bg-amber-100',
+                        vendu: 'bg-rose-50 border-rose-350 text-rose-800 hover:bg-rose-100',
+                        sponsorise: 'bg-purple-50 border-purple-350 text-purple-800 hover:bg-purple-100'
                       };
                       return (
                         <button
                           key={stand.id}
                           onClick={() => handleSelectStand(stand)}
-                          className={`border rounded-lg p-2 text-center transition-all cursor-pointer ${colorMap[stand.status]} flex flex-col justify-between items-center h-18`}
+                          className={`border rounded-lg p-2 text-center transition-all cursor-pointer ${colorMap[stand.status]} flex flex-col justify-between items-center h-16`}
                         >
-                          <span className="text-[11px] font-mono font-bold">{stand.num}</span>
-                          <span className="text-[9px] text-slate-500 font-sans">{stand.area}m²</span>
+                          <span className="text-xs font-mono font-bold">{stand.num}</span>
+                          <div className="w-1 h-1 rounded-full bg-slate-400"></div>
+                          <span className="text-[9px] text-slate-500 scale-90">{stand.area}m²</span>
                         </button>
                       );
                     })}
                   </div>
-
                 </div>
+              ) : (
+                /* --- HIGH FIDELITY LAYOUT REPRESENTATION OF AFRICA POOL & SPA EXPO FROM PDF --- */
+                <div className="min-w-[1050px] mx-auto space-y-6">
+                  {/* Visual Header Grid */}
+                  <div className="text-center font-serif font-black text-[12px] uppercase tracking-wider text-[#7A7667] mb-2 flex items-center justify-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#06B6D4]"></span>
+                    <span>AFRICA POOL & SPA EXPO 2026 — PLAN INTERACTIF DE L'EXPOSITION (OFEC CASABLANCA)</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#06B6D4]"></span>
+                  </div>
 
-                {/* ROW 3: horizontal row bottom (A20 - A26) */}
-                <div className="grid grid-cols-7 gap-2">
-                  {rowBottom.map((stand) => {
-                    const colorMap = {
-                      disponible: 'bg-emerald-50 border-emerald-350 text-emerald-800 hover:bg-emerald-100',
-                      reserve: 'bg-amber-50 border-amber-350 text-amber-800 hover:bg-amber-100',
-                      vendu: 'bg-rose-50 border-rose-350 text-rose-800 hover:bg-rose-100',
-                      sponsorise: 'bg-purple-50 border-purple-350 text-purple-800 hover:bg-purple-100'
-                    };
-                    return (
-                      <button
-                        key={stand.id}
-                        onClick={() => handleSelectStand(stand)}
-                        className={`border rounded-lg p-2 text-center transition-all cursor-pointer ${colorMap[stand.status]} flex flex-col justify-between items-center h-16`}
-                      >
-                        <span className="text-xs font-mono font-bold">{stand.num}</span>
-                        <div className="w-1 h-1 rounded-full bg-slate-400"></div>
-                        <span className="text-[9px] text-slate-500 scale-90">{stand.area}m²</span>
-                      </button>
-                    );
-                  })}
+                  {/* 8 Columns Grid to mirror the visual schema exactly */}
+                  <div className="grid grid-cols-8 gap-3.5 items-stretch">
+                    
+                    {/* COLUMN A (9m² vertical stands) */}
+                    <div className="col-span-1 flex flex-col gap-2 bg-[#F3F1E9]/40 p-2 rounded-xl border border-[#E8E6DE]">
+                      <div className="text-center font-black font-mono text-[11px] text-[#2D2D2D] border-b border-[#E8E6DE]/60 pb-1.5 mb-1 bg-white rounded-md py-0.5">COL. A</div>
+                      <div className="flex flex-col gap-1.5">
+                        {poolColA.map(stand => (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-1 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center h-12`}
+                          >
+                            <span className="text-[10px] font-mono font-bold leading-none">{stand.num}</span>
+                            <span className="text-[8px] font-sans text-slate-500 scale-95 leading-none truncate w-full" title={stand.companyName}>
+                              {stand.companyName ? stand.companyName.substring(0, 8) + '..' : `${stand.area}m²`}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* COLUMN B (Salle de Conférence + B stands) */}
+                    <div className="col-span-1 flex flex-col gap-2 bg-[#F3F1E9]/40 p-2 rounded-xl border border-[#E8E6DE]">
+                      <div className="text-center font-black font-mono text-[11px] text-[#2D2D2D] border-b border-[#E8E6DE]/60 pb-1.5 mb-1 bg-white rounded-md py-0.5">COL. B</div>
+                      <div className="flex flex-col gap-1.5 h-full">
+                        {/* SALLE DE CONFÉRENCE (spanning rows 4-6 vertically matching orange block) */}
+                        <div className="bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-lg p-2.5 text-center flex flex-col justify-center items-center h-[178px] shadow-sm border border-orange-700 select-none">
+                          <span className="text-[9px] uppercase font-bold tracking-wider leading-none">SALLE</span>
+                          <span className="text-[8px] font-medium leading-normal opacity-90">DE CONFÉRENCE</span>
+                          <span className="text-[8px] font-mono bg-white/20 px-1 py-0.5 rounded mt-2 text-white">60 m²</span>
+                        </div>
+
+                        {/* B stands sorted descending */}
+                        {poolColB.map(stand => (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-2 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center ${stand.area >= 72 ? 'h-[148px] justify-center bg-gray-50' : 'h-[72px]'}`}
+                          >
+                            <span className="text-[10px] font-mono font-bold leading-tight">{stand.num}</span>
+                            <span className="text-[9px] font-sans font-bold leading-normal truncate w-full text-center" title={stand.companyName}>
+                              {stand.companyName || (stand.status === 'disponible' ? 'Libre' : 'Réservé')}
+                            </span>
+                            <span className="text-[8px] font-mono text-slate-500">{stand.area}m²</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* COLUMN C */}
+                    <div className="col-span-1 flex flex-col gap-2 bg-[#F3F1E9]/40 p-2 rounded-xl border border-[#E8E6DE]">
+                      <div className="text-center font-black font-mono text-[11px] text-[#2D2D2D] border-b border-[#E8E6DE]/60 pb-1.5 mb-1 bg-white rounded-md py-0.5">COL. C</div>
+                      <div className="flex flex-col gap-1.5">
+                        {/* Row 6 Top stand */}
+                        {poolColC.filter(s => s.num === 'C-6A').map(stand => (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-1.5 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center h-12`}
+                          >
+                            <span className="text-[10px] font-mono font-bold">{stand.num}</span>
+                            <span className="text-[8px] text-slate-500">{stand.area}m²</span>
+                          </button>
+                        ))}
+
+                        {/* Corridor / Space holder for row 5 */}
+                        <div className="border border-dashed border-[#E8E6DE]/80 rounded-lg h-[116px] flex flex-col items-center justify-center bg-white/20 text-[#7A7667]/50 font-mono text-[9px] select-none text-center p-1">
+                          <span>Allée</span>
+                          <span>Centrale</span>
+                        </div>
+
+                        {/* Rest of C stands */}
+                        {poolColC.filter(s => s.num !== 'C-6A').map(stand => (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-2 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center ${stand.area >= 72 ? 'h-[148px] justify-center' : 'h-[72px]'}`}
+                          >
+                            <span className="text-[10px] font-mono font-bold leading-tight">{stand.num}</span>
+                            <span className="text-[9px] font-sans font-bold leading-normal truncate w-full text-center" title={stand.companyName}>
+                              {stand.companyName || (stand.status === 'disponible' ? 'Libre' : 'Réservé')}
+                            </span>
+                            <span className="text-[8px] font-mono text-slate-500">{stand.area}m²</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* COLUMN D */}
+                    <div className="col-span-1 flex flex-col gap-2 bg-[#F3F1E9]/40 p-2 rounded-xl border border-[#E8E6DE]">
+                      <div className="text-center font-black font-mono text-[11px] text-[#2D2D2D] border-b border-[#E8E6DE]/60 pb-1.5 mb-1 bg-white rounded-md py-0.5">COL. D</div>
+                      <div className="flex flex-col gap-1.5">
+                        {/* Row 6 Small stands */}
+                        <div className="grid grid-cols-3 gap-0.5">
+                          {poolColD.filter(s => ['D-6A', 'D-6B', 'D-6C'].includes(s.num)).map(stand => (
+                            <button
+                              key={stand.id}
+                              onClick={() => handleSelectStand(stand)}
+                              className={`border rounded-md p-1 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-center items-center h-9`}
+                            >
+                              <span className="text-[8px] font-mono font-bold leading-none">{stand.num.substring(2)}</span>
+                              <span className="text-[7px] text-slate-500 leading-none">{stand.area}m²</span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Row 5 Small stands */}
+                        <div className="grid grid-cols-2 gap-1">
+                          {poolColD.filter(s => ['D-5A', 'D-5B'].includes(s.num)).map(stand => (
+                            <button
+                              key={stand.id}
+                              onClick={() => handleSelectStand(stand)}
+                              className={`border rounded-md p-1 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-center items-center h-9`}
+                            >
+                              <span className="text-[8px] font-mono font-bold leading-none">{stand.num.substring(2)}</span>
+                              <span className="text-[7px] text-slate-500 leading-none">{stand.area}m²</span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Row 4 stands */}
+                        <div className="flex flex-col gap-1">
+                          {poolColD.filter(s => ['D-4A', 'D-4B', 'D-4C'].includes(s.num)).map(stand => (
+                            <button
+                              key={stand.id}
+                              onClick={() => handleSelectStand(stand)}
+                              className={`border rounded-md p-1 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex items-center justify-between h-[34px]`}
+                            >
+                              <span className="text-[9px] font-mono font-bold leading-none shrink-0">{stand.num.substring(2)}</span>
+                              <span className="text-[8px] font-sans truncate text-slate-500 font-semibold pl-1 leading-none text-right" title={stand.companyName}>
+                                {stand.companyName || `${stand.area}m²`}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Big central stands (D-3A, D-2A, D-1A) */}
+                        {poolColD.filter(s => !['D-6A', 'D-6B', 'D-6C', 'D-5A', 'D-5B', 'D-4A', 'D-4B', 'D-4C'].includes(s.num)).map(stand => (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-2.5 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center h-[148px] justify-center`}
+                          >
+                            <span className="text-[10px] font-mono font-bold leading-tight">{stand.num}</span>
+                            <span className="text-[9px] font-sans font-bold leading-normal truncate w-full text-center" title={stand.companyName}>
+                              {stand.companyName || (stand.status === 'disponible' ? 'Libre' : 'Réservé')}
+                            </span>
+                            <span className="text-[8px] font-mono text-slate-500">{stand.area}m²</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* COLUMN E */}
+                    <div className="col-span-1 flex flex-col gap-2 bg-[#F3F1E9]/40 p-2 rounded-xl border border-[#E8E6DE]">
+                      <div className="text-center font-black font-mono text-[11px] text-[#2D2D2D] border-b border-[#E8E6DE]/60 pb-1.5 mb-1 bg-white rounded-md py-0.5">COL. E</div>
+                      <div className="flex flex-col gap-1.5">
+                        {/* Row 6 Small stands */}
+                        <div className="grid grid-cols-4 gap-0.5">
+                          {poolColE.filter(s => ['E-6A', 'E-6B', 'E-6C', 'E-6D'].includes(s.num)).map(stand => (
+                            <button
+                              key={stand.id}
+                              onClick={() => handleSelectStand(stand)}
+                              className={`border rounded-md p-0.5 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-center items-center h-9`}
+                            >
+                              <span className="text-[8px] font-mono font-bold leading-none">{stand.num.substring(2)}</span>
+                              <span className="text-[7px] text-slate-500 leading-none">{stand.area}m²</span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Row 5 Alteza */}
+                        {poolColE.filter(s => s.num === 'E-5A').map(stand => (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-1.5 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center h-10`}
+                          >
+                            <span className="text-[9px] font-mono font-bold leading-none">{stand.num}</span>
+                            <span className="text-[8px] text-slate-500 font-sans truncate max-w-full font-semibold leading-none">{stand.companyName || 'Alteza'}</span>
+                          </button>
+                        ))}
+
+                        {/* Row 4 stands */}
+                        <div className="grid grid-cols-2 gap-1">
+                          {poolColE.filter(s => ['E-4A', 'E-4B'].includes(s.num)).map(stand => (
+                            <button
+                              key={stand.id}
+                              onClick={() => handleSelectStand(stand)}
+                              className={`border rounded-md p-1 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center h-[52px]`}
+                            >
+                              <span className="text-[8px] font-mono font-bold leading-none">{stand.num}</span>
+                              <span className="text-[7px] font-sans truncate w-full leading-none font-semibold text-[#2D2D2D]" title={stand.companyName}>
+                                {stand.companyName || `${stand.area}m²`}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Row 3 stands */}
+                        <div className="flex flex-col gap-1">
+                          {poolColE.filter(s => ['E-3A', 'E-3B', 'E-3C'].includes(s.num)).map(stand => (
+                            <button
+                              key={stand.id}
+                              onClick={() => handleSelectStand(stand)}
+                              className={`border rounded-md p-1 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex items-center justify-between h-[34px]`}
+                            >
+                              <span className="text-[9px] font-mono font-bold leading-none shrink-0">{stand.num.substring(2)}</span>
+                              <span className="text-[7px] font-sans truncate text-slate-500 font-semibold pl-1 leading-none text-right" title={stand.companyName}>
+                                {stand.companyName || `${stand.area}m²`}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Row 2 & Row 1 Big slots */}
+                        {poolColE.filter(s => !['E-6A', 'E-6B', 'E-6C', 'E-6D', 'E-5A', 'E-4A', 'E-4B', 'E-3A', 'E-3B', 'E-3C'].includes(s.num)).map(stand => (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-2.5 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center h-[148px] justify-center`}
+                          >
+                            <span className="text-[10px] font-mono font-bold leading-tight">{stand.num}</span>
+                            <span className="text-[9px] font-sans font-bold leading-normal truncate w-full text-center" title={stand.companyName}>
+                              {stand.companyName || (stand.status === 'disponible' ? 'Libre' : 'Réservé')}
+                            </span>
+                            <span className="text-[8px] font-mono text-slate-500">{stand.area}m²</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* COLUMN F */}
+                    <div className="col-span-1 flex flex-col gap-2 bg-[#F3F1E9]/40 p-2 rounded-xl border border-[#E8E6DE]">
+                      <div className="text-center font-black font-mono text-[11px] text-[#2D2D2D] border-b border-[#E8E6DE]/60 pb-1.5 mb-1 bg-white rounded-md py-0.5">COL. F</div>
+                      <div className="flex flex-col gap-1.5">
+                        {/* RESTAURANT Shared Header Row 6 (spanning F-G, left portion shown in F) */}
+                        <div className="bg-[#148F4C] text-white rounded-lg p-1 text-center flex flex-col justify-center items-center h-9 border border-[#0d6e38] select-none">
+                          <span className="text-[9px] uppercase font-bold tracking-wider leading-none">RESTAURANT</span>
+                        </div>
+
+                        {/* Row 5 Small stands */}
+                        <div className="grid grid-cols-2 gap-1">
+                          {poolColF.filter(s => ['F-5A', 'F-5B'].includes(s.num)).map(stand => (
+                            <button
+                              key={stand.id}
+                              onClick={() => handleSelectStand(stand)}
+                              className={`border rounded-md p-1 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-center items-center h-9`}
+                            >
+                              <span className="text-[8px] font-mono font-bold leading-none">{stand.num.substring(2)}</span>
+                              <span className="text-[7px] text-slate-500 leading-none">{stand.area}m²</span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Row 4 stands */}
+                        <div className="grid grid-cols-2 gap-1">
+                          {poolColF.filter(s => ['F-4A', 'F-4B'].includes(s.num)).map(stand => (
+                            <button
+                              key={stand.id}
+                              onClick={() => handleSelectStand(stand)}
+                              className={`border rounded-md p-1 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center h-[52px]`}
+                            >
+                              <span className="text-[8px] font-mono font-bold leading-none">{stand.num}</span>
+                              <span className="text-[7px] font-sans truncate w-full leading-none font-semibold text-slate-600" title={stand.companyName}>
+                                {stand.companyName || `${stand.area}m²`}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Row 3 stands */}
+                        <div className="flex flex-col gap-1">
+                          {poolColF.filter(s => ['F-3A', 'F-3B', 'F-3C'].includes(s.num)).map(stand => (
+                            <button
+                              key={stand.id}
+                              onClick={() => handleSelectStand(stand)}
+                              className={`border rounded-md p-1 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex items-center justify-between h-[34px]`}
+                            >
+                              <span className="text-[9px] font-mono font-bold leading-none shrink-0">{stand.num.substring(2)}</span>
+                              <span className="text-[7px] font-sans truncate text-slate-500 font-semibold pl-1 leading-none text-right" title={stand.companyName}>
+                                {stand.companyName || `${stand.area}m²`}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Row 2 Big slot */}
+                        {poolColF.filter(s => s.num === 'F-2A').map(stand => (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-2.5 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center h-[148px] justify-center`}
+                          >
+                            <span className="text-[10px] font-mono font-bold leading-tight">{stand.num}</span>
+                            <span className="text-[9px] font-sans font-bold leading-normal truncate w-full text-center hover:whitespace-normal" title={stand.companyName}>
+                              {stand.companyName || (stand.status === 'disponible' ? 'Libre' : 'Réservé')}
+                            </span>
+                            <span className="text-[8px] font-mono text-slate-500">{stand.area}m²</span>
+                          </button>
+                        ))}
+
+                        {/* Row 1 Small stands (F-1A & F-1B) representing AAFM & UPEK */}
+                        <div className="grid grid-cols-2 gap-1 pt-1.5">
+                          {poolColF.filter(s => ['F-1A', 'F-1B'].includes(s.num)).map(stand => (
+                            <button
+                              key={stand.id}
+                              onClick={() => handleSelectStand(stand)}
+                              className={`border rounded-md p-1 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center h-[141px]`}
+                            >
+                              <span className="text-[8px] font-mono font-bold leading-none">{stand.num}</span>
+                              <span className="text-[7.5px] font-sans font-black leading-tight truncate w-full text-center" title={stand.companyName}>{stand.companyName || 'Libre'}</span>
+                              <span className="text-[7px] text-slate-500 leading-none">{stand.area}m²</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* COLUMN G */}
+                    <div className="col-span-1 flex flex-col gap-2 bg-[#F3F1E9]/40 p-2 rounded-xl border border-[#E8E6DE]">
+                      <div className="text-center font-black font-mono text-[11px] text-[#2D2D2D] border-b border-[#E8E6DE]/60 pb-1.5 mb-1 bg-white rounded-md py-0.5">COL. G</div>
+                      <div className="flex flex-col gap-1.5">
+                        {/* RESTAURANT Shared Header Row 6 (spanning G-F, right portion shown in G) */}
+                        <div className="bg-[#148F4C] text-white rounded-lg p-1 text-center flex flex-col justify-center items-center h-9 border border-[#0d6e38] select-none">
+                          <span className="text-[9px] uppercase font-bold tracking-wider leading-none font-semibold">TERRASSE</span>
+                        </div>
+
+                        {/* Row 5 Small stand */}
+                        {poolColG.filter(s => s.num === 'G-5A').map(stand => (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-1.5 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center h-10`}
+                          >
+                            <span className="text-[9px] font-mono font-bold leading-none">{stand.num}</span>
+                            <span className="text-[7px] text-slate-500 leading-none">{stand.area}m²</span>
+                          </button>
+                        ))}
+
+                        {/* Row 4 stands */}
+                        <div className="grid grid-cols-2 gap-1">
+                          {poolColG.filter(s => ['G-4A', 'G-4B'].includes(s.num)).map(stand => (
+                            <button
+                              key={stand.id}
+                              onClick={() => handleSelectStand(stand)}
+                              className={`border rounded-md p-1 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center h-[52px]`}
+                            >
+                              <span className="text-[8px] font-mono font-bold leading-none">{stand.num}</span>
+                              <span className="text-[7px] font-sans truncate w-full leading-none font-semibold" title={stand.companyName}>
+                                {stand.companyName || `${stand.area}m²`}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Big yellow G stands (G-3A, G-2A, G-1A) */}
+                        {poolColG.filter(s => !['G-5A', 'G-4A', 'G-4B'].includes(s.num)).map(stand => (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-2.5 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center h-[148px] justify-center`}
+                          >
+                            <span className="text-[10px] font-mono font-bold leading-tight">{stand.num}</span>
+                            <span className="text-[9px] font-sans font-bold leading-normal truncate w-full text-center" title={stand.companyName}>
+                              {stand.companyName || (stand.status === 'disponible' ? 'Libre' : 'Réservé')}
+                            </span>
+                            <span className="text-[8px] font-mono text-slate-500">{stand.area}m²</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* COLUMN H */}
+                    <div className="col-span-1 flex flex-col gap-2 bg-[#F3F1E9]/40 p-2 rounded-xl border border-[#E8E6DE]">
+                      <div className="text-center font-black font-mono text-[11px] text-[#2D2D2D] border-b border-[#E8E6DE]/60 pb-1.5 mb-1 bg-white rounded-md py-0.5">COL. H</div>
+                      <div className="flex flex-col gap-1.5">
+                        {/* A+E administration block inside Row 6 of Column H */}
+                        <div className="bg-[#475569] text-white rounded-lg p-1 text-center flex flex-col justify-center items-center h-9 border border-[#334155] select-none">
+                          <span className="text-[8.5px] uppercase font-bold tracking-wider leading-none">SERVICES A+E</span>
+                        </div>
+
+                        {/* Column H Stands */}
+                        {poolColH.map(stand => (
+                          <button
+                            key={stand.id}
+                            onClick={() => handleSelectStand(stand)}
+                            className={`border rounded-lg p-1 text-center transition-all cursor-pointer ${getStandColorClasses(stand.status)} flex flex-col justify-between items-center h-[46px]`}
+                          >
+                            <span className="text-[9px] font-mono font-bold leading-none">{stand.num}</span>
+                            <span className="text-[7.5px] text-slate-500 leading-none">{stand.area}m²</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Labeled Entrance (Entrée) banner representing bottom entry design of the PDF layout */}
+                  <div className="flex justify-center items-center pt-3 select-none">
+                    <div className="flex items-center gap-4 bg-white border-2 border-dashed border-red-500 rounded-2xl px-12 py-3 shadow-md animate-pulse">
+                      <span className="text-red-600 font-black text-xs">➔ ➔</span>
+                      <h5 className="font-serif font-black text-xs tracking-widest text-[#2D2D2D] uppercase">ENTRÉE EXPOSTION AFRICA POOL & SPA</h5>
+                      <span className="text-red-600 font-black text-xs">➔ ➔</span>
+                    </div>
+                  </div>
                 </div>
+              )}
 
-                {/* Grid Color legend map indicators */}
-                <div className="flex justify-center items-center gap-6 text-[10px] text-slate-500 border-t border-slate-200/50 pt-3 select-none">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
-                    <span>Disponible</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>
-                    <span>Réserve d'option</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
-                    <span>Vendu / Signé</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block"></span>
-                    <span>Sponsorisé</span>
-                  </div>
+              {/* Grid Color legend map indicators */}
+              <div className="flex justify-center items-center gap-6 text-[10px] text-[#7A7667] border-t border-slate-200/60 pt-5 mt-4 select-none">
+                <div className="flex items-center gap-1.5 font-sans">
+                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#10B981' }}></span>
+                  <span>Libre / Disponible</span>
                 </div>
-
+                <div className="flex items-center gap-1.5 font-sans">
+                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#F59E0B' }}></span>
+                  <span>Réservé (Option CRM)</span>
+                </div>
+                <div className="flex items-center gap-1.5 font-sans">
+                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#EF4444' }}></span>
+                  <span>Vendu / Contrat signé</span>
+                </div>
+                <div className="flex items-center gap-1.5 font-sans">
+                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#8B5CF6' }}></span>
+                  <span>Sponsor Officiel</span>
+                </div>
               </div>
             </div>
           </div>

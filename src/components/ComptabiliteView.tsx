@@ -18,7 +18,10 @@ import {
   Sparkles,
   Percent,
   TrendingDown,
-  Download
+  Download,
+  CreditCard,
+  Copy,
+  Check
 } from 'lucide-react';
 import { SiteId, Transaction, TransactionItem } from '../types';
 import { initialSites } from '../initialData';
@@ -39,6 +42,13 @@ export default function ComptabiliteView({
   const [activeType, setActiveType] = useState<'devis' | 'facture'>(currentSubTab === 'devis' ? 'devis' : 'facture');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [focusReceipt, setFocusReceipt] = useState<Transaction | null>(null);
+
+  const [copiedRib, setCopiedRib] = useState(false);
+  const handleCopyRib = () => {
+    navigator.clipboard.writeText('190780212115687449000681');
+    setCopiedRib(true);
+    setTimeout(() => setCopiedRib(false), 2000);
+  };
 
   // Form states
   const [formCompany, setFormCompany] = useState('');
@@ -140,6 +150,14 @@ export default function ComptabiliteView({
       setFocusReceipt(prev => prev ? { ...prev, status: nextStatus } : null);
     }
     triggerToast("Statut de la transaction actualisé avec succès.");
+  };
+
+  const handleDeleteDoc = (docId: string, docNum: string, docType: 'devis' | 'facture') => {
+    setTransactions(prev => prev.filter(t => t.id !== docId));
+    if (focusReceipt?.id === docId) {
+      setFocusReceipt(null);
+    }
+    triggerToast(`${docType === 'devis' ? 'Devis' : 'Facture'} ${docNum} supprimé de la comptabilité.`);
   };
 
   const triggerToast = (msg: string) => {
@@ -301,8 +319,10 @@ export default function ComptabiliteView({
               <span style="font-weight: 800; text-transform: uppercase; color: #a4a090; letter-spacing: 0.05em; display: block; margin-bottom: 4px; font-size: 8px;">Consignes de Règlement</span>
               <div>Règlement par chèque de banque barré ou par transfert de fonds direct aux coordonnées de l'agence régisseuse :</div>
               <div style="font-weight: bold; color: #2d2d2d; font-family: 'JetBrains Mono', monospace; margin-top: 6px; background-color: #fcfbf7; padding: 10px; border-radius: 8px; border: 1px solid #e8e6de; font-size: 8px; line-height: 1.45;">
-                ATTIJARIWAFA BANK CASABLANCA<br>
-                RIB : <span style="letter-spacing: 0.05em; color: #a68a64;">007 780 0001234567890123 44</span>
+                BANQUE POPULAIRE<br>
+                RIB : <span style="letter-spacing: 0.05em; color: #a68a64;">190 780 2121156874490006 81</span><br>
+                Code SWIFT : <span style="letter-spacing: 0.05em; color: #a68a64;">BCPOMAMC</span><br>
+                Bénéficiaire : R2H COMMUNICATION
               </div>
             </div>
 
@@ -430,6 +450,7 @@ export default function ComptabiliteView({
                     <th className="px-5 py-3">Montant TTC</th>
                     <th className="px-5 py-3">Salon</th>
                     <th className="px-5 py-3">Statut</th>
+                    <th className="px-5 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-sans">
@@ -460,11 +481,21 @@ export default function ComptabiliteView({
                             {trans.status === 'paye' ? 'Encaissé' : 'Envoyé'}
                           </span>
                         </td>
+                        <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteDoc(trans.id, trans.num, trans.type)}
+                            className="p-1 px-1.5 hover:bg-rose-50 hover:text-rose-700 text-rose-500 rounded-lg transition-all cursor-pointer border border-transparent hover:border-rose-100"
+                            title={`Supprimer ce ${trans.type === 'devis' ? 'devis' : 'factures'}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-slate-400">
+                      <td colSpan={6} className="py-8 text-center text-slate-400">
                         <AlertCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
                         Aucune transaction listée sous ces critères.
                       </td>
@@ -667,6 +698,14 @@ export default function ComptabiliteView({
                       <Download className="w-3 h-3" />
                       <span>Télécharger</span>
                     </button>
+                    <button
+                      onClick={() => handleDeleteDoc(focusReceipt.id, focusReceipt.num, focusReceipt.type)}
+                      className="p-1 px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-[10px] font-semibold flex items-center gap-1 cursor-pointer transition border border-rose-200"
+                      title="Supprimer ce document de la comptabilité"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Supprimer</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -755,7 +794,12 @@ export default function ComptabiliteView({
                     <div className="max-w-[180px] text-slate-400 text-[9px]">
                       <span className="font-bold uppercase tracking-wider block mb-1">Information de Règlement</span>
                       <p className="font-medium">Règlement par chèque barré ou virement aux coordonnées :</p>
-                      <p className="font-bold text-slate-600 font-mono mt-1.5 select-all text-[8px] leading-tight">ATTIJARIWAFA BANK CASABLANCA<br />RIB: 007 780 0001234567890123 44</p>
+                      <p className="font-bold text-slate-600 font-mono mt-1.5 select-all text-[8px] leading-tight">
+                        BANQUE POPULAIRE<br />
+                        RIB: 190 780 2121156874490006 81<br />
+                        SWIFT: BCPOMAMC<br />
+                        Bénéficiaire: R2H COMMUNICATION
+                      </p>
                     </div>
 
                     {/* HT + VAT 20% + TTC summary block */}
@@ -787,9 +831,68 @@ export default function ComptabiliteView({
 
                 </div>
               ) : (
-                <div className="text-center py-12 text-slate-400 flex flex-col items-center justify-center gap-2 font-sans text-xs">
-                  <AlertCircle className="w-8 h-8 text-slate-300" />
-                  <span>Sélectionnez un devis ou une facture pour charger l'aperçu d'impression de l'agence.</span>
+                <div className="py-8 px-4 flex flex-col items-center justify-center gap-6 font-sans text-xs">
+                  <div className="text-center text-slate-400 flex flex-col items-center justify-center gap-2">
+                    <AlertCircle className="w-8 h-8 text-slate-300" />
+                    <span>Sélectionnez un devis ou une facture pour charger l'aperçu d'impression de l'agence.</span>
+                  </div>
+
+                  {/* RIB R2H Communication Interactive Information Card */}
+                  <div className="w-full max-w-sm mt-4 bg-gradient-to-br from-[#FCFBF8] to-[#F5F3EB] border border-[#E8E6DE] rounded-xl p-4 shadow-2xs relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -mr-8 -mt-8 pointer-events-none blur-xl"></div>
+                    
+                    <div className="flex items-center gap-2.5 mb-3">
+                      <div className="bg-amber-100 text-amber-800 p-1.5 rounded-lg">
+                        <CreditCard className="w-4 h-4 text-amber-700" />
+                      </div>
+                      <div>
+                        <h4 className="font-serif font-black text-[#2D2D2D] text-xs leading-none">R2H COMMUNICATION</h4>
+                        <p className="text-[9px] text-[#7A7667] mt-0.5">Relevé d'Identité Bancaire (RIB) Officiel</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-left font-sans text-[11px] text-slate-600 bg-white/70 p-3 rounded-lg border border-[#E8E6DE]/40">
+                      <div className="flex justify-between items-center pb-1.5 border-b border-[#E8E6DE]/30">
+                        <span className="text-[10px] text-slate-400 font-medium">Établissement</span>
+                        <span className="font-bold text-[#2D2D2D]">BANQUE POPULAIRE</span>
+                      </div>
+                      <div className="flex justify-between items-center pb-1.5 border-b border-[#E8E6DE]/30">
+                        <span className="text-[10px] text-slate-400 font-medium">Agence</span>
+                        <span className="font-semibold text-slate-700">IBNOU NAFIS (Casablanca)</span>
+                      </div>
+                      
+                      <div className="pt-1 flex flex-col gap-1">
+                        <span className="text-[10px] text-slate-400 font-medium">Code RIB (24 chiffres)</span>
+                        <div className="flex items-center justify-between bg-[#F8F7F2] px-2.5 py-1.5 rounded-md border border-[#E8E6DE] group">
+                          <code className="text-[11px] font-mono font-black text-[#2D2D2D] select-all tracking-wider">
+                            190 780 2121156874490006 81
+                          </code>
+                          <button
+                            onClick={handleCopyRib}
+                            className="text-slate-400 hover:text-blue-600 p-1 hover:bg-white rounded transition-colors cursor-pointer"
+                            title="Copier le RIB"
+                          >
+                            {copiedRib ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-1.5 text-[10px]">
+                        <span className="text-slate-400 font-medium">Code SWIFT (BIC)</span>
+                        <span className="font-mono font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded text-[9.5px]">BCPOMAMC</span>
+                      </div>
+                    </div>
+
+                    {copiedRib && (
+                      <div className="mt-2 text-center text-[10px] text-emerald-600 font-medium animate-pulse">
+                        RIB copié dans le presse-papiers avec succès !
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

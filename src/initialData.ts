@@ -165,15 +165,97 @@ export const initialStands: Stand[] = [
   { id: 'g-A28', site: 'gardenexpo', num: 'A28', hall: 'Hall A', area: 18, pricePerM2: 2500, status: 'disponible' },
 
   // --- AFRICA POOL & SPA EXPO 2025 ---
-  { id: 'p-A01', site: 'africapool', num: 'A01', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-A02', site: 'africapool', num: 'A02', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'Smal Pools Morocco', clientName: 'Hakim Filali', category: 'Coques Polyester' },
-  { id: 'p-A03', site: 'africapool', num: 'A03', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-A04', site: 'africapool', num: 'A04', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-A05', site: 'africapool', num: 'A05', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'AquaPools Maroc', clientName: 'Khadija Bennani', category: 'Piscines & Spas Haut de Gamme' },
-  { id: 'p-A06', site: 'africapool', num: 'A06', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'China Water Tech', clientName: 'Chen Wei', category: 'Filtration & Pompes' },
-  { id: 'p-A07', site: 'africapool', num: 'A07', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-A08', site: 'africapool', num: 'A08', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-A17', site: 'africapool', num: 'A17', hall: 'Hall 1', area: 36, pricePerM2: 2900, status: 'reserve', companyName: 'Diffazur Maroc', clientName: 'Antoine Dubois', category: 'Piscines béton' }
+  // Column A (9m² vertical stands)
+  { id: 'p-A-1A', site: 'africapool', num: 'A-1A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-1B', site: 'africapool', num: 'A-1B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-1C', site: 'africapool', num: 'A-1C', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-1D', site: 'africapool', num: 'A-1D', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-1E', site: 'africapool', num: 'A-1E', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-2A', site: 'africapool', num: 'A-2A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-2B', site: 'africapool', num: 'A-2B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-2C', site: 'africapool', num: 'A-2C', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-2D', site: 'africapool', num: 'A-2D', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-2E', site: 'africapool', num: 'A-2E', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-3A', site: 'africapool', num: 'A-3A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-3B', site: 'africapool', num: 'A-3B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-3C', site: 'africapool', num: 'A-3C', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-3D', site: 'africapool', num: 'A-3D', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-3E', site: 'africapool', num: 'A-3E', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-A-3F', site: 'africapool', num: 'A-3F', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'vendu', companyName: 'AstralPool Maroc', clientName: 'Kamal Sghiouar', category: 'Équipements de Piscine' },
+
+  // Row 6 Top stands (small yellow/red 9m²)
+  { id: 'p-C-6A', site: 'africapool', num: 'C-6A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-D-6A', site: 'africapool', num: 'D-6A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-D-6B', site: 'africapool', num: 'D-6B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-D-6C', site: 'africapool', num: 'D-6C', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'vendu', companyName: 'BWT-Barco', clientName: 'Fouad Laroui', category: 'Traitement de l\'eau' },
+  { id: 'p-E-6A', site: 'africapool', num: 'E-6A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-E-6B', site: 'africapool', num: 'E-6B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-E-6C', site: 'africapool', num: 'E-6C', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-E-6D', site: 'africapool', num: 'E-6D', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+
+  // Row 5 stands
+  { id: 'p-D-5A', site: 'africapool', num: 'D-5A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-D-5B', site: 'africapool', num: 'D-5B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'reserve', companyName: 'O/D L.G THERMIQUE', clientName: 'Adil Bennis' },
+  { id: 'p-E-5A', site: 'africapool', num: 'E-5A', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'ALTEZA', clientName: 'Yassir Ghamri', category: 'Pergolas & Pool Houses' },
+  { id: 'p-F-5A', site: 'africapool', num: 'F-5A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'vendu', companyName: 'Topromaroc', clientName: 'Driss Tazi', category: 'Sécurité de piscine' },
+  { id: 'p-F-5B', site: 'africapool', num: 'F-5B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-G-5A', site: 'africapool', num: 'G-5A', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'Fluidra Maroc', clientName: 'Hassan Filali', category: 'Systèmes de filtration' },
+
+  // Row 4 stands
+  { id: 'p-D-4A', site: 'africapool', num: 'D-4A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'CCI', clientName: 'Amine El Alami', category: 'Climatisation / Chauffage' },
+  { id: 'p-D-4B', site: 'africapool', num: 'D-4B', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-D-4C', site: 'africapool', num: 'D-4C', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'L.G. THERMIQUE', clientName: 'Sami Naciri', category: 'Pompes à chaleur' },
+  { id: 'p-E-4A', site: 'africapool', num: 'E-4A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'Spasauna', clientName: 'Khadija Bennani', category: 'Saunas & Hammams' },
+  { id: 'p-E-4B', site: 'africapool', num: 'E-4B', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-F-4A', site: 'africapool', num: 'F-4A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'ATLANTA POMPES', clientName: 'Mehdi Naciri', category: 'Pompes de circulation' },
+  { id: 'p-F-4B', site: 'africapool', num: 'F-4B', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-G-4A', site: 'africapool', num: 'G-4A', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-G-4B', site: 'africapool', num: 'G-4B', hall: 'Hall 1', area: 54, pricePerM2: 2800, status: 'disponible' },
+
+  // Row 3 (Paledo, Poolspa, Gamis, Verso, Zen, etc.)
+  { id: 'p-B-3A', site: 'africapool', num: 'B-3A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'PALEDO', clientName: 'Karim Slaoui', category: 'Piscines & Équipements' },
+  { id: 'p-B-3B', site: 'africapool', num: 'B-3B', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'POOLSPA', clientName: 'Said Bennani', category: 'Spas & Balnéothérapie' },
+  { id: 'p-C-4A', site: 'africapool', num: 'C-4A', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'reserve', companyName: 'Réservé Option C-4A', clientName: 'Nabil Chraibi' },
+  { id: 'p-D-3A', site: 'africapool', num: 'D-3A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'reserve', companyName: 'Gamis', clientName: 'Mehdi Rahho', category: 'Traitement de l\'eau' },
+  { id: 'p-E-3A', site: 'africapool', num: 'E-3A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'VERSO SIGNATURE', clientName: 'Yassine Alami', category: 'Architecture extérieure' },
+  { id: 'p-E-3B', site: 'africapool', num: 'E-3B', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'Water Tech', clientName: 'Anas Ouazzani', category: 'Filtration' },
+  { id: 'p-E-3C', site: 'africapool', num: 'E-3C', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-F-3A', site: 'africapool', num: 'F-3A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'Zen Piscine', clientName: 'Samira Belkadi', category: 'Aménagement paysager' },
+  { id: 'p-F-3B', site: 'africapool', num: 'F-3B', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'AZUL IZMAWN', clientName: 'Omar Benjelloun', category: 'Revêtements' },
+  { id: 'p-F-3C', site: 'africapool', num: 'F-3C', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-G-3A', site: 'africapool', num: 'G-3A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'disponible' },
+
+  // Row 2
+  { id: 'p-B-2A', site: 'africapool', num: 'B-2A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'reserve', companyName: 'Réservé B-2A' },
+  { id: 'p-C-2A', site: 'africapool', num: 'C-2A', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-C-2B', site: 'africapool', num: 'C-2B', hall: 'Hall 1', area: 54, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-D-2A', site: 'africapool', num: 'D-2A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'vendu', companyName: 'Frio Equipement', clientName: 'Youssef El Amrani', category: 'Froid industriel & Spas' },
+  { id: 'p-E-2A', site: 'africapool', num: 'E-2A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'vendu', companyName: 'Desjoyaux', clientName: 'Khadija Bennani', category: 'Piscines monoblocs' },
+  { id: 'p-F-2A', site: 'africapool', num: 'F-2A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'reserve', companyName: 'Réservé F-2A' },
+  { id: 'p-G-2A', site: 'africapool', num: 'G-2A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'disponible' },
+
+  // Row 1 (Bottom row)
+  { id: 'p-B-1A', site: 'africapool', num: 'B-1A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-C-1A', site: 'africapool', num: 'C-1A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'vendu', companyName: 'AIR EAU SOLUTION', clientName: 'Rachid Alami', category: 'Hydraulique' },
+  { id: 'p-D-1A', site: 'africapool', num: 'D-1A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'reserve', companyName: 'Réservé WG', clientName: 'Idriss Filali', category: 'Wellness solutions' },
+  { id: 'p-E-1A', site: 'africapool', num: 'E-1A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'vendu', companyName: 'MASSOR', clientName: 'Sarah Touzani', category: 'Piscines Naturelles' },
+  { id: 'p-F-1A', site: 'africapool', num: 'F-1A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'AAFM', clientName: 'Amine Guessous', category: 'Association piscine' },
+  { id: 'p-F-1B', site: 'africapool', num: 'F-1B', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'UPEK', clientName: 'Karim Slaoui', category: 'Matériaux de Construction' },
+  { id: 'p-G-1A', site: 'africapool', num: 'G-1A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'disponible' },
+
+  // Column H (yellow vertical stands on RHS)
+  { id: 'p-H-1A', site: 'africapool', num: 'H-1A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-H-1B', site: 'africapool', num: 'H-1B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-H-1C', site: 'africapool', num: 'H-1C', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-H-1D', site: 'africapool', num: 'H-1D', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-H-1E', site: 'africapool', num: 'H-1E', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-H-2A', site: 'africapool', num: 'H-2A', hall: 'Hall 1', area: 24, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-H-2B', site: 'africapool', num: 'H-2B', hall: 'Hall 1', area: 24, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-H-3A', site: 'africapool', num: 'H-3A', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-H-3C', site: 'africapool', num: 'H-3C', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-H-4A', site: 'africapool', num: 'H-4A', hall: 'Hall 1', area: 24, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-H-4B', site: 'africapool', num: 'H-4B', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-H-5A', site: 'africapool', num: 'H-5A', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' }
 ];
 
 export const initialTransactions: Transaction[] = [
