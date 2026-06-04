@@ -28,6 +28,7 @@ interface DashboardViewProps {
   stands: Stand[];
   setStands: React.Dispatch<React.SetStateAction<Stand[]>>;
   contacts: Contact[];
+  setContacts?: React.Dispatch<React.SetStateAction<Contact[]>>;
   transactions: Transaction[];
   tasks: Task[];
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
@@ -39,6 +40,7 @@ export default function DashboardView({
   stands,
   setStands,
   contacts,
+  setContacts,
   transactions,
   tasks,
   setTasks,
@@ -131,6 +133,72 @@ export default function DashboardView({
       }
       return s;
     }));
+
+    // Bidirectional sync: propagate changes to the CRM contact list
+    if (setContacts) {
+      if (editStatus === 'disponible') {
+        // Clear stand assignment on matching CRM contact
+        setContacts(prev => prev.map(c => {
+          if (c.site === selectedSite && c.standNumber?.toLowerCase() === selectedStand.num.toLowerCase()) {
+            return {
+              ...c,
+              standNumber: undefined
+            };
+          }
+          return c;
+        }));
+      } else {
+        // Update or insert a CRM contact
+        setContacts(prev => {
+          const hasStandMatch = prev.some(c => c.site === selectedSite && c.standNumber?.toLowerCase() === selectedStand.num.toLowerCase());
+          
+          if (hasStandMatch) {
+            return prev.map(c => {
+              if (c.site === selectedSite && c.standNumber?.toLowerCase() === selectedStand.num.toLowerCase()) {
+                return {
+                  ...c,
+                  company: editCompany.trim(),
+                  name: editClient.trim(),
+                  role: editStatus === 'vendu' || editStatus === 'sponsorise' ? 'client' : 'prospect'
+                };
+              }
+              return c;
+            });
+          } else {
+            // Check matching company name with no stand number assigned yet
+            const companyMatchIdx = prev.findIndex(c => c.site === selectedSite && c.company.toLowerCase() === editCompany.trim().toLowerCase());
+            if (companyMatchIdx !== -1) {
+              return prev.map((c, idx) => {
+                if (idx === companyMatchIdx) {
+                  return {
+                    ...c,
+                    name: editClient.trim(),
+                    role: editStatus === 'vendu' || editStatus === 'sponsorise' ? 'client' : 'prospect',
+                    standNumber: selectedStand.num
+                  };
+                }
+                return c;
+              });
+            } else {
+              // Create brand new Contact in the CRM
+              const newC: Contact = {
+                id: `c_gen_map_${Date.now()}`,
+                name: editClient.trim() || 'À désigner',
+                company: editCompany.trim() || 'Exposant',
+                email: `info@${editCompany.trim().toLowerCase().replace(/[^a-z0-9]/g, '') || 'exposant'}.ma`,
+                phone: '+212 660 000 000',
+                site: selectedSite,
+                role: editStatus === 'vendu' || editStatus === 'sponsorise' ? 'client' : 'prospect',
+                dateAdded: new Date().toISOString().split('T')[0],
+                notes: `Créé automatiquement lors de la réservation du stand ${selectedStand.num} sur le plan.`,
+                standNumber: selectedStand.num
+              };
+              return [newC, ...prev];
+            }
+          }
+        });
+      }
+    }
 
     triggerToast(`Stand ${selectedStand.num} mis à jour avec succès.`);
     setSelectedStand(null);

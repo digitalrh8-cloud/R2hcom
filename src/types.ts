@@ -26,6 +26,7 @@ export interface Contact {
   role: 'prospect' | 'client' | 'fournisseur' | 'partner';
   dateAdded: string;
   notes?: string;
+  standNumber?: string;
 }
 
 export type StandStatus = 'disponible' | 'reserve' | 'vendu' | 'sponsorise';

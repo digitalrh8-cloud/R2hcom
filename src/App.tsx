@@ -237,6 +237,7 @@ export default function App() {
             stands={stands}
             setStands={setStands}
             contacts={contacts}
+            setContacts={setContacts}
             transactions={transactions}
             tasks={tasks}
             setTasks={setTasks}
@@ -250,6 +251,7 @@ export default function App() {
             contacts={contacts}
             setContacts={setContacts}
             stands={stands}
+            setStands={setStands}
             transactions={transactions}
             setTransactions={setTransactions}
             setCurrentTab={setCurrentTab}
@@ -262,6 +264,7 @@ export default function App() {
             contacts={contacts}
             setContacts={setContacts}
             stands={stands}
+            setStands={setStands}
             transactions={transactions}
             setTransactions={setTransactions}
             setCurrentTab={setCurrentTab}

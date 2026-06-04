@@ -48,7 +48,8 @@ export const initialContacts: Contact[] = [
     site: 'gardenexpo',
     role: 'client',
     dateAdded: '2024-01-15',
-    notes: 'Exposant majeur du salon Garden Expo, spécialisé en solutions d\'irrigation intelligentes.'
+    notes: 'Exposant majeur du salon Garden Expo, spécialisé en solutions d\'irrigation intelligentes.',
+    standNumber: 'A17'
   },
   {
     id: 'c2',
@@ -59,7 +60,8 @@ export const initialContacts: Contact[] = [
     site: 'africapool',
     role: 'client',
     dateAdded: '2024-02-10',
-    notes: 'Fabricant de structures de piscines en composite. Intéressé par un grand stand double face.'
+    notes: 'Fabricant de structures de piscines en composite. Intéressé par un grand stand double face.',
+    standNumber: 'E-4A'
   },
   {
     id: 'c3',
@@ -70,7 +72,8 @@ export const initialContacts: Contact[] = [
     site: 'gardenexpo',
     role: 'client',
     dateAdded: '2024-01-20',
-    notes: 'Paysagiste réputé à Rabat. Veut un espace extérieur de pépinière.'
+    notes: 'Paysagiste réputé à Rabat. Veut un espace extérieur de pépinière.',
+    standNumber: 'A23'
   },
   {
     id: 'c4',
@@ -92,7 +95,8 @@ export const initialContacts: Contact[] = [
     site: 'gardenexpo',
     role: 'client',
     dateAdded: '2024-01-18',
-    notes: 'Mobilier de jardin premium en teck et résine tressée.'
+    notes: 'Mobilier de jardin premium en teck et résine tressée.',
+    standNumber: 'A18'
   },
   {
     id: 'c6',
@@ -103,7 +107,8 @@ export const initialContacts: Contact[] = [
     site: 'gardenexpo',
     role: 'prospect',
     dateAdded: '2024-04-12',
-    notes: 'Prospect chaud. A visité l\'édition précédente, hésite encore pour l\'emplacement.'
+    notes: 'Prospect chaud. A visité l\'édition précédente, hésite encore pour l\'emplacement.',
+    standNumber: 'A04'
   },
   {
     id: 'c7',
@@ -114,7 +119,8 @@ export const initialContacts: Contact[] = [
     site: 'gardenexpo',
     role: 'client',
     dateAdded: '2024-02-28',
-    notes: 'Exposant spécialisé dans le goutte-à-goutte connecté.'
+    notes: 'Exposant spécialisé dans le goutte-à-goutte connecté.',
+    standNumber: 'A24'
   },
   {
     id: 'c8',
@@ -126,6 +132,282 @@ export const initialContacts: Contact[] = [
     role: 'fournisseur',
     dateAdded: '2023-11-20',
     notes: 'Prestataire de structures métalliques auto-portées pour chapiteaux extérieurs.'
+  },
+  {
+    id: 'c-ap-1',
+    name: 'Kamal Sghiouar',
+    email: 'kamal@astralpool.ma',
+    phone: '+212 661 888 221',
+    company: 'AstralPool Maroc',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-03-10',
+    notes: 'Exposant de référence (Stand A-3F), équipementier piscine mondial.',
+    standNumber: 'A-3F'
+  },
+  {
+    id: 'c-ap-2',
+    name: 'Fouad Laroui',
+    email: 'fouad@bwt.ma',
+    phone: '+212 662 445 771',
+    company: 'BWT-Barco',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-03-12',
+    notes: 'Leader du traitement de l’eau (Stand D-6C).',
+    standNumber: 'D-6C'
+  },
+  {
+    id: 'c-ap-3',
+    name: 'Adil Bennis',
+    email: 'bennis@lgthermique.ma',
+    phone: '+212 663 555 888',
+    company: 'O/D L.G THERMIQUE',
+    site: 'africapool',
+    role: 'prospect',
+    dateAdded: '2024-05-02',
+    notes: 'Dossier d’option de réservation pour le stand D-5B (Génie climatique).',
+    standNumber: 'D-5B'
+  },
+  {
+    id: 'c-ap-4',
+    name: 'Yassir Ghamri',
+    email: 'ghamri@alteza.com',
+    phone: '+212 660 112 233',
+    company: 'ALTEZA',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-01-20',
+    notes: 'Spécialiste pergolas bioccimatiques et pool houses (Stand E-5A).',
+    standNumber: 'E-5A'
+  },
+  {
+    id: 'c-ap-5',
+    name: 'Driss Tazi',
+    email: 'driss@topromaroc.com',
+    phone: '+212 664 778 899',
+    company: 'Topromaroc',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-02-15',
+    notes: 'Équipements et barrières de sécurité de piscine (Stand F-5A).',
+    standNumber: 'F-5A'
+  },
+  {
+    id: 'c-ap-6',
+    name: 'Hassan Filali',
+    email: 'filali@fluidramatic.ma',
+    phone: '+212 665 999 111',
+    company: 'Fluidra Maroc',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-02-11',
+    notes: 'Fournisseur majeur de filtration et pompes (Stand G-5A).',
+    standNumber: 'G-5A'
+  },
+  {
+    id: 'c-ap-7',
+    name: 'Amine El Alami',
+    email: 'commercial@cci-maroc.com',
+    phone: '+212 522 344 556',
+    company: 'CCI',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-03-01',
+    notes: 'Climatisation et chauffage de grands bassins de natation (Stand D-4A).',
+    standNumber: 'D-4A'
+  },
+  {
+    id: 'c-ap-8',
+    name: 'Sami Naciri',
+    email: 'sami@lgthermique.ma',
+    phone: '+212 661 445 992',
+    company: 'L.G. THERMIQUE',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-03-04',
+    notes: 'Pompes à chaleur connectées d\'extérieur (Stand D-4C).',
+    standNumber: 'D-4C'
+  },
+  {
+    id: 'c-ap-10',
+    name: 'Mehdi Naciri',
+    email: 'mehdi@atlantapompes.ma',
+    phone: '+212 660 334 455',
+    company: 'ATLANTA POMPES',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-02-28',
+    notes: 'Pompes de circulation et moteurs de filtration (Stand F-4A).',
+    standNumber: 'F-4A'
+  },
+  {
+    id: 'c-ap-11',
+    name: 'Karim Slaoui',
+    email: 'karim@paledo.ma',
+    phone: '+212 663 111 222',
+    company: 'PALEDO',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-01-20',
+    notes: 'Constructeur de piscines écologiques et bassins préfabriqués (Stand B-3A).',
+    standNumber: 'B-3A'
+  },
+  {
+    id: 'c-ap-12',
+    name: 'Said Bennani',
+    email: 'said@poolspa.ma',
+    phone: '+212 664 321 098',
+    company: 'POOLSPA',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-01-25',
+    notes: 'Équipementier bien-être, spas et balnéothérapie (Stand B-3B).',
+    standNumber: 'B-3B'
+  },
+  {
+    id: 'c-ap-13',
+    name: 'Nabil Chraibi',
+    email: 'nabil@chraibi-holding.ma',
+    phone: '+212 661 112 233',
+    company: 'Option Stand C-4A',
+    site: 'africapool',
+    role: 'prospect',
+    dateAdded: '2024-05-10',
+    notes: 'Option posée pour le stand C-4A (spa résidentiel).',
+    standNumber: 'C-4A'
+  },
+  {
+    id: 'c-ap-14',
+    name: 'Mehdi Rahho',
+    email: 'rahho@gamis-bienetre.ma',
+    phone: '+212 662 555 666',
+    company: 'Gamis',
+    site: 'africapool',
+    role: 'prospect',
+    dateAdded: '2024-05-12',
+    notes: 'Option temporaire sur l’îlot central D-3A (Traitement de l’eau).',
+    standNumber: 'D-3A'
+  },
+  {
+    id: 'c-ap-15',
+    name: 'Yassine Alami',
+    email: 'yassine@versosignature.ma',
+    phone: '+212 661 990 011',
+    company: 'VERSO SIGNATURE',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-02-18',
+    notes: 'Architecte d’extérieur prestige (Stand E-3A).',
+    standNumber: 'E-3A'
+  },
+  {
+    id: 'c-ap-16',
+    name: 'Anas Ouazzani',
+    email: 'anas@watertech.ma',
+    phone: '+212 663 888 777',
+    company: 'Water Tech',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-02-05',
+    notes: 'Accessoires de filtration et douches d’extérieur (Stand E-3B).',
+    standNumber: 'E-3B'
+  },
+  {
+    id: 'c-ap-17',
+    name: 'Samira Belkadi',
+    email: 's.belkadi@zenpiscine.ma',
+    phone: '+212 660 771 122',
+    company: 'Zen Piscine',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-02-26',
+    notes: 'Aménagement de bords de bassins, bois composite, transats (Stand F-3A).',
+    standNumber: 'F-3A'
+  },
+  {
+    id: 'c-ap-18',
+    name: 'Omar Benjelloun',
+    email: 'omar@azul-izmawn.ma',
+    phone: '+212 665 444 333',
+    company: 'AZUL IZMAWN',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-03-02',
+    notes: 'Importateur d’émaux et pierres naturelles de Bali pour piscines (Stand F-3B).',
+    standNumber: 'F-3B'
+  },
+  {
+    id: 'c-ap-19',
+    name: 'Youssef El Amrani',
+    email: 'youssef@frio-equipement.ma',
+    phone: '+212 661 234 567',
+    company: 'Frio Equipement',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-01-15',
+    notes: 'Froid industriel et spas de massage (Stand D-2A).',
+    standNumber: 'D-2A'
+  },
+  {
+    id: 'c-ap-20',
+    name: 'Rachid Alami',
+    email: 'rachid@aireausolution.ma',
+    phone: '+212 664 555 111',
+    company: 'AIR EAU SOLUTION',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-02-20',
+    notes: 'Solutions hydrauliques et pompes immergées (Stand C-1A).',
+    standNumber: 'C-1A'
+  },
+  {
+    id: 'c-ap-21',
+    name: 'Idriss Filali',
+    email: 'filali@wellnessgroup.ma',
+    phone: '+212 665 112 288',
+    company: 'Option Wellness Group',
+    site: 'africapool',
+    role: 'prospect',
+    dateAdded: '2024-05-14',
+    notes: 'Option d’emplacement réservé WG sur le stand D-1A.',
+    standNumber: 'D-1A'
+  },
+  {
+    id: 'c-ap-22',
+    name: 'Sarah Touzani',
+    email: 's.touzani@massor.ma',
+    phone: '+212 665 222 333',
+    company: 'MASSOR',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-02-28',
+    notes: 'Piscines naturelles écologiques, revêtements de prestige (Stand E-1A).',
+    standNumber: 'E-1A'
+  },
+  {
+    id: 'c-ap-23',
+    name: 'Amine Guessous',
+    email: 'amine@aafm.ma',
+    phone: '+212 664 444 555',
+    company: 'AAFM',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-01-18',
+    notes: 'Stand institutionnel de l\'Association Piscine (Stand F-1A).',
+    standNumber: 'F-1A'
+  },
+  {
+    id: 'c-ap-24',
+    name: 'Karim Slaoui',
+    email: 'karim@upek.ma',
+    phone: '+212 663 111 222',
+    company: 'UPEK',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2024-01-20',
+    notes: 'Distribution de margelles, pierres de parement (Stand F-1B).',
+    standNumber: 'F-1B'
   }
 ];
 

@@ -34,6 +34,7 @@ interface CrmViewProps {
   contacts: Contact[];
   setContacts: React.Dispatch<React.SetStateAction<Contact[]>>;
   stands?: Stand[];
+  setStands?: React.Dispatch<React.SetStateAction<Stand[]>>;
   transactions?: Transaction[];
   setTransactions?: React.Dispatch<React.SetStateAction<Transaction[]>>;
   setCurrentTab?: (tab: string) => void;
@@ -44,6 +45,7 @@ export default function CrmView({
   contacts, 
   setContacts,
   stands = [],
+  setStands,
   transactions = [],
   setTransactions,
   setCurrentTab
@@ -61,6 +63,7 @@ export default function CrmView({
   const [newSite, setNewSite] = useState<SiteId>(selectedSite === 'r2h' ? 'gardenexpo' : selectedSite);
   const [newRole, setNewRole] = useState<'prospect' | 'client'>('prospect');
   const [newNotes, setNewNotes] = useState('');
+  const [newStandNumber, setNewStandNumber] = useState('');
 
   // Toast indicator
   const [toastMessage, setToastMessage] = useState<React.ReactNode | null>(null);
@@ -212,6 +215,8 @@ export default function CrmView({
     e.preventDefault();
     if (!newName || !newCompany || !newEmail) return;
 
+    const formattedStandNumber = newStandNumber.trim();
+
     const newContact: Contact = {
       id: `c_gen_${Date.now()}`,
       name: newName,
@@ -221,10 +226,26 @@ export default function CrmView({
       site: newSite,
       role: newRole,
       dateAdded: new Date().toISOString().split('T')[0],
-      notes: newNotes
+      notes: newNotes,
+      standNumber: formattedStandNumber || undefined
     };
 
     setContacts(prev => [newContact, ...prev]);
+
+    // Synchronize to the floorplan stands
+    if (setStands && formattedStandNumber) {
+      setStands(prev => prev.map(s => {
+        if (s.site === newSite && s.num.toLowerCase() === formattedStandNumber.toLowerCase()) {
+          return {
+            ...s,
+            status: newRole === 'client' ? 'vendu' : 'reserve',
+            companyName: newCompany,
+            clientName: newName
+          };
+        }
+        return s;
+      }));
+    }
 
     // Clear form
     setNewName('');
@@ -232,8 +253,13 @@ export default function CrmView({
     setNewPhone('');
     setNewCompany('');
     setNewNotes('');
+    setNewStandNumber('');
     setShowAddForm(false);
-    triggerToast(`Prospect ${newName} ajouté au CRM.`);
+    triggerToast(
+      newRole === 'client' 
+        ? `Exposant ${newName} ajouté au CRM avec succès.` 
+        : `Prospect ${newName} ajouté au CRM (en attente).`
+    );
   };
 
   // Convert prospect to signed exhibitor / client
@@ -250,6 +276,22 @@ export default function CrmView({
       setSelectedContact(prev => prev ? { ...prev, role: 'client' } : null);
     }
 
+    // Synchronize to the floorplan stands
+    const targetContact = contacts.find(c => c.id === contactId);
+    if (setStands && targetContact && targetContact.standNumber) {
+      setStands(prev => prev.map(s => {
+        if (s.site === targetContact.site && s.num.toLowerCase() === targetContact.standNumber?.trim().toLowerCase()) {
+          return {
+            ...s,
+            status: 'vendu',
+            companyName: targetContact.company,
+            clientName: targetContact.name
+          };
+        }
+        return s;
+      }));
+    }
+
     triggerToast("Prospect promu au statut d'exposant officiel !");
   };
 
@@ -259,6 +301,24 @@ export default function CrmView({
     if (selectedContact?.id === contactId) {
       setSelectedContact(null);
     }
+
+    // Synchronize to the floorplan stands: reset stand to available
+    const targetContact = contacts.find(c => c.id === contactId);
+    if (setStands && targetContact && targetContact.standNumber) {
+      setStands(prev => prev.map(s => {
+        if (s.site === targetContact.site && s.num.toLowerCase() === targetContact.standNumber?.trim().toLowerCase()) {
+          return {
+            ...s,
+            status: 'disponible',
+            companyName: '',
+            clientName: '',
+            category: ''
+          };
+        }
+        return s;
+      }));
+    }
+
     triggerToast(`Le contact ${name} a été supprimé avec succès.`);
   };
 
@@ -365,9 +425,17 @@ export default function CrmView({
                         onClick={() => setSelectedContact(contact)}
                       >
                         <td className="px-5 py-3.5">
-                          <div>
-                            <p className="font-bold text-[#2D2D2D]">{contact.company}</p>
-                            <p className="text-[10px] text-[#7A7667] mt-0.5">Ajouté: {contact.dateAdded}</p>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="font-bold text-[#2D2D2D]">{contact.company}</p>
+                              {contact.standNumber && (
+                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold font-mono text-[#A68A64] bg-[#A68A64]/10 px-1.5 py-0.5 rounded-sm">
+                                  <MapPin className="w-2.5 h-2.5" />
+                                  <span>{contact.standNumber}</span>
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-[#7A7667]">Ajouté: {contact.dateAdded}</p>
                           </div>
                         </td>
                         <td className="px-5 py-3.5 font-bold text-[#2D2D2D]">{contact.name}</td>
@@ -454,13 +522,12 @@ export default function CrmView({
 
         {/* Detail Panel of Selected Contact / Adding prospect menu */}
         <div className="space-y-6">
-
           {/* Dynamic Registration form in sidebar mode */}
           {showAddForm && (
             <div className="bg-white p-6 rounded-3xl border border-[#E8E6DE] shadow-md animate-in slide-in-from-right-5 duration-200">
               <h3 className="font-serif font-black text-xs uppercase tracking-wider text-[#A68A64] mb-4 flex items-center gap-2">
                 <UserSquare2 className="w-4 h-4 text-[#7E8F7A]" />
-                <span>Nouveau Prospect</span>
+                <span>Nouveau Contact (CRM)</span>
               </h3>
 
               <form onSubmit={handleAddNewContact} className="space-y-3.5 text-xs">
@@ -523,12 +590,37 @@ export default function CrmView({
                   </div>
                 </div>
 
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Statut CRM</label>
+                    <select
+                      value={newRole}
+                      onChange={(e) => setNewRole(e.target.value as 'prospect' | 'client')}
+                      className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-[11px] font-semibold"
+                    >
+                      <option value="prospect">Prospect (En attente)</option>
+                      <option value="client">Exposant (Officiel)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">N° Stand (dans le plan)</label>
+                    <input
+                      type="text"
+                      value={newStandNumber}
+                      onChange={(e) => setNewStandNumber(e.target.value)}
+                      placeholder="Ex: A01, B12..."
+                      className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D]"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Notes initiales</label>
+                  <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Notes de suivi / Besoins</label>
                   <textarea
                     value={newNotes}
                     onChange={(e) => setNewNotes(e.target.value)}
-                    placeholder="Besoins exprimés par le client..."
+                    placeholder="Besoins exprimés, détails matériels, etc..."
                     rows={3}
                     className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] resize-none"
                   />
@@ -599,6 +691,16 @@ export default function CrmView({
                     <div>
                       <p className="font-bold text-[#2D2D2D]">{selectedContact.site === 'africapool' ? 'africapoolspa.com' : 'gardenexpo.ma'}</p>
                       <p className="text-[9px] text-[#7A7667]">Salon référencé</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    <MapPin className="w-4 h-4 text-[#A68A64]" />
+                    <div>
+                      <p className="font-mono font-bold text-[#A68A64] bg-[#A68A64]/10 px-2 py-0.5 rounded-md max-w-max">
+                        {selectedContact.standNumber || "Non spécifié"}
+                      </p>
+                      <p className="text-[9px] text-[#7A7667]">N° de stand (dans le plan)</p>
                     </div>
                   </div>
                 </div>
