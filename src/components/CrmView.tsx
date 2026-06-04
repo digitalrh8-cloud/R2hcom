@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   UserPlus, 
@@ -24,7 +24,8 @@ import {
   Receipt,
   X,
   Plus,
-  Trash2
+  Trash2,
+  RefreshCw
 } from 'lucide-react';
 import { SiteId, Contact, Stand, Transaction, TransactionItem } from '../types';
 import { initialSites } from '../initialData';
@@ -65,8 +66,130 @@ export default function CrmView({
   const [newNotes, setNewNotes] = useState('');
   const [newStandNumber, setNewStandNumber] = useState('');
 
+  // Calculate sorted free stands for the selected site
+  const freeStands = stands
+    .filter(s => s.site === newSite && s.status === 'disponible')
+    .sort((a, b) => a.num.localeCompare(b.num, undefined, { numeric: true, sensitivity: 'base' }));
+
   // Toast indicator
   const [toastMessage, setToastMessage] = useState<React.ReactNode | null>(null);
+
+  // Synchronise sold and reserved stands to CRM contacts dynamically
+  const handleSyncStandsToCrm = (isSilent = false) => {
+    let countAdded = 0;
+    let countUpdated = 0;
+    
+    setContacts(prev => {
+      const updatedContacts = [...prev];
+      
+      stands.forEach(stand => {
+        // We look at rented ('vendu') and optioned ('reserve') stands
+        if (stand.status === 'vendu' || stand.status === 'reserve' || stand.status === 'sponsorise') {
+          // Check if there is already a contact assigned to this specific stand (case insensitive)
+          const contactWithStandIdx = updatedContacts.findIndex(c => 
+            c.site === stand.site && 
+            c.standNumber?.trim().toLowerCase() === stand.num.trim().toLowerCase()
+          );
+          
+          // Or find a contact matching the identical company name in that site that doesn't have a standNumber yet
+          const contactWithCompanyIdx = updatedContacts.findIndex(c => 
+            c.site === stand.site && 
+            c.company.trim().toLowerCase() === (stand.companyName || '').trim().toLowerCase()
+          );
+          
+          if (contactWithStandIdx !== -1) {
+            // Found a matching contact for this stand. Let's make sure its role and name are synchronized!
+            const match = updatedContacts[contactWithStandIdx];
+            let changed = false;
+            
+            if (stand.companyName && match.company !== stand.companyName) {
+              match.company = stand.companyName;
+              changed = true;
+            }
+            if (stand.clientName && match.name !== stand.clientName) {
+              match.name = stand.clientName;
+              changed = true;
+            }
+            const expectedRole = stand.status === 'vendu' || stand.status === 'sponsorise' ? 'client' : 'prospect';
+            if (match.role !== expectedRole) {
+              match.role = expectedRole;
+              changed = true;
+            }
+            
+            if (changed) {
+              countUpdated++;
+            }
+          } else if (contactWithCompanyIdx !== -1) {
+            // Found matching company name in GRC without stand number. Let's assign the stand number to link them.
+            const match = updatedContacts[contactWithCompanyIdx];
+            match.standNumber = stand.num;
+            const expectedRole = stand.status === 'vendu' || stand.status === 'sponsorise' ? 'client' : 'prospect';
+            if (match.role !== expectedRole) {
+              match.role = expectedRole;
+            }
+            if (stand.clientName && stand.clientName !== 'À désigner' && match.name !== stand.clientName) {
+              match.name = stand.clientName;
+            }
+            countUpdated++;
+          } else {
+            // NO MATCH FOUND - Create a synchronized contact card in GRC
+            const companyName = stand.companyName?.trim() || `Option Stand ${stand.num}`;
+            const clientName = stand.clientName?.trim() || `Interlocuteur ${stand.num}`;
+            
+            // Format temporary email as requested by user
+            const normalizedCompany = companyName
+              .toLowerCase()
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "") // remove accents
+              .replace(/[^a-z0-9]/g, ''); // alphanumeric slug
+            
+            const tempEmail = `contact@${normalizedCompany || 'exposant'}-${stand.num.toLowerCase().replace(/[^a-z0-9]/g, '')}.ma`;
+            
+            const newContact: Contact = {
+              id: `c_synced_${stand.site}_${stand.num}_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+              name: clientName,
+              company: companyName,
+              email: tempEmail,
+              phone: '+212 660 000 000',
+              site: stand.site,
+              role: stand.status === 'vendu' || stand.status === 'sponsorise' ? 'client' : 'prospect',
+              dateAdded: new Date().toISOString().split('T')[0],
+              notes: `Synchronisé automatiquement depuis le plan (Stand ${stand.num}, ${stand.hall}).`,
+              standNumber: stand.num
+            };
+            
+            updatedContacts.push(newContact);
+            countAdded++;
+          }
+        }
+      });
+      
+      return updatedContacts;
+    });
+
+    if (!isSilent) {
+      if (countAdded > 0 || countUpdated > 0) {
+        triggerToast(
+          <span>
+            <strong>Synchro réussie !</strong> {countAdded} entreprises importées dans le CRM, {countUpdated} coordonnées ré-associées de manière transparente.
+          </span>
+        );
+      } else {
+        triggerToast("Vos coordonnées CRM sont déjà à jour avec le plan.");
+      }
+    }
+  };
+
+  // Run automatically on load to ensure everything from Africa Pool and Garden Expo plans matches the CRM
+  useEffect(() => {
+    // Only run this when stands have loaded and we have contacts
+    if (stands && stands.length > 0 && contacts && contacts.length > 0) {
+      const timer = setTimeout(() => {
+        handleSyncStandsToCrm(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [stands.length]);
 
   // Invoice Generator State
   const [invoiceModalContact, setInvoiceModalContact] = useState<Contact | null>(null);
@@ -348,13 +471,24 @@ export default function CrmView({
           </p>
         </div>
 
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="px-4.5 py-2.5 bg-[#2C3E36] hover:bg-[#202E28] text-white text-xs font-semibold rounded-xl shadow-xs font-sans flex items-center gap-2 cursor-pointer transition-all shrink-0"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span>Inscrire Prospect</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => handleSyncStandsToCrm(false)}
+            className="px-4 py-2.5 bg-[#A68A64]/10 hover:bg-[#A68A64]/20 border border-[#A68A64]/30 text-[#2D2D2D] text-xs font-bold rounded-xl shadow-xs font-sans flex items-center gap-2 cursor-pointer transition-all"
+            title="Synchroniser automatiquement avec les réservations de stands du plan"
+          >
+            <RefreshCw className="w-4 h-4 text-[#A68A64]" />
+            <span>Synchroniser Plan</span>
+          </button>
+
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="px-4.5 py-2.5 bg-[#2C3E36] hover:bg-[#202E28] text-white text-xs font-semibold rounded-xl shadow-xs font-sans flex items-center gap-2 cursor-pointer transition-all shrink-0"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Inscrire Prospect</span>
+          </button>
+        </div>
       </div>
 
       {/* Grid containing Contact List and Contact profile inspection Card */}
@@ -605,13 +739,20 @@ export default function CrmView({
 
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">N° Stand (dans le plan)</label>
-                    <input
-                      type="text"
+                    <select
                       value={newStandNumber}
                       onChange={(e) => setNewStandNumber(e.target.value)}
-                      placeholder="Ex: A01, B12..."
-                      className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D]"
-                    />
+                      className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-[11px] font-semibold"
+                    >
+                      <option value="">
+                        {freeStands.length > 0 ? "-- Sélectionner un stand libre --" : "-- Aucun stand disponible --"}
+                      </option>
+                      {freeStands.map(s => (
+                        <option key={s.id} value={s.num}>
+                          {s.num} ({s.area}m²)
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
