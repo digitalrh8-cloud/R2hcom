@@ -128,6 +128,13 @@ export async function getPgPool(): Promise<pg.Pool | null> {
         idleTimeoutMillis: 30000,
         max: 10
       });
+
+      // Register error handler to catch idle client connection terminations gracefully
+      pgPool.on('error', (err) => {
+        console.error('[Postgres Service] Unexpected error on idle client:', err);
+        pgPool = null;
+        schemaInitialized = false;
+      });
       
       // Ping check
       const client = await pgPool.connect();
@@ -146,16 +153,56 @@ export async function getPgPool(): Promise<pg.Pool | null> {
 }
 
 /**
+ * Executes a query with recursive connection error retry logic.
+ * If a fatal connection termination is detected, the old pool is destroyed,
+ * a fresh pool is created, and the query is re-evaluated.
+ */
+export async function executeQuery(queryText: string, params?: any[], retryCount = 2): Promise<any> {
+  const pool = await getPgPool();
+  if (!pool) {
+    throw new Error('Database pool is offline.');
+  }
+  try {
+    return await pool.query(queryText, params);
+  } catch (err: any) {
+    const isConnErr = err.message && (
+      err.message.includes('terminated unexpectedly') ||
+      err.message.includes('closed') ||
+      err.message.includes('socket') ||
+      err.message.includes('connection') ||
+      err.message.includes('admin') ||
+      err.message.includes('SSL') ||
+      err.code === 'ECONNRESET' ||
+      err.code === '57P01' ||
+      err.message.includes('bad connection')
+    );
+    if (isConnErr && retryCount > 0) {
+      console.warn(`[Postgres Service] Database connection error caught ("${err.message}"). Re-establishing pool and retrying query...`);
+      if (pgPool) {
+        try {
+          await pgPool.end();
+        } catch (e) {}
+        pgPool = null;
+      }
+      schemaInitialized = false;
+      return executeQuery(queryText, params, retryCount - 1);
+    }
+    throw err;
+  }
+}
+
+/**
  * 2. Database schemas setup: Create relational tables if not exist
  */
 export async function initializeDbSchema(): Promise<boolean> {
   if (schemaInitialized) return true;
 
-  const pool = await getPgPool();
-  if (!pool) {
+  const rawPool = await getPgPool();
+  if (!rawPool) {
     console.warn('[Postgres Service] Database pool is offline - skipping table initialization.');
     return false;
   }
+  const pool = { query: (text: string, params?: any[]) => executeQuery(text, params) };
 
   try {
     console.log('[Postgres Service] Creating core relational tables...');
@@ -203,7 +250,7 @@ export async function initializeDbSchema(): Promise<boolean> {
       );
     `);
 
-    await seedCollectionsIfEmpty(pool);
+    await seedCollectionsIfEmpty(rawPool);
     schemaInitialized = true;
     dbError = null;
     return true;
@@ -218,11 +265,12 @@ export async function initializeDbSchema(): Promise<boolean> {
  * Reset and force re-create database schemas/baseline records
  */
 export async function resetDbSchema(force = false): Promise<boolean> {
-  const pool = await getPgPool();
-  if (!pool) {
+  const rawPool = await getPgPool();
+  if (!rawPool) {
     console.warn('[Postgres Service] Connection pool offline - cannot reset schemas.');
     return false;
   }
+  const pool = { query: (text: string, params?: any[]) => executeQuery(text, params) };
 
   try {
     if (force) {
@@ -243,7 +291,8 @@ export async function resetDbSchema(force = false): Promise<boolean> {
 /**
  * Seeds static baseline datasets when tables are empty
  */
-async function seedCollectionsIfEmpty(pool: pg.Pool) {
+async function seedCollectionsIfEmpty(rawPool: pg.Pool) {
+  const pool = { query: (text: string, params?: any[]) => executeQuery(text, params) };
   try {
     // 1. Stands
     const standsCountRes = await pool.query('SELECT COUNT(*) FROM stands');
@@ -314,11 +363,12 @@ async function seedCollectionsIfEmpty(pool: pg.Pool) {
  * 3. Primary CRUD service layer: Load User Data from Postgresql
  */
 export async function loadUserDataFromPostgres() {
-  const pool = await getPgPool();
-  if (!pool) {
+  const rawPool = await getPgPool();
+  if (!rawPool) {
     console.warn('[Postgres Service] Database offline, falling back to static sandbox data.');
     return null;
   }
+  const pool = { query: (text: string, params?: any[]) => executeQuery(text, params) };
 
   try {
     await initializeDbSchema();
@@ -332,11 +382,11 @@ export async function loadUserDataFromPostgres() {
     ]);
 
     return {
-      stands: standsRes.rows.map(row => row.data) as Stand[],
-      contacts: contactsRes.rows.map(row => row.data) as Contact[],
-      transactions: transactionsRes.rows.map(row => row.data) as Transaction[],
-      campaigns: campaignsRes.rows.map(row => row.data) as Campaign[],
-      tasks: tasksRes.rows.map(row => row.data) as Task[]
+      stands: standsRes.rows.map((row: any) => row.data) as Stand[],
+      contacts: contactsRes.rows.map((row: any) => row.data) as Contact[],
+      transactions: transactionsRes.rows.map((row: any) => row.data) as Transaction[],
+      campaigns: campaignsRes.rows.map((row: any) => row.data) as Campaign[],
+      tasks: tasksRes.rows.map((row: any) => row.data) as Task[]
     };
   } catch (err: any) {
     console.error('[Postgres Service] Load failed:', err);
@@ -355,8 +405,9 @@ export async function saveUserDataToPostgres(data: {
   campaigns: Campaign[];
   tasks: Task[];
 }) {
-  const pool = await getPgPool();
-  if (!pool) return false;
+  const rawPool = await getPgPool();
+  if (!rawPool) return false;
+  const pool = { query: (text: string, params?: any[]) => executeQuery(text, params) };
 
   try {
     await initializeDbSchema();
@@ -424,8 +475,9 @@ export async function saveUserDataToPostgres(data: {
  * Get a specific configuration value from the railway_config table
  */
 export async function getRailwayConfigValue(key: string): Promise<string> {
-  const pool = await getPgPool();
-  if (!pool) return '';
+  const rawPool = await getPgPool();
+  if (!rawPool) return '';
+  const pool = { query: (text: string, params?: any[]) => executeQuery(text, params) };
   try {
     const res = await pool.query('SELECT value FROM railway_config WHERE key = $1', [key]);
     if (res.rows.length > 0) {
@@ -441,8 +493,9 @@ export async function getRailwayConfigValue(key: string): Promise<string> {
  * Save / Update a specific configuration value in the railway_config table
  */
 export async function saveRailwayConfigValue(key: string, value: string): Promise<boolean> {
-  const pool = await getPgPool();
-  if (!pool) return false;
+  const rawPool = await getPgPool();
+  if (!rawPool) return false;
+  const pool = { query: (text: string, params?: any[]) => executeQuery(text, params) };
   try {
     await pool.query(
       'INSERT INTO railway_config (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
