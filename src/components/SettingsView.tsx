@@ -14,9 +14,16 @@ import {
   Trash2, 
   DollarSign,
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  Shield,
+  UserPlus,
+  Users,
+  Lock,
+  Check,
+  X,
+  AlertTriangle
 } from 'lucide-react';
-import { SiteId } from '../types';
+import { SiteId, UserProfile, UserPermissions } from '../types';
 import { initialSites } from '../initialData';
 
 interface SettingsViewProps {
@@ -48,6 +55,188 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
   const [railwayStatus, setRailwayStatus] = useState<'connected' | 'disconnected'>('connected');
   const [savingDomain, setSavingDomain] = useState(false);
   const [domainMessage, setDomainMessage] = useState<{ type: 'success' | 'err' | null; text: string | null }>({ type: null, text: null });
+
+  // User profile management states
+  const [usersList, setUsersList] = useState<UserProfile[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [syncingUsers, setSyncingUsers] = useState(false);
+  const [userError, setUserError] = useState<string | null>(null);
+
+  // Form states for new user
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'admin' | 'commercial' | 'supervisor' | 'financial'>('commercial');
+  const [newUserTitle, setNewUserTitle] = useState('');
+  const [newUserPerms, setNewUserPerms] = useState<UserPermissions>({
+    canViewDashboard: true,
+    canManageLeads: true,
+    canViewDevis: false,
+    canViewFactures: false,
+    canViewMarketing: true,
+    canManageStands: true,
+    canViewSettings: false
+  });
+
+  // Load user profiles from API
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const res = await fetch('/api/users');
+      const data = await res.json();
+      if (data.success && data.users) {
+        setUsersList(data.users);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setUserError('Impossible de charger la liste des utilisateurs.');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const saveUsersToDb = async (updatedList: UserProfile[]) => {
+    setSyncingUsers(true);
+    setUserError(null);
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ users: updatedList })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsersList(data.users || updatedList);
+      } else {
+        setUserError(data.error || "Une erreur s'est produite lors de la synchronisation des profils.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setUserError("Erreur réseau: impossible de synchroniser la liste sur le serveur.");
+    } finally {
+      setSyncingUsers(false);
+    }
+  };
+
+  const handleRoleChangeForNewUser = (role: 'admin' | 'commercial' | 'supervisor' | 'financial') => {
+    setNewUserRole(role);
+    if (role === 'admin') {
+      setNewUserPerms({
+        canViewDashboard: true,
+        canManageLeads: true,
+        canViewDevis: true,
+        canViewFactures: true,
+        canViewMarketing: true,
+        canManageStands: true,
+        canViewSettings: true
+      });
+      setNewUserTitle('Administrateur');
+    } else if (role === 'commercial') {
+      setNewUserPerms({
+        canViewDashboard: true,
+        canManageLeads: true,
+        canViewDevis: false,
+        canViewFactures: false,
+        canViewMarketing: true,
+        canManageStands: true,
+        canViewSettings: false
+      });
+      setNewUserTitle('Commercial de terrain');
+    } else if (role === 'financial') {
+      setNewUserPerms({
+        canViewDashboard: true,
+        canManageLeads: false,
+        canViewDevis: true,
+        canViewFactures: true,
+        canViewMarketing: false,
+        canManageStands: false,
+        canViewSettings: false
+      });
+      setNewUserTitle('Responsable Financier');
+    } else if (role === 'supervisor') {
+      setNewUserPerms({
+        canViewDashboard: true,
+        canManageLeads: true,
+        canViewDevis: true,
+        canViewFactures: false,
+        canViewMarketing: true,
+        canManageStands: true,
+        canViewSettings: false
+      });
+      setNewUserTitle('Superviseur Salons');
+    }
+  };
+
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUserName.trim() || !newUserEmail.trim() || !newUserPassword.trim()) {
+      setUserError("Veuillez remplir tous les champs obligatoires (Nom, Identifiant/E-mail, Mot de passe).");
+      return;
+    }
+
+    const emailExists = usersList.some(u => u.email.toLowerCase() === newUserEmail.trim().toLowerCase());
+    if (emailExists) {
+      setUserError(`L'adresse email ou l'identifiant '${newUserEmail}' est déjà attribué.`);
+      return;
+    }
+
+    const newUser: UserProfile = {
+      id: 'u_' + Date.now(),
+      name: newUserName.trim(),
+      email: newUserEmail.trim().toLowerCase(),
+      password: newUserPassword.trim(),
+      role: newUserRole,
+      title: newUserTitle.trim() || (newUserRole === 'admin' ? 'Administrateur' : 'Commercial'),
+      avatarUrl: `https://images.unsplash.com/photo-${['1535713875002-d1d0cf377fde', '1494790108377-be9c29b29330', '1599566150163-29194dcaad36', '1580489944761-15a19d654956', '1507003211169-0a1dd7228f2d'][Math.floor(Math.random() * 5)]}?auto=format&fit=crop&q=80&w=200`,
+      permissions: newUserPerms
+    };
+
+    const updated = [...usersList, newUser];
+    await saveUsersToDb(updated);
+
+    // Reset Form
+    setNewUserName('');
+    setNewUserEmail('');
+    setNewUserPassword('');
+    setNewUserTitle('');
+    setShowAddForm(false);
+  };
+
+  const handleTogglePermission = async (userId: string, permissionKey: keyof UserPermissions) => {
+    const updated = usersList.map(u => {
+      if (u.id === userId) {
+        return {
+          ...u,
+          permissions: {
+            ...u.permissions,
+            [permissionKey]: !u.permissions[permissionKey]
+          }
+        };
+      }
+      return u;
+    });
+    await saveUsersToDb(updated);
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    const targetUser = usersList.find(u => u.id === userId);
+    if (!targetUser) return;
+
+    if (targetUser.email === 'admin' || (targetUser.role === 'admin' && usersList.filter(u => u.role === 'admin').length === 1)) {
+      alert("Sécurité : Impossible de supprimer l'administrateur principal pour éviter tout verrouillage d'accès.");
+      return;
+    }
+
+    if (confirm(`Êtes-vous sûr de vouloir supprimer définitivement le profil de ${targetUser.name} (${targetUser.email}) ?\nIl ne pourra plus se connecter au back-office.`)) {
+      const updated = usersList.filter(u => u.id !== userId);
+      await saveUsersToDb(updated);
+    }
+  };
 
   // Load configured Railway Domain on component mount
   React.useEffect(() => {
@@ -464,6 +653,378 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
           </div>
         </div>
 
+      </div>
+
+      {/* Dynamic Profile and Roles Permissions Administration Area */}
+      <div id="users-administration-panel" className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-slate-800 font-display flex items-center gap-2">
+              <Shield className="w-5 h-5 text-[#A68A64]" />
+              <span>Gestion des Profils, Rôles & Accès Back-Office</span>
+            </h3>
+            <p className="text-[11px] text-slate-500">
+              Créez des profils, assignez-leur des rôles (Admin, Commercial, Superviseur, Finance) et configurez leurs habilitations d'accès en temps réel.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {syncingUsers && (
+              <span className="text-[11px] text-slate-400 animate-pulse flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+                <span className="w-1.5 h-1.5 bg-sky-500 rounded-full animate-ping"></span>
+                Synchro active...
+              </span>
+            )}
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="px-3.5 py-1.5 bg-[#2C3E36] hover:bg-[#202E28] text-white rounded-lg font-semibold text-xs transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
+            >
+              {showAddForm ? <X className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+              <span>{showAddForm ? "Annuler l'ajout" : "Créer un profil"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Global User Error message */}
+        {userError && (
+          <div className="p-3 bg-rose-50/65 border border-rose-100 text-rose-800 rounded-lg text-xs leading-relaxed flex items-start gap-2">
+            <AlertTriangle className="w-4.5 h-4.5 text-rose-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <span className="font-bold">Erreur administration :</span> {userError}
+            </div>
+            <button onClick={() => setUserError(null)} className="text-rose-400 hover:text-rose-600 font-bold px-1">&times;</button>
+          </div>
+        )}
+
+        {/* Create User Form Section */}
+        {showAddForm && (
+          <form onSubmit={handleAddUser} className="p-4 bg-slate-50/60 border border-slate-100 rounded-xl space-y-4 animate-fadeIn transition-all duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-sans">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Nom complet <span className="text-rose-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Myriem Belkhadir"
+                  value={newUserName}
+                  onChange={(e) => setNewUserName(e.target.value)}
+                  className="w-full p-2 bg-white border border-slate-200 rounded-lg outline-hidden text-slate-700"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Identifiant / E-mail de connexion <span className="text-rose-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  placeholder="myriem@r2h.ma ou myriem"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  className="w-full p-2 bg-white border border-slate-200 rounded-lg outline-hidden text-slate-700 font-mono text-[11px]"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Mot de passe de sécurité <span className="text-rose-500">*</span></label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    required
+                    placeholder="Saisissez un mot de passe"
+                    value={newUserPassword}
+                    onChange={(e) => setNewUserPassword(e.target.value)}
+                    className="w-full p-2 pr-8 bg-white border border-slate-200 rounded-lg outline-hidden text-slate-700 font-mono text-[11px]"
+                  />
+                  <Lock className="w-3.5 h-3.5 text-slate-300 absolute right-2.5 top-3" />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Fonction optionnelle</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Commerciale Senior"
+                  value={newUserTitle}
+                  onChange={(e) => setNewUserTitle(e.target.value)}
+                  className="w-full p-2 bg-white border border-slate-200 rounded-lg outline-hidden text-slate-700"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs font-sans pt-2">
+              <div className="md:col-span-1 space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Rôle Général</label>
+                <select
+                  value={newUserRole}
+                  onChange={(e) => handleRoleChangeForNewUser(e.target.value as any)}
+                  className="w-full p-2 bg-white border border-slate-200 rounded-lg outline-hidden text-slate-700 font-medium"
+                >
+                  <option value="commercial font-semibold">👤 Commercial</option>
+                  <option value="admin font-semibold">🏢 Administrateur Global</option>
+                  <option value="financial font-semibold">💰 Responsable Financier / Compta</option>
+                  <option value="supervisor font-semibold">👁️ Superviseur Salons</option>
+                </select>
+                <p className="text-[9px] text-slate-400 italic">
+                  Changer de rôle réaffectera automatiquement des habilitations suggérées.
+                </p>
+              </div>
+
+              {/* Toggle Habilitations Grid for newly created account */}
+              <div className="md:col-span-3 space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase block">Droits et Accès Spécifiques (Habilitations)</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-white p-3 rounded-xl border border-slate-200">
+                  <label className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={newUserPerms.canViewDashboard}
+                      onChange={(e) => setNewUserPerms({ ...newUserPerms, canViewDashboard: e.target.checked })}
+                      className="rounded-sm border-slate-300 accent-[#2C3E36] w-3.5 h-3.5"
+                    />
+                    <span>Tableau de bord</span>
+                  </label>
+                  
+                  <label className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={newUserPerms.canManageLeads}
+                      onChange={(e) => setNewUserPerms({ ...newUserPerms, canManageLeads: e.target.checked })}
+                      className="rounded-sm border-slate-300 accent-[#2C3E36] w-3.5 h-3.5"
+                    />
+                    <span>Clients & Prospects</span>
+                  </label>
+
+                  <label className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={newUserPerms.canViewDevis}
+                      onChange={(e) => setNewUserPerms({ ...newUserPerms, canViewDevis: e.target.checked })}
+                      className="rounded-sm border-slate-300 accent-[#2C3E36] w-3.5 h-3.5"
+                    />
+                    <span>Édition de Devis</span>
+                  </label>
+
+                  <label className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={newUserPerms.canViewFactures}
+                      onChange={(e) => setNewUserPerms({ ...newUserPerms, canViewFactures: e.target.checked })}
+                      className="rounded-sm border-slate-300 accent-[#2C3E36] w-3.5 h-3.5"
+                    />
+                    <span>Factures & Fiscal</span>
+                  </label>
+
+                  <label className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={newUserPerms.canViewMarketing}
+                      onChange={(e) => setNewUserPerms({ ...newUserPerms, canViewMarketing: e.target.checked })}
+                      className="rounded-sm border-slate-300 accent-[#2C3E36] w-3.5 h-3.5"
+                    />
+                    <span>Marketing IA</span>
+                  </label>
+
+                  <label className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={newUserPerms.canManageStands}
+                      onChange={(e) => setNewUserPerms({ ...newUserPerms, canManageStands: e.target.checked })}
+                      className="rounded-sm border-slate-300 accent-[#2C3E36] w-3.5 h-3.5"
+                    />
+                    <span>Gestion des Stands</span>
+                  </label>
+
+                  <label className="flex items-center gap-1.5 text-[11px] text-slate-600 font-medium cursor-pointer select-none col-span-2 sm:col-span-1">
+                    <input
+                      type="checkbox"
+                      checked={newUserPerms.canViewSettings}
+                      onChange={(e) => setNewUserPerms({ ...newUserPerms, canViewSettings: e.target.checked })}
+                      className="rounded-sm border-slate-300 accent-[#2C3E36] w-3.5 h-3.5"
+                    />
+                    <span>Configuration Admin</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="submit"
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs select-none cursor-pointer transition-colors"
+              >
+                Valider & Enregistrer l'utilisateur
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Existing Accounts Spreadsheet View */}
+        <div className="overflow-x-auto border border-slate-200/60 rounded-xl bg-white">
+          {loadingUsers ? (
+            <div className="p-8 text-center space-y-2 text-slate-500 text-xs">
+              <div className="w-6 h-6 border-2 border-[#2C3E36] border-t-transparent rounded-full animate-spin mx-auto"></div>
+              <span>Chargement sécurisé des privilèges...</span>
+            </div>
+          ) : (
+            <table className="w-full text-left border-collapse text-slate-700">
+              <thead>
+                <tr className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                  <th className="px-4 py-3">Utilisateur</th>
+                  <th className="px-4 py-3">Identifiant / E-mail</th>
+                  <th className="px-4 py-3">Rôle Global</th>
+                  <th className="px-4 py-3 text-center">Accès & Accréditations</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs font-sans">
+                {usersList.map((user) => {
+                  let roleColor = 'bg-slate-100 text-slate-700';
+                  if (user.role === 'admin') roleColor = 'bg-sky-50 text-sky-800 border-sky-200/50';
+                  if (user.role === 'commercial') roleColor = 'bg-amber-50 text-amber-800 border-amber-200/50';
+                  if (user.role === 'financial') roleColor = 'bg-emerald-50 text-emerald-800 border-emerald-200/50';
+                  if (user.role === 'supervisor') roleColor = 'bg-indigo-50 text-indigo-800 border-indigo-200/50';
+
+                  return (
+                    <tr key={user.id} className="hover:bg-slate-50/40 transition-colors">
+                      {/* Avatar / Name */}
+                      <td className="px-4 py-3.5 flex items-center gap-3">
+                        <img
+                          src={user.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200"}
+                          alt={user.name}
+                          className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-800 text-[12px]">{user.name}</span>
+                          <span className="text-[10px] text-slate-400">{user.title}</span>
+                        </div>
+                      </td>
+
+                      {/* Login Identifier */}
+                      <td className="px-4 py-3.5 font-mono text-[11px] text-slate-600 font-medium">
+                        {user.email}
+                      </td>
+
+                      {/* Role representation with colored badge */}
+                      <td className="px-4 py-3.5">
+                        <span className={`inline-block px-2.5 py-1 text-[10px] font-bold uppercase rounded-md border ${roleColor} tracking-wider`}>
+                          {user.role}
+                        </span>
+                      </td>
+
+                      {/* Permissions on/off togglers map */}
+                      <td className="px-4 py-3.5">
+                        <div className="flex flex-wrap items-center justify-center gap-1.5 max-w-[400px] mx-auto">
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePermission(user.id, 'canViewDashboard')}
+                            className={`px-1.5 py-0.5 rounded-sm text-[9px] font-bold border transition-all cursor-pointer ${
+                              user.permissions?.canViewDashboard
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200/70' 
+                                : 'bg-slate-50 text-slate-300 border-slate-100'
+                            }`}
+                            title="Tableau de bord"
+                          >
+                            Dashboard
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePermission(user.id, 'canManageLeads')}
+                            className={`px-1.5 py-0.5 rounded-sm text-[9px] font-bold border transition-all cursor-pointer ${
+                              user.permissions?.canManageLeads
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200/70' 
+                                : 'bg-slate-50 text-slate-300 border-slate-100'
+                            }`}
+                            title="Contacts / CRM"
+                          >
+                            CRM
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePermission(user.id, 'canViewDevis')}
+                            className={`px-1.5 py-0.5 rounded-sm text-[9px] font-bold border transition-all cursor-pointer ${
+                              user.permissions?.canViewDevis
+                                ? 'bg-amber-50 text-amber-700 border-amber-200/70 font-bold' 
+                                : 'bg-slate-50 text-slate-300 border-slate-100'
+                            }`}
+                            title="Devis récents & rédaction"
+                          >
+                            Devis
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePermission(user.id, 'canViewFactures')}
+                            className={`px-1.5 py-0.5 rounded-sm text-[9px] font-bold border transition-all cursor-pointer ${
+                              user.permissions?.canViewFactures
+                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200/60 font-bold' 
+                                : 'bg-slate-50 text-slate-300 border-slate-100'
+                            }`}
+                            title="Factures & TVA"
+                          >
+                            Factures
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePermission(user.id, 'canViewMarketing')}
+                            className={`px-1.5 py-0.5 rounded-sm text-[9px] font-bold border transition-all cursor-pointer ${
+                              user.permissions?.canViewMarketing
+                                ? 'bg-[#70845B]/10 text-[#70845B] border-[#70845B]/30' 
+                                : 'bg-slate-50 text-slate-300 border-slate-100'
+                            }`}
+                            title="Rédacteur IA Marketing"
+                          >
+                            Mailing-IA
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePermission(user.id, 'canManageStands')}
+                            className={`px-1.5 py-0.5 rounded-sm text-[9px] font-bold border transition-all cursor-pointer ${
+                              user.permissions?.canManageStands
+                                ? 'bg-sky-50 text-sky-700 border-sky-200/70' 
+                                : 'bg-slate-50 text-slate-300 border-slate-100'
+                            }`}
+                            title="Plans du salon & stands"
+                          >
+                            Salon
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePermission(user.id, 'canViewSettings')}
+                            className={`px-1.5 py-0.5 rounded-sm text-[9px] font-bold border transition-all cursor-pointer ${
+                              user.permissions?.canViewSettings
+                                ? 'bg-rose-50 text-[#A68A64] border-rose-150' 
+                                : 'bg-slate-50 text-slate-300 border-slate-100'
+                            }`}
+                            title="Administration globale & DNS"
+                          >
+                            Paramètres
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Deletion action */}
+                      <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="p-1 px-2.5 text-rose-600 hover:text-white hover:bg-rose-600 rounded-lg transition-all font-medium border border-rose-200 hover:border-transparent cursor-pointer text-[11px]"
+                          title="Supprimer ce compte utilisateur"
+                        >
+                          Supprimer
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
 
     </div>

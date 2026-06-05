@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lock, Mail, ArrowRight, Eye, EyeOff, ShieldCheck, Sparkles, Building2 } from 'lucide-react';
 import R2HLogo from './R2HLogo';
+import { UserProfile } from '../types';
 
 interface LoginViewProps {
-  onLoginSuccess: (adminName: string, role: string, title: string, avatarUrl: string) => void;
+  onLoginSuccess: (adminName: string, role: string, title: string, avatarUrl: string, permissions: any) => void;
 }
 
 export default function LoginView({ onLoginSuccess }: LoginViewProps) {
@@ -17,71 +18,56 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
+
+  // Load user profiles from API
+  useEffect(() => {
+    async function fetchProfiles() {
+      try {
+        const resp = await fetch('/api/users');
+        const data = await resp.json();
+        if (data.success && data.users) {
+          setUserProfiles(data.users);
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement des profils utilisateurs:', err);
+      }
+    }
+    fetchProfiles();
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
-    // Simulate database lookup / validation
     setTimeout(() => {
       const cleanEmail = email.trim().toLowerCase();
       const cleanPassword = password.trim();
 
-      // Flexible validation supporting full enterprise emails or generic quick ids
-      if (
-        (cleanEmail === 'admin@r2h.ma' && cleanPassword === 'admin2026') ||
-        (cleanEmail === 'admin' && cleanPassword === 'admin') ||
-        (cleanEmail === 'digitalrh8@gmail.com' && cleanPassword === 'admin')
-      ) {
-        setIsLoading(false);
-        onLoginSuccess('Mehdi Rahho', 'admin', 'Directeur Général', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200');
-        return;
-      }
+      // Find matched user
+      const matchedUser = userProfiles.find(user => {
+        const userEmail = user.email.toLowerCase();
+        // Support direct name/id login (e.g. 'admin' or 'amira') or full email login (e.g. 'admin@r2h.ma' or 'amira@r2h.ma')
+        const matchesEmailKey = userEmail === cleanEmail || 
+          userEmail.split('@')[0] === cleanEmail ||
+          (userEmail === 'admin' && cleanEmail === 'digitalrh8@gmail.com');
+        return matchesEmailKey && user.password === cleanPassword;
+      });
 
-      // 4 Commercial admins accounts (login using email or just direct tag)
-      // 1. Amira Alami
-      if (
-        (cleanEmail === 'amira@r2h.ma' || cleanEmail === 'amira') &&
-        (cleanPassword === 'amira' || cleanPassword === 'commercial')
-      ) {
+      if (matchedUser) {
         setIsLoading(false);
-        onLoginSuccess('Amira Alami', 'commercial', 'Responsable Commerciale', 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200');
-        return;
-      }
-
-      // 2. Yassine Naciri
-      if (
-        (cleanEmail === 'yassine@r2h.ma' || cleanEmail === 'yassine') &&
-        (cleanPassword === 'yassine' || cleanPassword === 'commercial')
-      ) {
+        onLoginSuccess(
+          matchedUser.name, 
+          matchedUser.role, 
+          matchedUser.title, 
+          matchedUser.avatarUrl,
+          matchedUser.permissions
+        );
+      } else {
         setIsLoading(false);
-        onLoginSuccess('Yassine Naciri', 'commercial', 'Commercial Senior', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200');
-        return;
+        setError('Adresse e-mail ou mot de passe incorrect. Veuillez vérifier vos identifiants de connexion.');
       }
-
-      // 3. Fatima Zahra
-      if (
-        (cleanEmail === 'fatima@r2h.ma' || cleanEmail === 'fatima') &&
-        (cleanPassword === 'fatima' || cleanPassword === 'commercial')
-      ) {
-        setIsLoading(false);
-        onLoginSuccess('Fatima Zahra', 'commercial', 'Chargée de Clientèle', 'https://images.unsplash.com/photo-1534751516642-a131ffd103fd?auto=format&fit=crop&q=80&w=200');
-        return;
-      }
-
-      // 4. Karim Tazi
-      if (
-        (cleanEmail === 'karim@r2h.ma' || cleanEmail === 'karim') &&
-        (cleanPassword === 'karim' || cleanPassword === 'commercial')
-      ) {
-        setIsLoading(false);
-        onLoginSuccess('Karim Tazi', 'commercial', 'Négociateur Événementiel', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200');
-        return;
-      }
-
-      setIsLoading(false);
-      setError('Adresse e-mail ou mot de passe incorrect. Pour vous connecter, utilisez soit : admin/admin ou un des commerciaux (amira, yassine, fatima ou karim) avec leur prénom comme mot de passe.');
     }, 800);
   };
 

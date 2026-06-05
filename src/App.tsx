@@ -63,27 +63,67 @@ export default function App() {
     return getCookie('r2h_portal_authenticated') === 'true';
   });
 
-  const [currentUser, setCurrentUser] = useState<{name: string, role: string, title: string, avatarUrl: string}>(() => {
+  const [currentUser, setCurrentUser] = useState<{name: string, role: string, title: string, avatarUrl: string, permissions?: any}>(() => {
+    let perms = null;
+    const cookiePerms = getCookie('r2h_portal_user_perms');
+    if (cookiePerms) {
+      try {
+        perms = JSON.parse(cookiePerms);
+      } catch (e) {
+        console.error('Error parsing perms cookie:', e);
+      }
+    }
     return {
       name: getCookie('r2h_portal_user_name') || 'Mehdi Rahho',
       role: getCookie('r2h_portal_user_role') || 'admin',
       title: getCookie('r2h_portal_user_title') || 'Directeur Général',
-      avatarUrl: getCookie('r2h_portal_user_avatar') || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200'
+      avatarUrl: getCookie('r2h_portal_user_avatar') || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
+      permissions: perms || {
+        canViewDashboard: true,
+        canManageLeads: true,
+        canViewDevis: true,
+        canViewFactures: true,
+        canViewMarketing: true,
+        canManageStands: true,
+        canViewSettings: true
+      }
     };
   });
 
-  const handleLoginSuccess = (adminName: string, role: string, title: string, avatarUrl: string) => {
+  const handleLoginSuccess = (adminName: string, role: string, title: string, avatarUrl: string, permissions?: any) => {
     setIsAuthenticated(true);
     setCookie('r2h_portal_authenticated', 'true');
     setCookie('r2h_portal_user_name', adminName);
     setCookie('r2h_portal_user_role', role);
     setCookie('r2h_portal_user_title', title);
     setCookie('r2h_portal_user_avatar', avatarUrl);
+    
+    const finalPerms = permissions || (role === 'admin' ? {
+      canViewDashboard: true,
+      canManageLeads: true,
+      canViewDevis: true,
+      canViewFactures: true,
+      canViewMarketing: true,
+      canManageStands: true,
+      canViewSettings: true
+    } : {
+      canViewDashboard: true,
+      canManageLeads: true,
+      canViewDevis: false,
+      canViewFactures: false,
+      canViewMarketing: true,
+      canManageStands: true,
+      canViewSettings: false
+    });
+
+    setCookie('r2h_portal_user_perms', JSON.stringify(finalPerms));
+
     setCurrentUser({
       name: adminName,
       role: role,
       title: title,
-      avatarUrl: avatarUrl
+      avatarUrl: avatarUrl,
+      permissions: finalPerms
     });
   };
 
@@ -94,6 +134,7 @@ export default function App() {
     eraseCookie('r2h_portal_user_role');
     eraseCookie('r2h_portal_user_title');
     eraseCookie('r2h_portal_user_avatar');
+    eraseCookie('r2h_portal_user_perms');
     setCurrentTab('dashboard');
   };
   

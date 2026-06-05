@@ -167,6 +167,141 @@ app.post('/api/db/initialize', async (req, res) => {
 });
 
 
+// --- User Profiles Management Endpoints ---
+
+// Default static users for seeding & fallback
+const DEFAULT_USER_PROFILES = [
+  {
+    id: 'u1',
+    name: 'Mehdi Rahho',
+    email: 'admin',
+    password: 'admin',
+    role: 'admin',
+    title: 'Directeur Général',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
+    permissions: {
+      canViewDashboard: true,
+      canManageLeads: true,
+      canViewDevis: true,
+      canViewFactures: true,
+      canViewMarketing: true,
+      canManageStands: true,
+      canViewSettings: true
+    }
+  },
+  {
+    id: 'u2',
+    name: 'Amira Alami',
+    email: 'amira@r2h.ma',
+    password: 'amira',
+    role: 'commercial',
+    title: 'Responsable Commerciale',
+    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+    permissions: {
+      canViewDashboard: true,
+      canManageLeads: true,
+      canViewDevis: false,
+      canViewFactures: false,
+      canViewMarketing: true,
+      canManageStands: true,
+      canViewSettings: false
+    }
+  },
+  {
+    id: 'u3',
+    name: 'Yassine Naciri',
+    email: 'yassine@r2h.ma',
+    password: 'yassine',
+    role: 'commercial',
+    title: 'Commercial Senior',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+    permissions: {
+      canViewDashboard: true,
+      canManageLeads: true,
+      canViewDevis: false,
+      canViewFactures: false,
+      canViewMarketing: true,
+      canManageStands: true,
+      canViewSettings: false
+    }
+  },
+  {
+    id: 'u4',
+    name: 'Fatima Zahra',
+    email: 'fatima@r2h.ma',
+    password: 'fatima',
+    role: 'commercial',
+    title: 'Chargée de Clientèle',
+    avatarUrl: 'https://images.unsplash.com/photo-1534751516642-a131ffd103fd?auto=format&fit=crop&q=80&w=200',
+    permissions: {
+      canViewDashboard: true,
+      canManageLeads: true,
+      canViewDevis: false,
+      canViewFactures: false,
+      canViewMarketing: true,
+      canManageStands: true,
+      canViewSettings: false
+    }
+  },
+  {
+    id: 'u5',
+    name: 'Karim Tazi',
+    email: 'karim@r2h.ma',
+    password: 'karim',
+    role: 'commercial',
+    title: 'Négociateur Événementiel',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+    permissions: {
+      canViewDashboard: true,
+      canManageLeads: true,
+      canViewDevis: false,
+      canViewFactures: false,
+      canViewMarketing: true,
+      canManageStands: true,
+      canViewSettings: false
+    }
+  }
+];
+
+// Get users list
+app.get('/api/users', async (req, res) => {
+  try {
+    const status = getDatabaseStatus();
+    if (!status.isConfigured) {
+      res.json({ success: true, users: DEFAULT_USER_PROFILES });
+      return;
+    }
+    const val = await getRailwayConfig('user_profiles');
+    if (val) {
+      res.json({ success: true, users: JSON.parse(val) });
+    } else {
+      await saveRailwayConfig('user_profiles', JSON.stringify(DEFAULT_USER_PROFILES));
+      res.json({ success: true, users: DEFAULT_USER_PROFILES });
+    }
+  } catch (err: any) {
+    res.json({ success: true, users: DEFAULT_USER_PROFILES, error: err.message });
+  }
+});
+
+// Update users list
+app.post('/api/users', async (req, res) => {
+  try {
+    const { users } = req.body || {};
+    if (!users || !Array.isArray(users)) {
+      res.status(400).json({ success: false, error: 'Format de données utilisateur invalide' });
+      return;
+    }
+    const status = getDatabaseStatus();
+    if (status.isConfigured) {
+      await saveRailwayConfig('user_profiles', JSON.stringify(users));
+    }
+    res.json({ success: true, users });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || String(err) });
+  }
+});
+
+
 // Lazy-loaded Gemini SDK client
 let aiClient: GoogleGenAI | null = null;
 function getGeminiClient() {

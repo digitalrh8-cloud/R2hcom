@@ -44,7 +44,7 @@ interface SidebarProps {
   onLogout?: () => void;
   isMobileOpen?: boolean;
   onClose?: () => void;
-  currentUser?: { name: string; role: string; title: string; avatarUrl: string };
+  currentUser?: { name: string; role: string; title: string; avatarUrl: string; permissions?: any };
 }
 
 export default function Sidebar({ 
@@ -58,10 +58,27 @@ export default function Sidebar({
     name: 'Mehdi Rahho',
     role: 'admin',
     title: 'Directeur Général',
-    avatarUrl: '/src/assets/images/mehdi_profile_1780566080143.png'
+    avatarUrl: '/src/assets/images/mehdi_profile_1780566080143.png',
+    permissions: {
+      canViewDashboard: true,
+      canManageLeads: true,
+      canViewDevis: true,
+      canViewFactures: true,
+      canViewMarketing: true,
+      canManageStands: true,
+      canViewSettings: true
+    }
   }
 }: SidebarProps) {
   
+  const canViewDashboard = currentUser.permissions ? currentUser.permissions.canViewDashboard : true;
+  const canManageLeads = currentUser.permissions ? currentUser.permissions.canManageLeads : true;
+  const canViewDevis = currentUser.permissions ? currentUser.permissions.canViewDevis : currentUser.role !== 'commercial';
+  const canViewFactures = currentUser.permissions ? currentUser.permissions.canViewFactures : currentUser.role !== 'commercial';
+  const canViewMarketing = currentUser.permissions ? currentUser.permissions.canViewMarketing : true;
+  const canManageStands = currentUser.permissions ? currentUser.permissions.canManageStands : true;
+  const canViewSettings = currentUser.permissions ? currentUser.permissions.canViewSettings : currentUser.role !== 'commercial';
+
   // Helper to change tabs and close drawer on mobile automatically
   const handleTabSelect = (tab: string) => {
     setCurrentTab(tab);
@@ -132,28 +149,32 @@ export default function Sidebar({
         </div>
 
         {/* Commercial Section */}
-        <div className="space-y-1">
-          <p className="px-3 text-[10px] font-bold text-[#6E8B7E] uppercase tracking-widest pb-1">Commercial & CRM</p>
-          <button 
-            type="button"
-            id="nav-prospects"
-            onClick={() => handleTabSelect('prospects')} 
-            className={getLinkClass('prospects')}
-          >
-            <Users className="w-4 h-4 text-[#A68A64]" />
-            <span>Prospects</span>
-          </button>
-          <button 
-            type="button"
-            id="nav-clients"
-            onClick={() => handleTabSelect('clients')} 
-            className={getLinkClass('clients')}
-          >
-            <UserSquare2 className="w-4 h-4 text-[#A68A64]" />
-            <span>Clients & Exposants</span>
-          </button>
-          {currentUser.role !== 'commercial' && (
-            <>
+        {(canManageLeads || canViewDevis || canViewFactures) && (
+          <div className="space-y-1">
+            <p className="px-3 text-[10px] font-bold text-[#6E8B7E] uppercase tracking-widest pb-1">Commercial & CRM</p>
+            {canManageLeads && (
+              <>
+                <button 
+                  type="button"
+                  id="nav-prospects"
+                  onClick={() => handleTabSelect('prospects')} 
+                  className={getLinkClass('prospects')}
+                >
+                  <Users className="w-4 h-4 text-[#A68A64]" />
+                  <span>Prospects</span>
+                </button>
+                <button 
+                  type="button"
+                  id="nav-clients"
+                  onClick={() => handleTabSelect('clients')} 
+                  className={getLinkClass('clients')}
+                >
+                  <UserSquare2 className="w-4 h-4 text-[#A68A64]" />
+                  <span>Clients & Exposants</span>
+                </button>
+              </>
+            )}
+            {canViewDevis && (
               <button 
                 type="button"
                 id="nav-devis"
@@ -163,6 +184,8 @@ export default function Sidebar({
                 <FileText className="w-4 h-4 text-[#A68A64]" />
                 <span>Devis récents</span>
               </button>
+            )}
+            {canViewFactures && (
               <button 
                 type="button"
                 id="nav-factures"
@@ -172,40 +195,44 @@ export default function Sidebar({
                 <Receipt className="w-4 h-4 text-[#A68A64]" />
                 <span>Factures & TVA</span>
               </button>
-            </>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* Shows & Salons and Floor plans */}
-        <div className="space-y-1">
-          <p className="px-3 text-[10px] font-bold text-[#6E8B7E] uppercase tracking-widest pb-1">Salons & Événements</p>
-          <button 
-            type="button"
-            id="nav-stands"
-            onClick={() => handleTabSelect('stands')} 
-            className={getLinkClass('stands')}
-          >
-            <Grid3X3 className="w-4 h-4 text-[#A68A64]" />
-            <span>Plan du salon & Stands</span>
-          </button>
-        </div>
+        {canManageStands && (
+          <div className="space-y-1">
+            <p className="px-3 text-[10px] font-bold text-[#6E8B7E] uppercase tracking-widest pb-1">Salons & Événements</p>
+            <button 
+              type="button"
+              id="nav-stands"
+              onClick={() => handleTabSelect('stands')} 
+              className={getLinkClass('stands')}
+            >
+              <Grid3X3 className="w-4 h-4 text-[#A68A64]" />
+              <span>Plan du salon & Stands</span>
+            </button>
+          </div>
+        )}
 
         {/* Marketing campaign drafers */}
-        <div className="space-y-1">
-          <p className="px-3 text-[10px] font-bold text-[#6E8B7E] uppercase tracking-widest pb-1">Marketing IA</p>
-          <button 
-            type="button"
-            id="nav-marketing"
-            onClick={() => handleTabSelect('marketing')} 
-            className={getLinkClass('marketing')}
-          >
-            <Sparkles className="w-4 h-4 text-[#A68A64]" />
-            <span>Rédacteur d'Emails IA</span>
-          </button>
-        </div>
+        {canViewMarketing && (
+          <div className="space-y-1">
+            <p className="px-3 text-[10px] font-bold text-[#6E8B7E] uppercase tracking-widest pb-1">Marketing IA</p>
+            <button 
+              type="button"
+              id="nav-marketing"
+              onClick={() => handleTabSelect('marketing')} 
+              className={getLinkClass('marketing')}
+            >
+              <Sparkles className="w-4 h-4 text-[#A68A64]" />
+              <span>Rédacteur d'Emails IA</span>
+            </button>
+          </div>
+        )}
 
         {/* Settings Group */}
-        {currentUser.role !== 'commercial' && (
+        {canViewSettings && (
           <div className="space-y-1">
             <p className="px-3 text-[10px] font-bold text-[#6E8B7E] uppercase tracking-widest pb-1">Paramètres</p>
             <button 

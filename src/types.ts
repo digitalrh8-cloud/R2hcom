@@ -90,3 +90,25 @@ export interface Task {
   priority: 'basse' | 'moyenne' | 'haute';
   status: 'a_faire' | 'en_cours' | 'termine';
 }
+
+export interface UserPermissions {
+  canViewDashboard: boolean;
+  canManageLeads: boolean; // Access to CrmView (leads/prospects/clients)
+  canViewDevis: boolean; // Access to Devis tab
+  canViewFactures: boolean; // Access to Factures/Invoices tab
+  canViewMarketing: boolean; // Access to AI Marketing
+  canManageStands: boolean; // Access to floor plan and stand reservation
+  canViewSettings: boolean; // Access to general system configuration & user management
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  role: 'admin' | 'commercial' | 'supervisor' | 'financial';
+  title: string;
+  avatarUrl: string;
+  permissions: UserPermissions;
+}
+
