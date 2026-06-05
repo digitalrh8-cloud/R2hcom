@@ -43,6 +43,28 @@ export default function ComptabiliteView({
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [focusReceipt, setFocusReceipt] = useState<Transaction | null>(null);
 
+  const [advanceInput, setAdvanceInput] = useState<string>('');
+
+  React.useEffect(() => {
+    if (focusReceipt) {
+      setAdvanceInput(focusReceipt.advancePaid ? String(focusReceipt.advancePaid) : '');
+    } else {
+      setAdvanceInput('');
+    }
+  }, [focusReceipt]);
+
+  const handleUpdateAdvance = (amount: number) => {
+    if (!focusReceipt) return;
+    setTransactions(prev => prev.map(t => {
+      if (t.id === focusReceipt.id) {
+        return { ...t, advancePaid: amount };
+      }
+      return t;
+    }));
+    setFocusReceipt(prev => prev ? { ...prev, advancePaid: amount } : null);
+    triggerToast(`Mise à jour de l'avance : ${amount.toLocaleString()} MAD.`);
+  };
+
   const [copiedRib, setCopiedRib] = useState(false);
   const handleCopyRib = () => {
     navigator.clipboard.writeText('190780212115687449000681');
@@ -352,6 +374,16 @@ export default function ComptabiliteView({
                 <span style="font-weight: 800; color: #2d2d2d; font-family: 'Playfair Display', serif;">NET À PAYER TTC :</span>
                 <span style="font-family: 'JetBrains Mono', monospace; font-weight: 800; color: #a68a64; font-size: 13.5px;">${totalTTC.toLocaleString('fr-FR')} MAD</span>
               </div>
+              ${receipt.advancePaid && receipt.advancePaid > 0 ? `
+              <div style="display: flex; justify-content: space-between; margin-top: 6px; margin-bottom: 6px; font-size: 10px; color: #10b981; font-weight: 600;">
+                <span>AVANCE REÇUE (TTC) :</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-weight: bold;">-${receipt.advancePaid.toLocaleString('fr-FR')} MAD</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px dashed #e8e6de; font-size: 12.5px; margin-top: 4px; color: #b45309;">
+                <span style="font-weight: 800; font-family: 'Playfair Display', serif;">RESTE À PAYER :</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 13.5px;">${(totalTTC - receipt.advancePaid).toLocaleString('fr-FR')} MAD</span>
+              </div>
+              ` : ''}
             </div>
           </div>
 
@@ -478,19 +510,33 @@ export default function ComptabiliteView({
                           <p className="font-semibold text-slate-800">{trans.companyName}</p>
                           <p className="text-[10px] text-slate-400 mt-0.5">{trans.clientName} • {trans.date}</p>
                         </td>
-                        <td className="px-5 py-3 font-mono font-medium text-slate-800">
-                          {(trans.amount * 1.2).toLocaleString()} MAD
+                        <td className="px-5 py-3">
+                          <span className="font-mono font-medium text-slate-800">{(trans.amount * 1.2).toLocaleString()} MAD</span>
+                          {trans.advancePaid && trans.advancePaid > 0 && trans.type === 'facture' ? (
+                            <div className="mt-1 flex flex-col gap-0.5 select-none">
+                              <span className="text-[9px] bg-emerald-50/85 text-emerald-700 px-1.5 py-0.5 rounded-md font-semibold font-sans w-fit">
+                                Avance : -{trans.advancePaid.toLocaleString()} MAD
+                              </span>
+                              <span className="text-[9px] bg-amber-50/85 text-amber-700 px-1.5 py-0.5 rounded-md font-bold font-sans w-fit">
+                                Reste : {(trans.amount * 1.2 - trans.advancePaid).toLocaleString()} MAD
+                              </span>
+                            </div>
+                          ) : null}
                         </td>
                         <td className="px-5 py-3">
-                          <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full text-slate-500 font-medium">
+                          <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full text-slate-500 font-medium font-sans">
                             {trans.site === 'africapool' ? 'Africa Pool' : trans.site === 'gardenexpo' ? 'Garden Expo' : 'R2H Com'}
                           </span>
                         </td>
                         <td className="px-5 py-3">
                           <span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold ${
-                            trans.status === 'paye' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                            trans.status === 'paye' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
+                            (trans.advancePaid && trans.advancePaid > 0 && trans.type === 'facture') ? 'bg-indigo-50 text-indigo-700 border border-indigo-100 font-bold' :
+                            'bg-amber-50 text-amber-600 border border-amber-100'
                           }`}>
-                            {trans.status === 'paye' ? 'Encaissé' : 'Envoyé'}
+                            {trans.status === 'paye' ? 'Encaissé' : 
+                             (trans.advancePaid && trans.advancePaid > 0 && trans.type === 'facture') ? 'Avance perçue' : 
+                             'Envoyé'}
                           </span>
                         </td>
                         <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
@@ -752,7 +798,8 @@ export default function ComptabiliteView({
               </div>
 
               {focusReceipt ? (
-                /* Corporate printable page mockup frame rendering */
+                <>
+                {/* Corporate printable page mockup frame rendering */}
                 <div id="printable-area-mockup" className="bg-white border border-slate-300 p-6 rounded-lg font-sans text-[11px] leading-relaxed relative text-slate-800 selection:bg-rose-100">
                   
                   {/* Watermark paid indicator */}
@@ -847,17 +894,29 @@ export default function ComptabiliteView({
                     <div className="w-full sm:max-w-[200px] border-t-2 border-slate-200 pt-2.5">
                       <div className="space-y-1 text-right font-sans text-[10px]">
                         <div className="flex justify-between">
-                          <span className="text-slate-400 font-medium">TOTAL HT :</span>
+                          <span className="text-slate-400 font-medium font-sans">TOTAL HT :</span>
                           <span className="font-mono font-medium text-slate-800">{focusReceipt.amount.toLocaleString()} MAD</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400 font-medium">TVA (20.00%) :</span>
+                          <span className="text-slate-400 font-medium font-sans">TVA (20.00%) :</span>
                           <span className="font-mono font-medium text-slate-800">{(focusReceipt.amount * 0.2).toLocaleString()} MAD</span>
                         </div>
                         <div className="flex justify-between border-t border-slate-100 pt-1 text-xs select-none">
                           <span className="font-bold text-slate-900">NET À PAYER TTC:</span>
                           <span className="font-mono font-bold text-blue-600">{(focusReceipt.amount * 1.2).toLocaleString()} MAD</span>
                         </div>
+                        {focusReceipt.advancePaid && focusReceipt.advancePaid > 0 ? (
+                          <>
+                            <div className="flex justify-between text-emerald-600 font-semibold font-sans mt-1">
+                              <span>AVANCE REÇUE :</span>
+                              <span className="font-mono">-{focusReceipt.advancePaid.toLocaleString()} MAD</span>
+                            </div>
+                            <div className="flex justify-between border-t border-dashed border-slate-200 pt-1 text-xs font-bold text-amber-700">
+                              <span>RESTE À PAYER :</span>
+                              <span className="font-mono">{(focusReceipt.amount * 1.2 - focusReceipt.advancePaid).toLocaleString()} MAD</span>
+                            </div>
+                          </>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -871,6 +930,117 @@ export default function ComptabiliteView({
                   )}
 
                 </div>
+
+                {/* Advance payment management panel (only for Invoices/Factures and confirmed exhibitors) */}
+                {focusReceipt.type === 'facture' && (
+                  <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 print:hidden text-xs">
+                    <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                      <span className="text-base select-none">💳</span>
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">Gestion de l'Avance / Acompte Exposant</h4>
+                        <p className="text-[10px] text-slate-500 font-medium">Configurez l'avance perçue pour cet exposant d'exposition.</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Montant de l'avance (MAD)</label>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono font-bold text-[10px]">MAD</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max={Math.round(focusReceipt.amount * 1.2)}
+                            value={advanceInput}
+                            onChange={(e) => setAdvanceInput(e.target.value)}
+                            placeholder="0.00"
+                            className="w-full pl-12 pr-2.5 py-2 bg-white border border-slate-200 rounded-xl outline-hidden text-slate-800 font-mono font-bold text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Raccourcis d'acompte</label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const val = Math.round((focusReceipt.amount * 1.2) * 0.3);
+                              setAdvanceInput(String(val));
+                            }}
+                            className="px-2 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-center cursor-pointer text-[10px] transition-colors"
+                          >
+                            30% (Acompte)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const val = Math.round((focusReceipt.amount * 1.2) * 0.5);
+                              setAdvanceInput(String(val));
+                            }}
+                            className="px-2 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-center cursor-pointer text-[10px] transition-colors"
+                          >
+                            50% (Acompte)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase font-sans">Mode de versement de l'avance</label>
+                        <select
+                          defaultValue="virement"
+                          className="w-full p-2 bg-white border border-slate-200 rounded-xl outline-hidden text-slate-700 text-[11px]"
+                        >
+                          <option value="virement">🏦 Virement Bancaire (BP)</option>
+                          <option value="cheque">✍️ Chèque de Banque</option>
+                          <option value="especes">💵 Versement Espèces</option>
+                          <option value="autre">⚙️ Autre mode</option>
+                        </select>
+                      </div>
+
+                      <div className="flex flex-col justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const amount = parseFloat(advanceInput) || 0;
+                            handleUpdateAdvance(amount);
+                          }}
+                          className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-center cursor-pointer transition-all shadow-2xs hover:shadow-xs text-[11px]"
+                        >
+                          Enregistrer l'Avance
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Display calculations indicators */}
+                    {(() => {
+                      const amtTTC = focusReceipt.amount * 1.2;
+                      const advVal = parseFloat(advanceInput) || 0;
+                      const restVal = Math.max(0, amtTTC - advVal);
+                      return (
+                        <div className="bg-white p-3 rounded-xl border border-slate-200 flex justify-between items-center text-[10.5px]">
+                          <div>
+                            <span className="text-slate-400 font-medium block">Total Facture TTC</span>
+                            <span className="font-mono font-bold text-slate-800">{amtTTC.toLocaleString()} MAD</span>
+                          </div>
+                          <div className="border-l border-slate-200 h-8"></div>
+                          <div>
+                            <span className="text-slate-400 font-medium block">Avance Saisie</span>
+                            <span className="font-mono font-bold text-emerald-600">-{advVal.toLocaleString()} MAD</span>
+                          </div>
+                          <div className="border-l border-slate-200 h-8"></div>
+                          <div>
+                            <span className="text-[#a68a64] font-bold block">Reste à payer TTC</span>
+                            <span className="font-mono font-black text-amber-700">{restVal.toLocaleString()} MAD</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+                </>
               ) : (
                 <div className="py-8 px-4 flex flex-col items-center justify-center gap-6 font-sans text-xs">
                   <div className="text-center text-slate-400 flex flex-col items-center justify-center gap-2">

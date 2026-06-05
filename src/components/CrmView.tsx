@@ -89,7 +89,7 @@ export default function CrmView({
   const [newPhone, setNewPhone] = useState('');
   const [newCompany, setNewCompany] = useState('');
   const [newSite, setNewSite] = useState<SiteId>(selectedSite === 'r2h' ? 'gardenexpo' : selectedSite);
-  const [newRole, setNewRole] = useState<'prospect' | 'client'>('prospect');
+  const [newRole, setNewRole] = useState<'prospect' | 'client' | 'partner_media'>('prospect');
   const [newNotes, setNewNotes] = useState('');
   const [newStandNumber, setNewStandNumber] = useState('');
   const [newProspectStatus, setNewProspectStatus] = useState<'interesse' | 'pas_interesse' | 'a_rappeler' | 'relance' | 'demande_devis'>('interesse');
@@ -97,6 +97,8 @@ export default function CrmView({
   const [newExceptionalPrice, setNewExceptionalPrice] = useState<string>('');
   const [newStandArea, setNewStandArea] = useState<string>('');
   const [newIncludeRegFee, setNewIncludeRegFee] = useState<boolean>(true);
+  const [newRegFeeMode, setNewRegFeeMode] = useState<'yes' | 'no' | 'manual'>('yes');
+  const [newRegFeeManualAmount, setNewRegFeeManualAmount] = useState<string>('2500');
 
   // Calculate sorted free stands for the selected site
   const freeStands = stands
@@ -110,7 +112,7 @@ export default function CrmView({
   const [editPhone, setEditPhone] = useState('');
   const [editCompany, setEditCompany] = useState('');
   const [editSite, setEditSite] = useState<SiteId>('gardenexpo');
-  const [editRole, setEditRole] = useState<'prospect' | 'client' | 'fournisseur' | 'partner'>('prospect');
+  const [editRole, setEditRole] = useState<'prospect' | 'client' | 'fournisseur' | 'partner' | 'partner_media'>('prospect');
   const [editNotes, setEditNotes] = useState('');
   const [editStandNumber, setEditStandNumber] = useState('');
   const [editProspectStatus, setEditProspectStatus] = useState<'interesse' | 'pas_interesse' | 'a_rappeler' | 'relance' | 'demande_devis'>('interesse');
@@ -118,6 +120,8 @@ export default function CrmView({
   const [editExceptionalPrice, setEditExceptionalPrice] = useState<string>('');
   const [editStandArea, setEditStandArea] = useState<string>('');
   const [editIncludeRegFee, setEditIncludeRegFee] = useState<boolean>(true);
+  const [editRegFeeMode, setEditRegFeeMode] = useState<'yes' | 'no' | 'manual'>('yes');
+  const [editRegFeeManualAmount, setEditRegFeeManualAmount] = useState<string>('2500');
 
   // Calculate sorted free stands for editing site, including the contact's current stand
   const editFreeStands = stands
@@ -313,6 +317,19 @@ export default function CrmView({
       ];
     }
 
+    if (contact.includeRegistrationFee !== false) {
+      const alreadyHasRegFee = initialItems.some(item => item.description.toLowerCase().includes("enregistrement"));
+      if (!alreadyHasRegFee) {
+        const regAmount = contact.registrationFeeAmount !== undefined ? contact.registrationFeeAmount : 2500;
+        initialItems.push({
+          id: `item_reg_${Date.now()}`,
+          description: "Frais d'enregistrement d'Enquête",
+          quantity: 1,
+          unitPrice: regAmount
+        });
+      }
+    }
+
     setCustomInvoiceItems(initialItems);
     setInvoiceNotes(`Facture d'exposant formulée en fonction des tarifs et des emplacements validés pour le salon ${
       sitesList.find(s => s.id === contact.site)?.name || 'R2H Communication'
@@ -430,7 +447,8 @@ export default function CrmView({
       standType: newRole === 'prospect' ? newStandType : undefined,
       exceptionalPrice: newRole === 'prospect' && !isNaN(parsedPrice) && parsedPrice >= 0 ? parsedPrice : undefined,
       standArea: newRole === 'prospect' && !isNaN(parsedArea) && parsedArea >= 0 ? parsedArea : undefined,
-      includeRegistrationFee: newRole === 'prospect' ? newIncludeRegFee : undefined
+      includeRegistrationFee: newRole === 'prospect' ? (newRegFeeMode !== 'no') : undefined,
+      registrationFeeAmount: newRole === 'prospect' ? (newRegFeeMode === 'manual' ? (parseFloat(newRegFeeManualAmount) || 0) : (newRegFeeMode === 'yes' ? 2500 : 0)) : undefined
     };
 
     setContacts(prev => [newContact, ...prev]);
@@ -441,7 +459,7 @@ export default function CrmView({
         if (s.site === newSite && s.num.toLowerCase() === formattedStandNumber.toLowerCase()) {
           return {
             ...s,
-            status: newRole === 'client' ? 'vendu' : 'reserve',
+            status: (newRole === 'client' || newRole === 'partner_media') ? 'vendu' : 'reserve',
             companyName: newCompany,
             clientName: newName
           };
@@ -461,6 +479,8 @@ export default function CrmView({
     setNewExceptionalPrice('');
     setNewStandArea('');
     setNewIncludeRegFee(true);
+    setNewRegFeeMode('yes');
+    setNewRegFeeManualAmount('2500');
     setShowAddForm(false);
     triggerToast(
       newRole === 'client' 
@@ -545,6 +565,19 @@ export default function CrmView({
     setEditExceptionalPrice(contact.exceptionalPrice ? String(contact.exceptionalPrice) : '');
     setEditStandArea(contact.standArea ? String(contact.standArea) : '');
     setEditIncludeRegFee(contact.includeRegistrationFee !== false); // default to true if undefined or true
+    
+    if (contact.includeRegistrationFee === false) {
+      setEditRegFeeMode('no');
+      setEditRegFeeManualAmount('2500');
+    } else {
+      if (contact.registrationFeeAmount !== undefined && contact.registrationFeeAmount !== 2500) {
+        setEditRegFeeMode('manual');
+        setEditRegFeeManualAmount(String(contact.registrationFeeAmount));
+      } else {
+        setEditRegFeeMode('yes');
+        setEditRegFeeManualAmount('2500');
+      }
+    }
   };
 
   // Save changes from Edit modal
@@ -577,7 +610,8 @@ export default function CrmView({
           standType: editRole === 'prospect' ? editStandType : undefined,
           exceptionalPrice: editRole === 'prospect' && !isNaN(parsedEditPrice) && parsedEditPrice >= 0 ? parsedEditPrice : undefined,
           standArea: editRole === 'prospect' && !isNaN(parsedEditArea) && parsedEditArea >= 0 ? parsedEditArea : undefined,
-          includeRegistrationFee: editRole === 'prospect' ? editIncludeRegFee : undefined
+          includeRegistrationFee: editRole === 'prospect' ? (editRegFeeMode !== 'no') : undefined,
+          registrationFeeAmount: editRole === 'prospect' ? (editRegFeeMode === 'manual' ? (parseFloat(editRegFeeManualAmount) || 0) : (editRegFeeMode === 'yes' ? 2500 : 0)) : undefined
         };
       }
       return c;
@@ -599,7 +633,8 @@ export default function CrmView({
         standType: editRole === 'prospect' ? editStandType : undefined,
         exceptionalPrice: editRole === 'prospect' && !isNaN(parsedEditPrice) && parsedEditPrice >= 0 ? parsedEditPrice : undefined,
         standArea: editRole === 'prospect' && !isNaN(parsedEditArea) && parsedEditArea >= 0 ? parsedEditArea : undefined,
-        includeRegistrationFee: editRole === 'prospect' ? editIncludeRegFee : undefined
+        includeRegistrationFee: editRole === 'prospect' ? (editRegFeeMode !== 'no') : undefined,
+        registrationFeeAmount: editRole === 'prospect' ? (editRegFeeMode === 'manual' ? (parseFloat(editRegFeeManualAmount) || 0) : (editRegFeeMode === 'yes' ? 2500 : 0)) : undefined
       });
     }
 
@@ -621,7 +656,7 @@ export default function CrmView({
 
         // 2b. Assign new stand if provided
         if (newStandNum && s.site === newSite && s.num.toLowerCase() === newStandNum.toLowerCase()) {
-          updatedStand.status = (editRole === 'client' || editRole === 'partner') ? 'vendu' : 'reserve';
+          updatedStand.status = (editRole === 'client' || editRole === 'partner' || editRole === 'partner_media') ? 'vendu' : 'reserve';
           updatedStand.companyName = editCompany.trim();
           updatedStand.clientName = editName.trim();
         }
@@ -702,10 +737,11 @@ export default function CrmView({
             </div>
 
             {/* Quick role tabs filter */}
-            <div className="flex bg-[#F0EEE6] p-1 rounded-xl border border-[#E8E6DE]/60 w-full sm:w-auto">
+            <div className="flex bg-[#F0EEE6] p-1 rounded-xl border border-[#E8E6DE]/60 w-full sm:w-auto overflow-x-auto scrollbar-none">
               {[
                 { id: 'all', text: 'Tous' },
                 { id: 'prospect', text: 'Prospects' },
+                { id: 'partner_media', text: 'Partenaires Médias' },
                 { id: 'client', text: 'Clients / Exposants' },
                 { id: 'fournisseur', text: 'Prestataires' }
               ].map(tab => (
@@ -775,9 +811,13 @@ export default function CrmView({
                           <div className="flex flex-col gap-1.5 items-start font-sans">
                             <span className={`px-2 py-0.5 rounded-xl uppercase font-mono text-[8px] font-bold ${
                               contact.role === 'client' ? 'bg-[#7E8F7A]/15 text-[#4D5E4A] border border-[#7E8F7A]/30' :
-                              contact.role === 'prospect' ? 'bg-[#A68A64]/15 text-[#2D2D2D] border border-[#A68A64]/30' : 'bg-[#F0EEE6] text-[#7A7667] border border-[#E8E6DE]'
+                              contact.role === 'prospect' ? 'bg-[#A68A64]/15 text-[#2D2D2D] border border-[#A68A64]/30' :
+                              contact.role === 'partner_media' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
+                              'bg-[#F0EEE6] text-[#7A7667] border border-[#E8E6DE]'
                             }`}>
-                              {contact.role === 'client' ? 'Exposant' : contact.role === 'prospect' ? 'Prospect' : 'Fournisseur'}
+                              {contact.role === 'client' ? 'Exposant' : 
+                               contact.role === 'prospect' ? 'Prospect' : 
+                               contact.role === 'partner_media' ? 'Partenaire Média' : 'Fournisseur'}
                             </span>
                             {contact.role === 'prospect' && (
                               <span className={`text-[9.5px] px-2 py-0.5 rounded-md font-bold border leading-none shadow-3xs ${getProspectStatusColorClass(contact.prospectStatus)}`}>
@@ -947,11 +987,12 @@ export default function CrmView({
                     <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Statut CRM</label>
                     <select
                       value={newRole}
-                      onChange={(e) => setNewRole(e.target.value as 'prospect' | 'client')}
+                      onChange={(e) => setNewRole(e.target.value as 'prospect' | 'client' | 'partner_media')}
                       className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-[11px] font-semibold"
                     >
                       <option value="prospect">Prospect (En attente)</option>
                       <option value="client">Exposant (Officiel)</option>
+                      <option value="partner_media">Partenaire Média</option>
                     </select>
                   </div>
 
@@ -1011,31 +1052,69 @@ export default function CrmView({
                         </div>
 
                         <div className="space-y-1 col-span-2">
-                          <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Frais d'enregistrement d'Enquête (2500 MAD HT)</label>
-                          <div className="flex gap-2">
+                          <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Frais d'enregistrement d'Enquête</label>
+                          <div className="grid grid-cols-3 gap-2">
                             <button
                               type="button"
-                              onClick={() => setNewIncludeRegFee(true)}
-                              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
-                                newIncludeRegFee 
+                              onClick={() => {
+                                setNewRegFeeMode('yes');
+                                setNewIncludeRegFee(true);
+                              }}
+                              className={`py-2 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
+                                newRegFeeMode === 'yes' 
                                   ? 'bg-[#A68A64] text-white border-[#A68A64] shadow-xs' 
-                                  : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-slate-50'
+                                  : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-[#F8F7F2]'
                               }`}
                             >
-                              ✅ OUI (+2,500 MAD)
+                              ✅ Oui (2500)
                             </button>
                             <button
                               type="button"
-                              onClick={() => setNewIncludeRegFee(false)}
-                              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
-                                !newIncludeRegFee 
+                              onClick={() => {
+                                setNewRegFeeMode('no');
+                                setNewIncludeRegFee(false);
+                              }}
+                              className={`py-2 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
+                                newRegFeeMode === 'no' 
                                   ? 'bg-[#FAF9F5] text-rose-700 border-[#E8E6DE] shadow-inner font-bold' 
-                                  : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-slate-50'
+                                  : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-[#F8F7F2]'
                               }`}
                             >
-                              ❌ NON (Exclure)
+                              ❌ Non (Exclu)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewRegFeeMode('manual');
+                                setNewIncludeRegFee(true);
+                              }}
+                              className={`py-2 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
+                                newRegFeeMode === 'manual' 
+                                  ? 'bg-purple-600 text-white border-purple-600 shadow-xs font-bold' 
+                                  : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-[#F8F7F2]'
+                              }`}
+                            >
+                              ✏️ Manuel
                             </button>
                           </div>
+                          {newRegFeeMode === 'manual' && (
+                            <div className="mt-2 text-left animate-in fade-in duration-200">
+                              <label className="text-[9px] font-bold text-purple-600 uppercase tracking-wider block mb-1">Indiquer le montant des frais d'enregistrement (MAD HT) *</label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400 text-xs font-bold font-sans">MAD</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  placeholder="Saisir montant manuellement"
+                                  value={newRegFeeManualAmount}
+                                  onChange={(e) => {
+                                    setNewRegFeeManualAmount(e.target.value);
+                                  }}
+                                  className="w-full pl-12 pr-3 py-2 bg-purple-50/50 border border-purple-200 rounded-xl outline-hidden text-purple-950 font-mono font-bold text-xs"
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {(newStandType === 'personalise' || newStandType === 'exceptionnel') && (
@@ -1069,9 +1148,13 @@ export default function CrmView({
                           formulaDesc = "Manuel";
                         }
 
-                        if (newIncludeRegFee) {
+                        if (newRegFeeMode === 'yes') {
                           amountHT += 2500;
                           formulaDesc += " + 2500 MAD Enregistrement";
+                        } else if (newRegFeeMode === 'manual') {
+                          const manualAmount = parseFloat(newRegFeeManualAmount) || 0;
+                          amountHT += manualAmount;
+                          formulaDesc += ` + ${manualAmount} MAD Enregistrement (manuel)`;
                         }
 
                         const tvaAmount = amountHT * 0.20;
@@ -1178,7 +1261,12 @@ export default function CrmView({
                   <div>
                     <h5 className="font-serif font-black text-[#2D2D2D] text-sm leading-tight">{selectedContact.company}</h5>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap font-sans">
-                      <span className="text-[9px] text-[#A68A64] uppercase font-bold tracking-wider">{selectedContact.role === 'client' ? 'Exposant Officiel' : 'Prospect Enregistré'}</span>
+                      <span className="text-[9px] text-[#A68A64] uppercase font-bold tracking-wider">
+                        {selectedContact.role === 'client' ? 'Exposant Officiel' : 
+                         selectedContact.role === 'prospect' ? 'Prospect Enregistré' : 
+                         selectedContact.role === 'partner_media' ? 'Partenaire Média Officiel' : 
+                         selectedContact.role === 'partner' ? 'Partenaire Officiel' : 'Fournisseur / Prestataire'}
+                      </span>
                       {selectedContact.role === 'prospect' && (
                         <span className={`text-[9.5px] px-2 py-0.5 rounded-md font-bold border leading-tight ${getProspectStatusColorClass(selectedContact.prospectStatus)}`}>
                           {getProspectStatusLabel(selectedContact.prospectStatus)}
@@ -1257,9 +1345,10 @@ export default function CrmView({
                         }
                         const preRegAmount = amountHT;
                         const includeReg = selectedContact.includeRegistrationFee !== false;
-                        if (includeReg) {
-                          amountHT += 2500;
-                        }
+                        const regAmount = includeReg 
+                          ? (selectedContact.registrationFeeAmount !== undefined ? selectedContact.registrationFeeAmount : 2500)
+                          : 0;
+                        amountHT += regAmount;
                         const tvaAmount = amountHT * 0.20;
                         const amountTTC = amountHT * 1.20;
 
@@ -1271,8 +1360,8 @@ export default function CrmView({
                             </div>
                             <div className="flex justify-between items-center text-[11px] text-[#7A7667]">
                               <span>Frais d'enregistrement :</span>
-                              <span className={`font-semibold font-mono ${includeReg ? 'text-amber-700' : 'text-slate-400 line-through'}`}>
-                                {includeReg ? '+2 500 MAD (Inclus)' : '0 MAD (Exclu)'}
+                              <span className={`font-semibold font-mono ${includeReg ? 'text-amber-700 font-bold' : 'text-slate-400 line-through'}`}>
+                                {includeReg ? `+${regAmount.toLocaleString()} MAD` : '0 MAD (Exclu)'}
                               </span>
                             </div>
                             <div className="flex justify-between items-center text-[11.5px] font-bold text-[#A68A64] border-t border-[#E8E6DE]/30 pt-1">
@@ -1290,6 +1379,21 @@ export default function CrmView({
                           </div>
                         );
                       })()}
+                    </div>
+                  )}
+
+                  {selectedContact.role === 'partner_media' && (
+                    <div className="bg-purple-50/50 border border-purple-200/60 rounded-2xl p-4 my-2 col-span-1 space-y-2.5 font-sans">
+                      <div className="flex items-center gap-2 border-b border-purple-100 pb-2 mb-1 border-dashed">
+                        <span className="text-xl">🎥</span>
+                        <div>
+                          <p className="text-[9px] font-bold text-purple-700 uppercase tracking-wider leading-none">Partenaire Média</p>
+                          <p className="font-bold text-purple-900 text-[11px] mt-0.5">Gratuit (Aucun frais de stand)</p>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-[#55476D] font-medium leading-relaxed italic">
+                        Ce contact est un partenaire média officiel. Il occupe un stand gratuitement et n'a pas de facturation ni devis associé.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -1318,6 +1422,19 @@ export default function CrmView({
                     >
                       <Trash2 className="w-4 h-4" />
                       <span>Supprimer le Prospect</span>
+                    </button>
+                  </div>
+                )}
+
+                {selectedContact.role === 'partner_media' && (
+                  <div className="space-y-2 pt-1 font-sans">
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteContact(selectedContact.id, selectedContact.name)}
+                      className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 font-semibold rounded-xl border border-red-200 transition-all cursor-pointer flex items-center justify-center gap-2 text-xs text-center"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Supprimer le Partenaire Média</span>
                     </button>
                   </div>
                 )}
@@ -1644,6 +1761,7 @@ export default function CrmView({
                   <option value="prospect">Prospect (En cours de démarchage)</option>
                   <option value="client">Client (Exposant officiel)</option>
                   <option value="partner">Partenaire officiel</option>
+                  <option value="partner_media">Partenaire Média</option>
                   <option value="fournisseur">Fournisseur / Prestataire</option>
                 </select>
               </div>
@@ -1704,31 +1822,69 @@ export default function CrmView({
                     </div>
 
                     <div className="space-y-1 col-span-2">
-                      <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Frais d'enregistrement d'Enquête (2500 MAD HT)</label>
-                      <div className="flex gap-2">
+                      <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Frais d'enregistrement d'Enquête</label>
+                      <div className="grid grid-cols-3 gap-2">
                         <button
                           type="button"
-                          onClick={() => setEditIncludeRegFee(true)}
-                          className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
-                            editIncludeRegFee 
+                          onClick={() => {
+                            setEditRegFeeMode('yes');
+                            setEditIncludeRegFee(true);
+                          }}
+                          className={`py-2 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
+                            editRegFeeMode === 'yes' 
                               ? 'bg-[#A68A64] text-white border-[#A68A64] shadow-xs' 
-                              : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-slate-50'
+                              : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-[#F8F7F2]'
                           }`}
                         >
-                          ✅ OUI (+2,500 MAD)
+                          ✅ Oui (2500)
                         </button>
                         <button
                           type="button"
-                          onClick={() => setEditIncludeRegFee(false)}
-                          className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
-                            !editIncludeRegFee 
+                          onClick={() => {
+                            setEditRegFeeMode('no');
+                            setEditIncludeRegFee(false);
+                          }}
+                          className={`py-2 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
+                            editRegFeeMode === 'no' 
                               ? 'bg-[#FAF9F5] text-rose-700 border-[#E8E6DE] shadow-inner font-bold' 
-                              : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-slate-50'
+                              : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-[#F8F7F2]'
                           }`}
                         >
-                          ❌ NON (Exclure)
+                          ❌ Non (Exclu)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditRegFeeMode('manual');
+                            setEditIncludeRegFee(true);
+                          }}
+                          className={`py-2 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
+                            editRegFeeMode === 'manual' 
+                              ? 'bg-purple-600 text-white border-purple-600 shadow-xs font-bold' 
+                              : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-[#F8F7F2]'
+                          }`}
+                        >
+                          ✏️ Manuel
                         </button>
                       </div>
+                      {editRegFeeMode === 'manual' && (
+                        <div className="mt-2 text-left animate-in fade-in duration-200">
+                          <label className="text-[9px] font-bold text-purple-600 uppercase tracking-wider block mb-1">Indiquer le montant des frais d'enregistrement (MAD HT) *</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400 text-xs font-bold font-sans">MAD</span>
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="Saisir montant manuellement"
+                              value={editRegFeeManualAmount}
+                              onChange={(e) => {
+                                setEditRegFeeManualAmount(e.target.value);
+                              }}
+                              className="w-full pl-12 pr-3 py-2 bg-purple-50/50 border border-purple-200 rounded-xl outline-hidden text-purple-950 font-mono font-bold text-xs"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {(editStandType === 'personalise' || editStandType === 'exceptionnel') && (
@@ -1762,9 +1918,13 @@ export default function CrmView({
                       formulaDesc = "Manuel";
                     }
 
-                    if (editIncludeRegFee) {
+                    if (editRegFeeMode === 'yes') {
                       amountHT += 2500;
                       formulaDesc += " + 2500 MAD Enregistrement";
+                    } else if (editRegFeeMode === 'manual') {
+                      const manualAmount = parseFloat(editRegFeeManualAmount) || 0;
+                      amountHT += manualAmount;
+                      formulaDesc += ` + ${manualAmount} MAD Enregistrement (manuel)`;
                     }
 
                     const tvaAmount = amountHT * 0.20;

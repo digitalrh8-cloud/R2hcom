@@ -23,7 +23,7 @@ export interface Contact {
   phone: string;
   company: string;
   site: SiteId;
-  role: 'prospect' | 'client' | 'fournisseur' | 'partner';
+  role: 'prospect' | 'client' | 'fournisseur' | 'partner' | 'partner_media';
   dateAdded: string;
   notes?: string;
   standNumber?: string;
@@ -32,6 +32,7 @@ export interface Contact {
   exceptionalPrice?: number;
   standArea?: number;
   includeRegistrationFee?: boolean;
+  registrationFeeAmount?: number;
 }
 
 export type StandStatus = 'disponible' | 'reserve' | 'vendu' | 'sponsorise';
@@ -72,6 +73,7 @@ export interface Transaction {
   dueDate: string;
   items: TransactionItem[];
   notes?: string;
+  advancePaid?: number;
 }
 
 export interface Campaign {
