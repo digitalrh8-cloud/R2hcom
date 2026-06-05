@@ -44,6 +44,8 @@ export interface Stand {
   companyName?: string;
   category?: string;
   notes?: string;
+  standType?: 'surface_nue' | 'equipe' | 'personalise';
+  exceptionalPrice?: number;
 }
 
 export interface TransactionItem {

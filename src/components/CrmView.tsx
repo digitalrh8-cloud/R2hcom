@@ -259,12 +259,31 @@ export default function CrmView({
     let initialItems: TransactionItem[] = [];
 
     if (matchedStands.length > 0) {
-      initialItems = matchedStands.map((stand, idx) => ({
-        id: `item_st_${stand.id}_${idx}_${Date.now()}`,
-        description: `Espace stand ${stand.num} (${stand.hall}) - ${stand.area}m²`,
-        quantity: 1,
-        unitPrice: stand.area * stand.pricePerM2
-      }));
+      initialItems = matchedStands.map((stand, idx) => {
+        let finalPrice = stand.area * (stand.pricePerM2 || 2500);
+        let categoryLabel = "Surface Nue";
+        
+        if (stand.standType === 'equipe') {
+          categoryLabel = "Stand Équipé";
+          finalPrice = stand.area * ((stand.pricePerM2 || 2500) + 500);
+        } else if (stand.standType === 'personalise') {
+          categoryLabel = "Stand Personnalisé";
+          finalPrice = stand.area * ((stand.pricePerM2 || 2500) + 1200);
+        }
+        
+        // Exceptional price overrides default calculations if configured
+        if (stand.exceptionalPrice !== undefined && stand.exceptionalPrice !== null && stand.exceptionalPrice > 0) {
+          finalPrice = stand.exceptionalPrice;
+          categoryLabel += " - Tarif Exceptionnel";
+        }
+
+        return {
+          id: `item_st_${stand.id}_${idx}_${Date.now()}`,
+          description: `Espace stand ${stand.num} (${stand.hall}) - ${stand.area}m² (${categoryLabel})`,
+          quantity: 1,
+          unitPrice: finalPrice
+        };
+      });
     } else if (matchedDevis.length > 0 && matchedDevis[0].items && matchedDevis[0].items.length > 0) {
       initialItems = matchedDevis[0].items.map((item, idx) => ({
         id: `item_dv_${item.id}_${idx}_${Date.now()}`,

@@ -58,6 +58,8 @@ export default function DashboardView({
   const [editCategory, setEditCategory] = useState('');
   const [editStatus, setEditStatus] = useState<'disponible' | 'reserve' | 'vendu' | 'sponsorise'>('disponible');
   const [editNotes, setEditNotes] = useState('');
+  const [editStandType, setEditStandType] = useState<'surface_nue' | 'equipe' | 'personalise'>('surface_nue');
+  const [editExceptionalPrice, setEditExceptionalPrice] = useState<string>('');
   const [showNotification, setShowNotification] = useState<string | null>(null);
 
   // Determine current floor plan site (since R2H aggregates, default floor plan view is Garden Expo)
@@ -431,12 +433,16 @@ export default function DashboardView({
     setEditCategory(stand.category || '');
     setEditStatus(stand.status);
     setEditNotes(stand.notes || '');
+    setEditStandType(stand.standType || 'surface_nue');
+    setEditExceptionalPrice(stand.exceptionalPrice ? String(stand.exceptionalPrice) : '');
   };
 
   // Save stand changes
   const handleSaveStand = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedStand) return;
+
+    const parsedPrice = parseFloat(editExceptionalPrice);
 
     setStands(prev => prev.map(s => {
       if (s.id === selectedStand.id) {
@@ -446,7 +452,9 @@ export default function DashboardView({
           companyName: editStatus === 'disponible' ? '' : editCompany,
           clientName: editStatus === 'disponible' ? '' : editClient,
           category: editStatus === 'disponible' ? '' : editCategory,
-          notes: editNotes
+          notes: editNotes,
+          standType: editStandType,
+          exceptionalPrice: !isNaN(parsedPrice) && parsedPrice >= 0 ? parsedPrice : undefined
         };
       }
       return s;
@@ -596,6 +604,25 @@ export default function DashboardView({
       case 'sponsorise': return '#8B5CF6';
       default: return '#6B7280';
     }
+  };
+
+  const getStandTooltip = (stand: Stand) => {
+    let typeName = "Surface Nue";
+    if (stand.standType === 'equipe') typeName = "Stand Équipé";
+    else if (stand.standType === 'personalise') typeName = "Stand Personnalisé";
+    
+    let priceText = "";
+    if (stand.exceptionalPrice !== undefined && stand.exceptionalPrice !== null && stand.exceptionalPrice > 0) {
+      priceText = `${stand.exceptionalPrice.toLocaleString()} MAD (Exceptionnel)`;
+    } else {
+      let r = stand.pricePerM2 || 2500;
+      if (stand.standType === 'equipe') r += 500;
+      else if (stand.standType === 'personalise') r += 1200;
+      priceText = `${(stand.area * r).toLocaleString()} MAD`;
+    }
+
+    const companyStr = stand.companyName ? ` - ${stand.companyName}` : " - Libre";
+    return `Stand ${stand.num} (${stand.area}m²)${companyStr}\nType: ${typeName}\nPrix: ${priceText}`;
   };
 
   // Determine site config for presentation colors
@@ -1358,6 +1385,7 @@ export default function DashboardView({
                           <button
                             key={stand.id}
                             onClick={() => handleSelectStand(stand)}
+                            title={getStandTooltip(stand)}
                             className={`border rounded-xl p-2.5 text-center transition-all cursor-pointer ${colorMap[stand.status] || colorMap['disponible']} flex flex-col justify-between items-center h-20 min-w-[55px]`}
                           >
                             <span className="text-xs font-mono font-bold tracking-tight">{stand.num}</span>
@@ -1682,6 +1710,67 @@ export default function DashboardView({
                   <option value="vendu">⛔ Vendu (Contrat signé)</option>
                   <option value="sponsorise">★ Sponsorisé (Partenaire officiel)</option>
                 </select>
+              </div>
+
+              {/* Stand Type Category Package */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Catégorie du Stand</label>
+                <select
+                  value={editStandType}
+                  onChange={(e) => setEditStandType(e.target.value as any)}
+                  className="w-full text-xs bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl p-2.5 outline-hidden text-[#2D2D2D] font-semibold"
+                >
+                  <option value="surface_nue">🏢 Surface Nue (Prix standard)</option>
+                  <option value="equipe">📦 Stand Équipé (+500 MAD/m²)</option>
+                  <option value="personalise">✨ Stand Personnalisé (+1200 MAD/m²)</option>
+                </select>
+              </div>
+
+              {/* Exceptional Stand rate override */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Tarif stand - Prix Exceptionnel (MAD)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editExceptionalPrice}
+                  onChange={(e) => setEditExceptionalPrice(e.target.value)}
+                  placeholder="Laisser vide pour calcul standard"
+                  className="w-full text-xs bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl p-2.5 outline-hidden text-[#2D2D2D] font-mono font-semibold"
+                />
+                <p className="text-[9px] text-[#7A7667]/80">Si renseigné, ce tarif exceptionnel remplacera le calcul au m² lors des facturations.</p>
+              </div>
+
+              {/* Dynamic Pricing Estimate Box */}
+              <div className="bg-[#FBFBFA] border border-[#E8E6DE]/60 rounded-2xl p-4.5 space-y-2 text-xs text-[#7A7667]">
+                <div className="flex justify-between font-medium">
+                  <span>Surface :</span>
+                  <span className="font-mono text-[#2D2D2D] font-semibold">{selectedStand.area} m²</span>
+                </div>
+                <div className="flex justify-between font-medium">
+                  <span>Tarif m² de base :</span>
+                  <span className="font-mono text-[#2D2D2D] font-semibold">{(selectedStand.pricePerM2 || 2500).toLocaleString()} MAD</span>
+                </div>
+                <div className="flex justify-between font-medium">
+                  <span>Formule :</span>
+                  <span className="font-serif italic text-xs text-[#2D2D2D] font-bold">
+                    {editStandType === 'surface_nue' ? 'Surface Nue' : editStandType === 'equipe' ? 'Stand Équipé (+500/m²)' : 'Stand Personnalisé (+1200/m²)'}
+                  </span>
+                </div>
+                <div className="border-t border-[#E8E6DE]/50 pt-2 flex justify-between font-bold text-sm text-[#2D2D2D]">
+                  <span>Total Financier Estimé :</span>
+                  <span className="font-mono text-[#A68A64]">
+                    {(() => {
+                      const exp = parseFloat(editExceptionalPrice);
+                      if (!isNaN(exp) && exp >= 0) {
+                        return `${exp.toLocaleString()} MAD (Exceptionnel)`;
+                      }
+                      let rate = selectedStand.pricePerM2 || 2500;
+                      if (editStandType === 'equipe') rate += 500;
+                      if (editStandType === 'personalise') rate += 1200;
+                      return `${(selectedStand.area * rate).toLocaleString()} MAD`;
+                    })()}
+                  </span>
+                </div>
               </div>
 
               {editStatus !== 'disponible' && (
