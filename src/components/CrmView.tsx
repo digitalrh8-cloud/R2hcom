@@ -779,8 +779,8 @@ export default function CrmView({
                             )}
                             {contact.role === 'prospect' && contact.standType && (
                               <span className="text-[9px] font-sans text-slate-650 bg-amber-50/40 border border-[#E8E6DE] px-2 py-0.5 rounded-md font-semibold truncate max-w-[170px] mt-0.5">
-                                {contact.standType === 'surface_nue' ? '🏢 Sec (1500 MAD)' :
-                                 contact.standType === 'equipe' ? '📦 Équipé (1800 MAD)' :
+                                {contact.standType === 'surface_nue' ? '🏢 Sec (1800 MAD)' :
+                                 contact.standType === 'equipe' ? '📦 Équipé (2400 MAD)' :
                                  contact.standType === 'personalise' ? '✨ Perso (Manuel)' : '💎 Exceptionnel'}
                                 {contact.standArea ? ` [${contact.standArea}m²]` : ''}
                               </span>
@@ -984,8 +984,8 @@ export default function CrmView({
                             onChange={(e) => setNewStandType(e.target.value as any)}
                             className="w-full p-2.5 bg-white border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-xs font-semibold"
                           >
-                            <option value="surface_nue">🏢 Surface Nue (1500 MAD/m²)</option>
-                            <option value="equipe">📦 Stand Équipé (1800 MAD/m²)</option>
+                            <option value="surface_nue">🏢 Surface Nue (1800 MAD/m²)</option>
+                            <option value="equipe">📦 Stand Équipé (2400 MAD/m²)</option>
                             <option value="personalise">✨ Stand Personnalisé (Saisie Manuelle)</option>
                             <option value="exceptionnel">💎 Tarif Exceptionnel (Saisie Manuelle)</option>
                           </select>
@@ -1018,23 +1018,47 @@ export default function CrmView({
                         )}
                       </div>
 
-                      {/* Simulator */}
-                      <div className="flex justify-between items-center bg-[#FDFDFB] border border-[#E8E6DE]/60 rounded-xl p-3.5 text-xs text-[#7A7667] shadow-3xs">
-                        <span className="font-medium text-[11px]">Estimation Tarifaire :</span>
-                        <span className="font-bold font-mono text-[#A68A64] text-sm">
-                          {(() => {
-                            const area = parseFloat(newStandArea) || 0;
-                            if (newStandType === 'surface_nue') {
-                              return `${(area * 1500).toLocaleString()} MAD (${area} m² x 1500)`;
-                            } else if (newStandType === 'equipe') {
-                              return `${(area * 1800).toLocaleString()} MAD (${area} m² x 1800)`;
-                            } else {
-                              const manualPrice = parseFloat(newExceptionalPrice) || 0;
-                              return `${manualPrice.toLocaleString()} MAD (Manuel)`;
-                            }
-                          })()}
-                        </span>
-                      </div>
+                      {/* Simulator with HT, TVA 20% & TTC */}
+                      {(() => {
+                        const area = parseFloat(newStandArea) || 0;
+                        let amountHT = 0;
+                        let formulaDesc = "";
+                        if (newStandType === 'surface_nue') {
+                          amountHT = area * 1800;
+                          formulaDesc = `${area} m² x 1800 MAD`;
+                        } else if (newStandType === 'equipe') {
+                          amountHT = area * 2400;
+                          formulaDesc = `${area} m² x 2400 MAD`;
+                        } else {
+                          amountHT = parseFloat(newExceptionalPrice) || 0;
+                          formulaDesc = "Saisie manuelle";
+                        }
+                        const tvaAmount = amountHT * 0.20;
+                        const amountTTC = amountHT * 1.20;
+
+                        return (
+                          <div className="bg-[#FDFDFB] border border-[#E8E6DE]/70 rounded-2xl p-4.5 space-y-2.5 text-xs text-[#7A7667] shadow-3xs w-full col-span-2">
+                            <div className="flex justify-between items-center text-[10px] font-bold text-[#A68A64] border-b border-[#E8E6DE]/50 pb-1.5 mb-1">
+                              <span>SIMULATEUR DE TARIF (HT + TVA 20%)</span>
+                              <span className="font-mono text-slate-400">({formulaDesc})</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium text-[11px]">Total HT :</span>
+                              <span className="font-bold font-mono text-[#2D2D2D]">{amountHT.toLocaleString()} MAD</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[#7A7667] border-dashed border-b border-[#E8E6DE]/55 pb-2">
+                              <span className="font-medium text-[11.5px] items-center gap-1">
+                                TVA (20% par défaut) :
+                              </span>
+                              <span className="font-bold font-mono text-slate-600">+{tvaAmount.toLocaleString()} MAD</span>
+                            </div>
+                            <div className="flex justify-between items-center pt-1">
+                              <span className="font-black text-[#2D2D2D] text-[11.5px]">NET À PAYER TTC :</span>
+                              <span className="font-black font-mono text-[#A68A64] text-sm bg-amber-50/50 px-2 py-1 rounded-lg border border-amber-150">{amountTTC.toLocaleString()} MAD</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
 
@@ -1167,31 +1191,49 @@ export default function CrmView({
                   </div>
 
                   {selectedContact.role === 'prospect' && selectedContact.standType && (
-                    <div className="flex items-start gap-2.5 bg-[#FAF9F5] border border-[#E8E6DE]/60 rounded-xl p-3 my-2 col-span-1">
-                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 shrink-0 text-sm">
-                        📋
+                    <div className="bg-[#FAF9F5] border border-[#E8E6DE]/60 rounded-2xl p-4 my-2 col-span-1 space-y-2.5 font-sans">
+                      <div className="flex items-center gap-2 border-b border-[#E8E6DE]/50 pb-2 mb-1">
+                        <span className="text-base">📋</span>
+                        <div>
+                          <p className="text-[9px] font-bold text-[#7A7667] uppercase tracking-wider leading-none">Option Tarifaire Prospect</p>
+                          <p className="font-bold text-[#2D2D2D] text-[10.5px] mt-0.5">
+                            {selectedContact.standType === 'surface_nue' ? '🏢 Surface Nue (1800 MAD)' :
+                             selectedContact.standType === 'equipe' ? '📦 Stand Équipé (2400 MAD)' :
+                             selectedContact.standType === 'personalise' ? '✨ Stand Personnalisé' : '💎 Tarif Exceptionnel'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="space-y-0.5 text-xs">
-                        <p className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Option Tarifaire Enquête</p>
-                        <p className="font-semibold text-[#2D2D2D]">
-                          {selectedContact.standType === 'surface_nue' ? '🏢 Surface Nue (1500 MAD/m²)' :
-                           selectedContact.standType === 'equipe' ? '📦 Stand Équipé (1800 MAD/m²)' :
-                           selectedContact.standType === 'personalise' ? '✨ Stand Personnalisé (Saisie Manuelle)' : '💎 Tarif Exceptionnel (Saisie Manuelle)'}
-                        </p>
-                        <p className="text-[11px] text-[#A68A64] font-bold font-mono">
-                          {(() => {
-                            const area = selectedContact.standArea || 0;
-                            if (selectedContact.standType === 'surface_nue') {
-                              return `${(area * 1500).toLocaleString()} MAD (${area} m² x 1500)`;
-                            } else if (selectedContact.standType === 'equipe') {
-                              return `${(area * 1800).toLocaleString()} MAD (${area} m² x 1800)`;
-                            } else {
-                              const manualPrice = selectedContact.exceptionalPrice || 0;
-                              return `${manualPrice.toLocaleString()} MAD (Tarif Manuel)`;
-                            }
-                          })()}
-                        </p>
-                      </div>
+                      
+                      {(() => {
+                        const area = selectedContact.standArea || 0;
+                        let amountHT = 0;
+                        if (selectedContact.standType === 'surface_nue') {
+                          amountHT = area * 1800;
+                        } else if (selectedContact.standType === 'equipe') {
+                          amountHT = area * 2400;
+                        } else {
+                          amountHT = selectedContact.exceptionalPrice || 0;
+                        }
+                        const tvaAmount = amountHT * 0.20;
+                        const amountTTC = amountHT * 1.20;
+
+                        return (
+                          <div className="space-y-1.5 text-xs">
+                            <div className="flex justify-between items-center text-[11px] text-[#7A7667]">
+                              <span>Total HT {area > 0 && `(${area} m²)`} :</span>
+                              <span className="font-bold font-mono text-[#2D2D2D]">{amountHT.toLocaleString()} MAD</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[11px] text-[#7A7667] border-dashed border-b border-[#E8E6DE]/40 pb-1.5">
+                              <span>TVA (20%) :</span>
+                              <span className="font-semibold font-mono text-slate-500">+{tvaAmount.toLocaleString()} MAD</span>
+                            </div>
+                            <div className="flex justify-between items-center pt-1 font-bold">
+                              <span className="text-[#2D2D2D]">Montant TTC :</span>
+                              <span className="font-black font-mono text-[#A68A64] text-xs bg-amber-50/60 px-2 py-0.5 rounded-md border border-amber-150">{amountTTC.toLocaleString()} MAD</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
@@ -1586,8 +1628,8 @@ export default function CrmView({
                         onChange={(e) => setEditStandType(e.target.value as any)}
                         className="w-full p-2.5 bg-white border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-xs font-semibold"
                       >
-                        <option value="surface_nue">🏢 Surface Nue (1500 MAD/m²)</option>
-                        <option value="equipe">📦 Stand Équipé (1800 MAD/m²)</option>
+                        <option value="surface_nue">🏢 Surface Nue (1800 MAD/m²)</option>
+                        <option value="equipe">📦 Stand Équipé (2400 MAD/m²)</option>
                         <option value="personalise">✨ Stand Personnalisé (Saisie Manuelle)</option>
                         <option value="exceptionnel">💎 Tarif Exceptionnel (Saisie Manuelle)</option>
                       </select>
@@ -1620,23 +1662,47 @@ export default function CrmView({
                     )}
                   </div>
 
-                  {/* Simulator */}
-                  <div className="flex justify-between items-center bg-[#FDFDFB] border border-[#E8E6DE]/60 rounded-xl p-3 text-xs text-[#7A7667] shadow-3xs">
-                    <span className="font-medium text-[11px]">Estimation Tarifaire :</span>
-                    <span className="font-bold font-mono text-[#A68A64] text-sm">
-                      {(() => {
-                        const area = parseFloat(editStandArea) || 0;
-                        if (editStandType === 'surface_nue') {
-                          return `${(area * 1500).toLocaleString()} MAD (${area} m² x 1500)`;
-                        } else if (editStandType === 'equipe') {
-                          return `${(area * 1800).toLocaleString()} MAD (${area} m² x 1800)`;
-                        } else {
-                          const manualPrice = parseFloat(editExceptionalPrice) || 0;
-                          return `${manualPrice.toLocaleString()} MAD (Manuel)`;
-                        }
-                      })()}
-                    </span>
-                  </div>
+                  {/* Simulator with HT, TVA 20% & TTC */}
+                  {(() => {
+                    const area = parseFloat(editStandArea) || 0;
+                    let amountHT = 0;
+                    let formulaDesc = "";
+                    if (editStandType === 'surface_nue') {
+                      amountHT = area * 1800;
+                      formulaDesc = `${area} m² x 1800 MAD`;
+                    } else if (editStandType === 'equipe') {
+                      amountHT = area * 2400;
+                      formulaDesc = `${area} m² x 2400 MAD`;
+                    } else {
+                      amountHT = parseFloat(editExceptionalPrice) || 0;
+                      formulaDesc = "Saisie manuelle";
+                    }
+                    const tvaAmount = amountHT * 0.20;
+                    const amountTTC = amountHT * 1.20;
+
+                    return (
+                      <div className="bg-[#FDFDFB] border border-[#E8E6DE]/70 rounded-2xl p-4.5 space-y-2.5 text-xs text-[#7A7667] shadow-3xs w-full col-span-2">
+                        <div className="flex justify-between items-center text-[10px] font-bold text-[#A68A64] border-b border-[#E8E6DE]/50 pb-1.5 mb-1">
+                          <span>SIMULATEUR DE TARIF (HT + TVA 20%)</span>
+                          <span className="font-mono text-slate-400">({formulaDesc})</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-[11px]">Total HT :</span>
+                          <span className="font-bold font-mono text-[#2D2D2D]">{amountHT.toLocaleString()} MAD</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[#7A7667] border-dashed border-b border-[#E8E6DE]/55 pb-2">
+                          <span className="font-medium text-[11.5px] items-center gap-1">
+                            TVA (20% par défaut) :
+                          </span>
+                          <span className="font-bold font-mono text-slate-600">+{tvaAmount.toLocaleString()} MAD</span>
+                        </div>
+                        <div className="flex justify-between items-center pt-1">
+                          <span className="font-black text-[#2D2D2D] text-[11.5px]">NET À PAYER TTC :</span>
+                          <span className="font-black font-mono text-[#A68A64] text-sm bg-amber-50/50 px-2 py-1 rounded-lg border border-amber-150">{amountTTC.toLocaleString()} MAD</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
