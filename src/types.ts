@@ -28,6 +28,9 @@ export interface Contact {
   notes?: string;
   standNumber?: string;
   prospectStatus?: 'interesse' | 'pas_interesse' | 'a_rappeler' | 'relance' | 'demande_devis';
+  standType?: 'surface_nue' | 'equipe' | 'personalise' | 'exceptionnel';
+  exceptionalPrice?: number;
+  standArea?: number;
 }
 
 export type StandStatus = 'disponible' | 'reserve' | 'vendu' | 'sponsorise';

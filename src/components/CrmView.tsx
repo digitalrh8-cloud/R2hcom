@@ -93,6 +93,9 @@ export default function CrmView({
   const [newNotes, setNewNotes] = useState('');
   const [newStandNumber, setNewStandNumber] = useState('');
   const [newProspectStatus, setNewProspectStatus] = useState<'interesse' | 'pas_interesse' | 'a_rappeler' | 'relance' | 'demande_devis'>('interesse');
+  const [newStandType, setNewStandType] = useState<'surface_nue' | 'equipe' | 'personalise' | 'exceptionnel'>('surface_nue');
+  const [newExceptionalPrice, setNewExceptionalPrice] = useState<string>('');
+  const [newStandArea, setNewStandArea] = useState<string>('');
 
   // Calculate sorted free stands for the selected site
   const freeStands = stands
@@ -110,6 +113,9 @@ export default function CrmView({
   const [editNotes, setEditNotes] = useState('');
   const [editStandNumber, setEditStandNumber] = useState('');
   const [editProspectStatus, setEditProspectStatus] = useState<'interesse' | 'pas_interesse' | 'a_rappeler' | 'relance' | 'demande_devis'>('interesse');
+  const [editStandType, setEditStandType] = useState<'surface_nue' | 'equipe' | 'personalise' | 'exceptionnel'>('surface_nue');
+  const [editExceptionalPrice, setEditExceptionalPrice] = useState<string>('');
+  const [editStandArea, setEditStandArea] = useState<string>('');
 
   // Calculate sorted free stands for editing site, including the contact's current stand
   const editFreeStands = stands
@@ -404,6 +410,8 @@ export default function CrmView({
     if (!newName || !newCompany || !newEmail) return;
 
     const formattedStandNumber = newStandNumber.trim();
+    const parsedPrice = parseFloat(newExceptionalPrice);
+    const parsedArea = parseFloat(newStandArea);
 
     const newContact: Contact = {
       id: `c_gen_${Date.now()}`,
@@ -416,7 +424,10 @@ export default function CrmView({
       dateAdded: new Date().toISOString().split('T')[0],
       notes: newNotes,
       standNumber: formattedStandNumber || undefined,
-      prospectStatus: newRole === 'prospect' ? newProspectStatus : undefined
+      prospectStatus: newRole === 'prospect' ? newProspectStatus : undefined,
+      standType: newRole === 'prospect' ? newStandType : undefined,
+      exceptionalPrice: newRole === 'prospect' && !isNaN(parsedPrice) && parsedPrice >= 0 ? parsedPrice : undefined,
+      standArea: newRole === 'prospect' && !isNaN(parsedArea) && parsedArea >= 0 ? parsedArea : undefined
     };
 
     setContacts(prev => [newContact, ...prev]);
@@ -443,6 +454,9 @@ export default function CrmView({
     setNewCompany('');
     setNewNotes('');
     setNewStandNumber('');
+    setNewStandType('surface_nue');
+    setNewExceptionalPrice('');
+    setNewStandArea('');
     setShowAddForm(false);
     triggerToast(
       newRole === 'client' 
@@ -523,6 +537,9 @@ export default function CrmView({
     setEditNotes(contact.notes || '');
     setEditStandNumber(contact.standNumber || '');
     setEditProspectStatus(contact.prospectStatus || 'interesse');
+    setEditStandType(contact.standType || 'surface_nue');
+    setEditExceptionalPrice(contact.exceptionalPrice ? String(contact.exceptionalPrice) : '');
+    setEditStandArea(contact.standArea ? String(contact.standArea) : '');
   };
 
   // Save changes from Edit modal
@@ -534,6 +551,9 @@ export default function CrmView({
     const oldSite = editModalContact.site;
     const newStandNum = editStandNumber.trim();
     const newSite = editSite;
+
+    const parsedEditPrice = parseFloat(editExceptionalPrice);
+    const parsedEditArea = parseFloat(editStandArea);
 
     // 1. Update GRC contacts list
     setContacts(prev => prev.map(c => {
@@ -548,7 +568,10 @@ export default function CrmView({
           role: editRole,
           notes: editNotes.trim(),
           standNumber: newStandNum || undefined,
-          prospectStatus: editRole === 'prospect' ? editProspectStatus : undefined
+          prospectStatus: editRole === 'prospect' ? editProspectStatus : undefined,
+          standType: editRole === 'prospect' ? editStandType : undefined,
+          exceptionalPrice: editRole === 'prospect' && !isNaN(parsedEditPrice) && parsedEditPrice >= 0 ? parsedEditPrice : undefined,
+          standArea: editRole === 'prospect' && !isNaN(parsedEditArea) && parsedEditArea >= 0 ? parsedEditArea : undefined
         };
       }
       return c;
@@ -566,7 +589,10 @@ export default function CrmView({
         role: editRole,
         notes: editNotes.trim(),
         standNumber: newStandNum || undefined,
-        prospectStatus: editRole === 'prospect' ? editProspectStatus : undefined
+        prospectStatus: editRole === 'prospect' ? editProspectStatus : undefined,
+        standType: editRole === 'prospect' ? editStandType : undefined,
+        exceptionalPrice: editRole === 'prospect' && !isNaN(parsedEditPrice) && parsedEditPrice >= 0 ? parsedEditPrice : undefined,
+        standArea: editRole === 'prospect' && !isNaN(parsedEditArea) && parsedEditArea >= 0 ? parsedEditArea : undefined
       });
     }
 
@@ -749,6 +775,14 @@ export default function CrmView({
                             {contact.role === 'prospect' && (
                               <span className={`text-[9.5px] px-2 py-0.5 rounded-md font-bold border leading-none shadow-3xs ${getProspectStatusColorClass(contact.prospectStatus)}`}>
                                 {getProspectStatusLabel(contact.prospectStatus)}
+                              </span>
+                            )}
+                            {contact.role === 'prospect' && contact.standType && (
+                              <span className="text-[9px] font-sans text-slate-650 bg-amber-50/40 border border-[#E8E6DE] px-2 py-0.5 rounded-md font-semibold truncate max-w-[170px] mt-0.5">
+                                {contact.standType === 'surface_nue' ? '🏢 Sec (1500 MAD)' :
+                                 contact.standType === 'equipe' ? '📦 Équipé (1800 MAD)' :
+                                 contact.standType === 'personalise' ? '✨ Perso (Manuel)' : '💎 Exceptionnel'}
+                                {contact.standArea ? ` [${contact.standArea}m²]` : ''}
                               </span>
                             )}
                           </div>
@@ -935,6 +969,75 @@ export default function CrmView({
                     </div>
                   )}
 
+                  {newRole === 'prospect' && (
+                    <div className="col-span-2 border border-[#E8E6DE]/60 bg-[#FAFAF8] rounded-2xl p-4.5 space-y-3.5 my-1">
+                      <div className="flex justify-between items-center border-b border-[#E8E6DE]/50 pb-2">
+                        <span className="text-[10px] font-bold text-[#A68A64] uppercase tracking-wider">Option Tarifaire de l'Enquête</span>
+                        <span className="text-[9px] bg-amber-50 text-amber-700 font-semibold px-2 py-0.5 rounded-full border border-amber-200">Prospect</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Catégorie de Stand</label>
+                          <select
+                            value={newStandType}
+                            onChange={(e) => setNewStandType(e.target.value as any)}
+                            className="w-full p-2.5 bg-white border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-xs font-semibold"
+                          >
+                            <option value="surface_nue">🏢 Surface Nue (1500 MAD/m²)</option>
+                            <option value="equipe">📦 Stand Équipé (1800 MAD/m²)</option>
+                            <option value="personalise">✨ Stand Personnalisé (Saisie Manuelle)</option>
+                            <option value="exceptionnel">💎 Tarif Exceptionnel (Saisie Manuelle)</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Surface Envisagée (m²)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder="ex: 18"
+                            value={newStandArea}
+                            onChange={(e) => setNewStandArea(e.target.value)}
+                            className="w-full p-2.5 bg-white border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-xs font-mono font-semibold"
+                          />
+                        </div>
+
+                        {(newStandType === 'personalise' || newStandType === 'exceptionnel') && (
+                          <div className="space-y-1 col-span-2">
+                            <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Prix Total Manuel (MAD)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="Entrer le prix personnalisé total"
+                              value={newExceptionalPrice}
+                              onChange={(e) => setNewExceptionalPrice(e.target.value)}
+                              className="w-full p-2.5 bg-white border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-xs font-mono font-semibold"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Simulator */}
+                      <div className="flex justify-between items-center bg-[#FDFDFB] border border-[#E8E6DE]/60 rounded-xl p-3.5 text-xs text-[#7A7667] shadow-3xs">
+                        <span className="font-medium text-[11px]">Estimation Tarifaire :</span>
+                        <span className="font-bold font-mono text-[#A68A64] text-sm">
+                          {(() => {
+                            const area = parseFloat(newStandArea) || 0;
+                            if (newStandType === 'surface_nue') {
+                              return `${(area * 1500).toLocaleString()} MAD (${area} m² x 1500)`;
+                            } else if (newStandType === 'equipe') {
+                              return `${(area * 1800).toLocaleString()} MAD (${area} m² x 1800)`;
+                            } else {
+                              const manualPrice = parseFloat(newExceptionalPrice) || 0;
+                              return `${manualPrice.toLocaleString()} MAD (Manuel)`;
+                            }
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">N° Stand (dans le plan)</label>
                     <select
@@ -1062,6 +1165,35 @@ export default function CrmView({
                       <p className="text-[9px] text-[#7A7667]">N° de stand (dans le plan)</p>
                     </div>
                   </div>
+
+                  {selectedContact.role === 'prospect' && selectedContact.standType && (
+                    <div className="flex items-start gap-2.5 bg-[#FAF9F5] border border-[#E8E6DE]/60 rounded-xl p-3 my-2 col-span-1">
+                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 shrink-0 text-sm">
+                        📋
+                      </div>
+                      <div className="space-y-0.5 text-xs">
+                        <p className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Option Tarifaire Enquête</p>
+                        <p className="font-semibold text-[#2D2D2D]">
+                          {selectedContact.standType === 'surface_nue' ? '🏢 Surface Nue (1500 MAD/m²)' :
+                           selectedContact.standType === 'equipe' ? '📦 Stand Équipé (1800 MAD/m²)' :
+                           selectedContact.standType === 'personalise' ? '✨ Stand Personnalisé (Saisie Manuelle)' : '💎 Tarif Exceptionnel (Saisie Manuelle)'}
+                        </p>
+                        <p className="text-[11px] text-[#A68A64] font-bold font-mono">
+                          {(() => {
+                            const area = selectedContact.standArea || 0;
+                            if (selectedContact.standType === 'surface_nue') {
+                              return `${(area * 1500).toLocaleString()} MAD (${area} m² x 1500)`;
+                            } else if (selectedContact.standType === 'equipe') {
+                              return `${(area * 1800).toLocaleString()} MAD (${area} m² x 1800)`;
+                            } else {
+                              const manualPrice = selectedContact.exceptionalPrice || 0;
+                              return `${manualPrice.toLocaleString()} MAD (Tarif Manuel)`;
+                            }
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5 font-sans">
@@ -1436,6 +1568,75 @@ export default function CrmView({
                     <option value="relance" style={{ backgroundColor: '#fff', color: '#0891B2' }}>↻ Relance</option>
                     <option value="demande_devis" style={{ backgroundColor: '#fff', color: '#6D28D9' }}>✎ Demande de devis</option>
                   </select>
+                </div>
+              )}
+
+              {editRole === 'prospect' && (
+                <div className="sm:col-span-2 border border-[#E8E6DE]/60 bg-[#FAFAF8] rounded-2xl p-4 space-y-3.5 my-1">
+                  <div className="flex justify-between items-center border-b border-[#E8E6DE]/50 pb-2">
+                    <span className="text-[10px] font-bold text-[#A68A64] uppercase tracking-wider">Option Tarifaire du Prospect (Modification)</span>
+                    <span className="text-[9px] bg-amber-50 text-amber-700 font-semibold px-2 py-0.5 rounded-full border border-amber-200">Mise à jour</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Catégorie de Stand</label>
+                      <select
+                        value={editStandType}
+                        onChange={(e) => setEditStandType(e.target.value as any)}
+                        className="w-full p-2.5 bg-white border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-xs font-semibold"
+                      >
+                        <option value="surface_nue">🏢 Surface Nue (1500 MAD/m²)</option>
+                        <option value="equipe">📦 Stand Équipé (1800 MAD/m²)</option>
+                        <option value="personalise">✨ Stand Personnalisé (Saisie Manuelle)</option>
+                        <option value="exceptionnel">💎 Tarif Exceptionnel (Saisie Manuelle)</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Surface Envisagée (m²)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder="ex: 18"
+                        value={editStandArea}
+                        onChange={(e) => setEditStandArea(e.target.value)}
+                        className="w-full p-2.5 bg-white border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-xs font-mono font-semibold"
+                      />
+                    </div>
+
+                    {(editStandType === 'personalise' || editStandType === 'exceptionnel') && (
+                      <div className="space-y-1 col-span-2">
+                        <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Prix Total Manuel (MAD)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Entrer le prix personnalisé"
+                          value={editExceptionalPrice}
+                          onChange={(e) => setEditExceptionalPrice(e.target.value)}
+                          className="w-full p-2.5 bg-white border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-xs font-mono font-semibold"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Simulator */}
+                  <div className="flex justify-between items-center bg-[#FDFDFB] border border-[#E8E6DE]/60 rounded-xl p-3 text-xs text-[#7A7667] shadow-3xs">
+                    <span className="font-medium text-[11px]">Estimation Tarifaire :</span>
+                    <span className="font-bold font-mono text-[#A68A64] text-sm">
+                      {(() => {
+                        const area = parseFloat(editStandArea) || 0;
+                        if (editStandType === 'surface_nue') {
+                          return `${(area * 1500).toLocaleString()} MAD (${area} m² x 1500)`;
+                        } else if (editStandType === 'equipe') {
+                          return `${(area * 1800).toLocaleString()} MAD (${area} m² x 1800)`;
+                        } else {
+                          const manualPrice = parseFloat(editExceptionalPrice) || 0;
+                          return `${manualPrice.toLocaleString()} MAD (Manuel)`;
+                        }
+                      })()}
+                    </span>
+                  </div>
                 </div>
               )}
 
