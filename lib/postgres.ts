@@ -413,52 +413,97 @@ export async function saveUserDataToPostgres(data: {
     await initializeDbSchema();
 
     // 1. Stands
-    if (data.stands && data.stands.length > 0) {
-      for (const s of data.stands) {
+    if (data.stands) {
+      if (data.stands.length > 0) {
+        for (const s of data.stands) {
+          await pool.query(
+            'INSERT INTO stands (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
+            [s.id, JSON.stringify(s)]
+          );
+        }
+        const standIds = data.stands.map(s => s.id);
         await pool.query(
-          'INSERT INTO stands (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
-          [s.id, JSON.stringify(s)]
+          'DELETE FROM stands WHERE id NOT IN (' + standIds.map((_, i) => '$' + (i + 1)).join(', ') + ')',
+          standIds
         );
+      } else {
+        await pool.query('DELETE FROM stands');
       }
     }
 
     // 2. Contacts
-    if (data.contacts && data.contacts.length > 0) {
-      for (const c of data.contacts) {
+    if (data.contacts) {
+      if (data.contacts.length > 0) {
+        for (const c of data.contacts) {
+          await pool.query(
+            'INSERT INTO contacts (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
+            [c.id, JSON.stringify(c)]
+          );
+        }
+        const contactIds = data.contacts.map(c => c.id);
         await pool.query(
-          'INSERT INTO contacts (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
-          [c.id, JSON.stringify(c)]
+          'DELETE FROM contacts WHERE id NOT IN (' + contactIds.map((_, i) => '$' + (i + 1)).join(', ') + ')',
+          contactIds
         );
+      } else {
+        await pool.query('DELETE FROM contacts');
       }
     }
 
     // 3. Transactions
-    if (data.transactions && data.transactions.length > 0) {
-      for (const t of data.transactions) {
+    if (data.transactions) {
+      if (data.transactions.length > 0) {
+        for (const t of data.transactions) {
+          await pool.query(
+            'INSERT INTO transactions (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
+            [t.id, JSON.stringify(t)]
+          );
+        }
+        const transactionIds = data.transactions.map(t => t.id);
         await pool.query(
-          'INSERT INTO transactions (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
-          [t.id, JSON.stringify(t)]
+          'DELETE FROM transactions WHERE id NOT IN (' + transactionIds.map((_, i) => '$' + (i + 1)).join(', ') + ')',
+          transactionIds
         );
+      } else {
+        await pool.query('DELETE FROM transactions');
       }
     }
 
     // 4. Campaigns
-    if (data.campaigns && data.campaigns.length > 0) {
-      for (const c of data.campaigns) {
+    if (data.campaigns) {
+      if (data.campaigns.length > 0) {
+        for (const c of data.campaigns) {
+          await pool.query(
+            'INSERT INTO campaigns (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
+            [c.id, JSON.stringify(c)]
+          );
+        }
+        const campaignIds = data.campaigns.map(c => c.id);
         await pool.query(
-          'INSERT INTO campaigns (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
-          [c.id, JSON.stringify(c)]
+          'DELETE FROM campaigns WHERE id NOT IN (' + campaignIds.map((_, i) => '$' + (i + 1)).join(', ') + ')',
+          campaignIds
         );
+      } else {
+        await pool.query('DELETE FROM campaigns');
       }
     }
 
     // 5. Tasks
-    if (data.tasks && data.tasks.length > 0) {
-      for (const t of data.tasks) {
+    if (data.tasks) {
+      if (data.tasks.length > 0) {
+        for (const t of data.tasks) {
+          await pool.query(
+            'INSERT INTO tasks (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
+            [t.id, JSON.stringify(t)]
+          );
+        }
+        const taskIds = data.tasks.map(t => t.id);
         await pool.query(
-          'INSERT INTO tasks (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
-          [t.id, JSON.stringify(t)]
+          'DELETE FROM tasks WHERE id NOT IN (' + taskIds.map((_, i) => '$' + (i + 1)).join(', ') + ')',
+          taskIds
         );
+      } else {
+        await pool.query('DELETE FROM tasks');
       }
     }
 

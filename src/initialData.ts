@@ -40,379 +40,148 @@ export const initialSites: SiteConfig[] = [
 
 export const initialContacts: Contact[] = [
   {
-    id: 'c1',
-    name: 'Youssef El Amrani',
-    email: 'youssef@greentech.ma',
-    phone: '+212 661 234 567',
-    company: 'GreenTech Solutions',
-    site: 'gardenexpo',
-    role: 'client',
-    dateAdded: '2024-01-15',
-    notes: 'Exposant majeur du salon Garden Expo, spécialisé en solutions d\'irrigation intelligentes.',
-    standNumber: 'A17'
-  },
-  {
-    id: 'c2',
-    name: 'Khadija Bennani',
-    email: 'khadija@aquapools.ma',
-    phone: '+212 662 987 654',
-    company: 'AquaPools Maroc',
-    site: 'africapool',
-    role: 'client',
-    dateAdded: '2024-02-10',
-    notes: 'Fabricant de structures de piscines en composite. Intéressé par un grand stand double face.',
-    standNumber: 'E-4A'
-  },
-  {
-    id: 'c3',
-    name: 'Karim Slaoui',
-    email: 'karim@naturepaysage.ma',
-    phone: '+212 663 111 222',
-    company: 'Nature & Paysage',
-    site: 'gardenexpo',
-    role: 'client',
-    dateAdded: '2024-01-20',
-    notes: 'Paysagiste réputé à Rabat. Veut un espace extérieur de pépinière.',
-    standNumber: 'A23'
-  },
-  {
-    id: 'c4',
-    name: 'Chen Wei',
-    email: 'c.wei@chinawatertech.com',
-    phone: '+86 138 5555 6666',
-    company: 'China Water Tech',
-    site: 'africapool',
-    role: 'client',
-    dateAdded: '2024-03-05',
-    notes: 'Fournisseur d\'équipements de filtration d\'eau de piscine. Coordonne son déplacement depuis Guangzhou.'
-  },
-  {
-    id: 'c5',
-    name: 'Amine Guessous',
-    email: 'amine@decojardin.ma',
-    phone: '+212 664 444 555',
-    company: 'Deco Jardin',
-    site: 'gardenexpo',
-    role: 'client',
-    dateAdded: '2024-01-18',
-    notes: 'Mobilier de jardin premium en teck et résine tressée.',
-    standNumber: 'A18'
-  },
-  {
-    id: 'c6',
-    name: 'Mehdi Naciri',
-    email: 'mehdi@atlaspaysage.ma',
-    phone: '+212 660 777 888',
-    company: 'Atlas Paysage',
-    site: 'gardenexpo',
-    role: 'prospect',
-    dateAdded: '2024-04-12',
-    notes: 'Prospect chaud. A visité l\'édition précédente, hésite encore pour l\'emplacement.',
-    standNumber: 'A04',
-    prospectStatus: 'interesse'
-  },
-  {
-    id: 'c7',
-    name: 'Sarah Touzani',
-    email: 's.touzani@smartwatering.ma',
-    phone: '+212 665 222 333',
-    company: 'Smart Irrigation',
-    site: 'gardenexpo',
-    role: 'client',
-    dateAdded: '2024-02-28',
-    notes: 'Exposant spécialisé dans le goutte-à-goutte connecté.',
-    standNumber: 'A24'
-  },
-  {
-    id: 'c8',
-    name: 'Olivier Laurent',
-    email: 'laurent@batimatex.fr',
-    phone: '+33 6 12 34 56 78',
-    company: 'BatiMat SARL',
-    site: 'r2h',
-    role: 'fournisseur',
-    dateAdded: '2023-11-20',
-    notes: 'Prestataire de structures métalliques auto-portées pour chapiteaux extérieurs.'
-  },
-  {
     id: 'c-ap-1',
-    name: 'Kamal Sghiouar',
-    email: 'kamal@astralpool.ma',
-    phone: '+212 661 888 221',
-    company: 'AstralPool Maroc',
+    name: 'youssef Elhafid',
+    email: 'yelhafid@ccei.ma',
+    phone: '645729742',
+    company: 'CCEI',
     site: 'africapool',
     role: 'client',
-    dateAdded: '2024-03-10',
-    notes: 'Exposant de référence (Stand A-3F), équipementier piscine mondial.',
+    dateAdded: '2026-05-10',
+    notes: 'Surface: 36m² (surface nue). Tarif HT: 1250 MAD / m². Acompte/Avance perçu.',
     standNumber: 'A-3F'
   },
   {
     id: 'c-ap-2',
-    name: 'Fouad Laroui',
-    email: 'fouad@bwt.ma',
-    phone: '+212 662 445 771',
-    company: 'BWT-Barco',
+    name: 'Nawal',
+    email: 'firstwater2010@gmail.com',
+    phone: '0661704340',
+    company: 'First Water',
     site: 'africapool',
     role: 'client',
-    dateAdded: '2024-03-12',
-    notes: 'Leader du traitement de l’eau (Stand D-6C).',
-    standNumber: 'D-6C'
-  },
-  {
-    id: 'c-ap-3',
-    name: 'Adil Bennis',
-    email: 'bennis@lgthermique.ma',
-    phone: '+212 663 555 888',
-    company: 'O/D L.G THERMIQUE',
-    site: 'africapool',
-    role: 'prospect',
-    dateAdded: '2024-05-02',
-    notes: 'Dossier d’option de réservation pour le stand D-5B (Génie climatique).',
-    standNumber: 'D-5B',
-    prospectStatus: 'a_rappeler'
-  },
-  {
-    id: 'c-ap-4',
-    name: 'Yassir Ghamri',
-    email: 'ghamri@alteza.com',
-    phone: '+212 660 112 233',
-    company: 'ALTEZA',
-    site: 'africapool',
-    role: 'client',
-    dateAdded: '2024-01-20',
-    notes: 'Spécialiste pergolas bioccimatiques et pool houses (Stand E-5A).',
-    standNumber: 'E-5A'
-  },
-  {
-    id: 'c-ap-5',
-    name: 'Driss Tazi',
-    email: 'driss@topromaroc.com',
-    phone: '+212 664 778 899',
-    company: 'Topromaroc',
-    site: 'africapool',
-    role: 'client',
-    dateAdded: '2024-02-15',
-    notes: 'Équipements et barrières de sécurité de piscine (Stand F-5A).',
-    standNumber: 'F-5A'
-  },
-  {
-    id: 'c-ap-6',
-    name: 'Hassan Filali',
-    email: 'filali@fluidramatic.ma',
-    phone: '+212 665 999 111',
-    company: 'Fluidra Maroc',
-    site: 'africapool',
-    role: 'client',
-    dateAdded: '2024-02-11',
-    notes: 'Fournisseur majeur de filtration et pompes (Stand G-5A).',
-    standNumber: 'G-5A'
-  },
-  {
-    id: 'c-ap-7',
-    name: 'Amine El Alami',
-    email: 'commercial@cci-maroc.com',
-    phone: '+212 522 344 556',
-    company: 'CCI',
-    site: 'africapool',
-    role: 'client',
-    dateAdded: '2024-03-01',
-    notes: 'Climatisation et chauffage de grands bassins de natation (Stand D-4A).',
-    standNumber: 'D-4A'
-  },
-  {
-    id: 'c-ap-8',
-    name: 'Sami Naciri',
-    email: 'sami@lgthermique.ma',
-    phone: '+212 661 445 992',
-    company: 'L.G. THERMIQUE',
-    site: 'africapool',
-    role: 'client',
-    dateAdded: '2024-03-04',
-    notes: 'Pompes à chaleur connectées d\'extérieur (Stand D-4C).',
-    standNumber: 'D-4C'
-  },
-  {
-    id: 'c-ap-10',
-    name: 'Mehdi Naciri',
-    email: 'mehdi@atlantapompes.ma',
-    phone: '+212 660 334 455',
-    company: 'ATLANTA POMPES',
-    site: 'africapool',
-    role: 'client',
-    dateAdded: '2024-02-28',
-    notes: 'Pompes de circulation et moteurs de filtration (Stand F-4A).',
-    standNumber: 'F-4A'
-  },
-  {
-    id: 'c-ap-11',
-    name: 'Karim Slaoui',
-    email: 'karim@paledo.ma',
-    phone: '+212 663 111 222',
-    company: 'PALEDO',
-    site: 'africapool',
-    role: 'client',
-    dateAdded: '2024-01-20',
-    notes: 'Constructeur de piscines écologiques et bassins préfabriqués (Stand B-3A).',
-    standNumber: 'B-3A'
-  },
-  {
-    id: 'c-ap-12',
-    name: 'Said Bennani',
-    email: 'said@poolspa.ma',
-    phone: '+212 664 321 098',
-    company: 'POOLSPA',
-    site: 'africapool',
-    role: 'client',
-    dateAdded: '2024-01-25',
-    notes: 'Équipementier bien-être, spas et balnéothérapie (Stand B-3B).',
+    dateAdded: '2026-05-12',
+    notes: 'Surface: 18m² (surface équipé). Tarif HT: 1250 MAD / m² + Frais d\'inscription 1500 MAD.',
     standNumber: 'B-3B'
   },
   {
-    id: 'c-ap-13',
-    name: 'Nabil Chraibi',
-    email: 'nabil@chraibi-holding.ma',
-    phone: '+212 661 112 233',
-    company: 'Option Stand C-4A',
-    site: 'africapool',
-    role: 'prospect',
-    dateAdded: '2024-05-10',
-    notes: 'Option posée pour le stand C-4A (spa résidentiel).',
-    standNumber: 'C-4A',
-    prospectStatus: 'demande_devis'
-  },
-  {
-    id: 'c-ap-14',
-    name: 'Mehdi Rahho',
-    email: 'rahho@gamis-bienetre.ma',
-    phone: '+212 662 555 666',
-    company: 'Gamis',
-    site: 'africapool',
-    role: 'prospect',
-    dateAdded: '2024-05-12',
-    notes: 'Option temporaire sur l’îlot central D-3A (Traitement de l’eau).',
-    standNumber: 'D-3A',
-    prospectStatus: 'relance'
-  },
-  {
-    id: 'c-ap-15',
-    name: 'Yassine Alami',
-    email: 'yassine@versosignature.ma',
-    phone: '+212 661 990 011',
-    company: 'VERSO SIGNATURE',
+    id: 'c-ap-3',
+    name: 'Belkacem Achaour ( Gérant )',
+    email: 'atlantapompe2019@gmail.com',
+    phone: '212-661655904 / 212-662805898',
+    company: 'ATLANTA POMPE',
     site: 'africapool',
     role: 'client',
-    dateAdded: '2024-02-18',
-    notes: 'Architecte d’extérieur prestige (Stand E-3A).',
-    standNumber: 'E-3A'
+    dateAdded: '2026-05-15',
+    notes: 'Surface: 36m² (surface équipé). Tarif HT: 1600 MAD / m².',
+    standNumber: 'F-4A'
   },
   {
-    id: 'c-ap-16',
-    name: 'Anas Ouazzani',
-    email: 'anas@watertech.ma',
-    phone: '+212 663 888 777',
-    company: 'Water Tech',
-    site: 'africapool',
-    role: 'client',
-    dateAdded: '2024-02-05',
-    notes: 'Accessoires de filtration et douches d’extérieur (Stand E-3B).',
-    standNumber: 'E-3B'
-  },
-  {
-    id: 'c-ap-17',
-    name: 'Samira Belkadi',
-    email: 's.belkadi@zenpiscine.ma',
-    phone: '+212 660 771 122',
-    company: 'Zen Piscine',
-    site: 'africapool',
-    role: 'client',
-    dateAdded: '2024-02-26',
-    notes: 'Aménagement de bords de bassins, bois composite, transats (Stand F-3A).',
-    standNumber: 'F-3A'
-  },
-  {
-    id: 'c-ap-18',
-    name: 'Omar Benjelloun',
-    email: 'omar@azul-izmawn.ma',
-    phone: '+212 665 444 333',
-    company: 'AZUL IZMAWN',
-    site: 'africapool',
-    role: 'client',
-    dateAdded: '2024-03-02',
-    notes: 'Importateur d’émaux et pierres naturelles de Bali pour piscines (Stand F-3B).',
-    standNumber: 'F-3B'
-  },
-  {
-    id: 'c-ap-19',
-    name: 'Youssef El Amrani',
-    email: 'youssef@frio-equipement.ma',
-    phone: '+212 661 234 567',
+    id: 'c-ap-4',
+    name: 'mohamed',
+    email: 'eaushop21@gmail.com',
+    phone: '+212 661-410471',
     company: 'Frio Equipement',
     site: 'africapool',
     role: 'client',
-    dateAdded: '2024-01-15',
-    notes: 'Froid industriel et spas de massage (Stand D-2A).',
+    dateAdded: '2026-05-18',
+    notes: 'Surface: 72m² (surface nue). Tarif HT: 1000 MAD / m² + 1500 MAD frais d\'inscription.',
     standNumber: 'D-2A'
   },
   {
-    id: 'c-ap-20',
-    name: 'Rachid Alami',
-    email: 'rachid@aireausolution.ma',
-    phone: '+212 664 555 111',
-    company: 'AIR EAU SOLUTION',
+    id: 'c-ap-5',
+    name: 'Oussama Amine',
+    email: 'Contact@paledo.ma',
+    phone: '212663421998',
+    company: 'Paledo',
     site: 'africapool',
     role: 'client',
-    dateAdded: '2024-02-20',
-    notes: 'Solutions hydrauliques et pompes immergées (Stand C-1A).',
-    standNumber: 'C-1A'
+    dateAdded: '2026-05-20',
+    notes: 'Surface: 36m² (surface nue). Forfait global de 50 000 MAD TTC.',
+    standNumber: 'E-3A'
   },
   {
-    id: 'c-ap-21',
-    name: 'Idriss Filali',
-    email: 'filali@wellnessgroup.ma',
-    phone: '+212 665 112 288',
-    company: 'Option Wellness Group',
-    site: 'africapool',
-    role: 'prospect',
-    dateAdded: '2024-05-14',
-    notes: 'Option d’emplacement réservé WG sur le stand D-1A.',
-    standNumber: 'D-1A',
-    prospectStatus: 'pas_interesse'
-  },
-  {
-    id: 'c-ap-22',
-    name: 'Sarah Touzani',
-    email: 's.touzani@massor.ma',
-    phone: '+212 665 222 333',
-    company: 'MASSOR',
+    id: 'c-ap-6',
+    name: 'tarek sekkat',
+    email: 'sales@sayaline.com',
+    phone: '+212 661-314597',
+    company: 'saya line',
     site: 'africapool',
     role: 'client',
-    dateAdded: '2024-02-28',
-    notes: 'Piscines naturelles écologiques, revêtements de prestige (Stand E-1A).',
+    dateAdded: '2026-05-22',
+    notes: 'Surface: 18m² (surface NUE). Tarif HT: 1400 MAD/m².',
+    standNumber: 'F-3C'
+  },
+  {
+    id: 'c-ap-7',
+    name: 'OUAFA lidya',
+    email: 'l.ouafa@poolspa.ma',
+    phone: '212 672-525044',
+    company: 'POOL SPA',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2026-05-24',
+    notes: 'Surface: 18m² (surface équipé). Tarif HT: 1800 MAD/m² + Frais d\'inscription HT 2400 MAD.',
     standNumber: 'E-1A'
   },
   {
-    id: 'c-ap-23',
-    name: 'Amine Guessous',
-    email: 'amine@aafm.ma',
-    phone: '+212 664 444 555',
-    company: 'AAFM',
+    id: 'c-ap-8',
+    name: 'Yoan Di cosimo',
+    email: 'direction@hwgroup.Fr',
+    phone: '212 673-874777',
+    company: 'HWG - hitech water group',
     site: 'africapool',
     role: 'client',
-    dateAdded: '2024-01-18',
-    notes: 'Stand institutionnel de l\'Association Piscine (Stand F-1A).',
-    standNumber: 'F-1A'
+    dateAdded: '2026-05-26',
+    notes: 'Surface: 72 M² NUE. Forfait de 70 000 MAD TTC.',
+    standNumber: 'E-2A'
   },
   {
-    id: 'c-ap-24',
-    name: 'Karim Slaoui',
-    email: 'karim@upek.ma',
-    phone: '+212 663 111 222',
-    company: 'UPEK',
+    id: 'c-ap-9',
+    name: 'SARA',
+    email: 'admin@medyassinesanitaire.com',
+    phone: '212 675-941653',
+    company: 'med yassine sanitaire ALTEZA',
     site: 'africapool',
     role: 'client',
-    dateAdded: '2024-01-20',
-    notes: 'Distribution de margelles, pierres de parement (Stand F-1B).',
-    standNumber: 'F-1B'
+    dateAdded: '2026-05-28',
+    notes: 'Surface: 18M2 EQUIPE. Tarif HT: 2400 MAD/m² + Frais d\'inscription 2400 MAD.',
+    standNumber: 'E-5A'
+  },
+  {
+    id: 'c-ap-10',
+    name: 'DAISY',
+    email: 'daisy@ledlightcn.net',
+    phone: '+86 137 3677 9371',
+    company: 'swin.led',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2026-05-30',
+    notes: 'Surface: 9M² EQUIPE. Tarif HT: 3000 MAD / m².',
+    standNumber: 'A-1A'
+  },
+  {
+    id: 'c-ap-11',
+    name: 'MOHAMED',
+    email: 'Mohammed.Hegab@MPT-Egypt.com',
+    phone: '20 10 22290100',
+    company: 'MISR POOL TECHNOLOGY',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2026-06-01',
+    notes: 'Surface: 9M² EQUIPE. Tarif HT: 2200 MAD / m².',
+    standNumber: 'A-1B'
+  },
+  {
+    id: 'c-ap-12',
+    name: 'tarik bensadik',
+    email: 'tarik@versosignature.ma',
+    phone: '+212 660 000 000',
+    company: 'verso signature',
+    site: 'africapool',
+    role: 'client',
+    dateAdded: '2026-06-02',
+    notes: 'Surface: 36 NUE. Forfait HT: 37 500 MAD.',
+    standNumber: 'D-3A'
   }
 ];
 
@@ -451,10 +220,10 @@ export const initialStands: Stand[] = [
   { id: 'g-A27', site: 'gardenexpo', num: 'A27', hall: 'Hall A', area: 18, pricePerM2: 2500, status: 'vendu', companyName: 'Eco-Outdoors', clientName: 'Fouad Chraibi', category: 'Éclairage Solaire' },
   { id: 'g-A28', site: 'gardenexpo', num: 'A28', hall: 'Hall A', area: 18, pricePerM2: 2500, status: 'disponible' },
 
-  // --- AFRICA POOL & SPA EXPO 2025 ---
-  // Column A (9m² vertical stands)
-  { id: 'p-A-1A', site: 'africapool', num: 'A-1A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-A-1B', site: 'africapool', num: 'A-1B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  // --- AFRICA POOL & SPA EXPO ---
+  // Column A
+  { id: 'p-A-1A', site: 'africapool', num: 'A-1A', hall: 'Hall 1', area: 9, pricePerM2: 3000, status: 'vendu', companyName: 'swin.led', clientName: 'DAISY', category: 'Lumières de Piscine' },
+  { id: 'p-A-1B', site: 'africapool', num: 'A-1B', hall: 'Hall 1', area: 9, pricePerM2: 2200, status: 'vendu', companyName: 'MISR POOL TECHNOLOGY', clientName: 'MOHAMED', category: 'Équipements et Technologie' },
   { id: 'p-A-1C', site: 'africapool', num: 'A-1C', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-A-1D', site: 'africapool', num: 'A-1D', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-A-1E', site: 'africapool', num: 'A-1E', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
@@ -468,13 +237,13 @@ export const initialStands: Stand[] = [
   { id: 'p-A-3C', site: 'africapool', num: 'A-3C', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-A-3D', site: 'africapool', num: 'A-3D', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-A-3E', site: 'africapool', num: 'A-3E', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-A-3F', site: 'africapool', num: 'A-3F', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'vendu', companyName: 'AstralPool Maroc', clientName: 'Kamal Sghiouar', category: 'Équipements de Piscine' },
+  { id: 'p-A-3F', site: 'africapool', num: 'A-3F', hall: 'Hall 1', area: 36, pricePerM2: 1250, status: 'vendu', companyName: 'CCEI', clientName: 'youssef Elhafid', category: 'Équipements de Piscine' },
 
-  // Row 6 Top stands (small yellow/red 9m²)
+  // Row 6 Top stands
   { id: 'p-C-6A', site: 'africapool', num: 'C-6A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-D-6A', site: 'africapool', num: 'D-6A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-D-6B', site: 'africapool', num: 'D-6B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-D-6C', site: 'africapool', num: 'D-6C', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'vendu', companyName: 'BWT-Barco', clientName: 'Fouad Laroui', category: 'Traitement de l\'eau' },
+  { id: 'p-D-6C', site: 'africapool', num: 'D-6C', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-E-6A', site: 'africapool', num: 'E-6A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-E-6B', site: 'africapool', num: 'E-6B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-E-6C', site: 'africapool', num: 'E-6C', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
@@ -482,55 +251,55 @@ export const initialStands: Stand[] = [
 
   // Row 5 stands
   { id: 'p-D-5A', site: 'africapool', num: 'D-5A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-D-5B', site: 'africapool', num: 'D-5B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'reserve', companyName: 'O/D L.G THERMIQUE', clientName: 'Adil Bennis' },
-  { id: 'p-E-5A', site: 'africapool', num: 'E-5A', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'ALTEZA', clientName: 'Yassir Ghamri', category: 'Pergolas & Pool Houses' },
-  { id: 'p-F-5A', site: 'africapool', num: 'F-5A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'vendu', companyName: 'Topromaroc', clientName: 'Driss Tazi', category: 'Sécurité de piscine' },
+  { id: 'p-D-5B', site: 'africapool', num: 'D-5B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-E-5A', site: 'africapool', num: 'E-5A', hall: 'Hall 1', area: 18, pricePerM2: 2400, status: 'vendu', companyName: 'med yassine sanitaire ALTEZA', clientName: 'SARA', category: 'Sanitaire & Plomberie' },
+  { id: 'p-F-5A', site: 'africapool', num: 'F-5A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-F-5B', site: 'africapool', num: 'F-5B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-G-5A', site: 'africapool', num: 'G-5A', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'Fluidra Maroc', clientName: 'Hassan Filali', category: 'Systèmes de filtration' },
+  { id: 'p-G-5A', site: 'africapool', num: 'G-5A', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
 
   // Row 4 stands
-  { id: 'p-D-4A', site: 'africapool', num: 'D-4A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'CCI', clientName: 'Amine El Alami', category: 'Climatisation / Chauffage' },
+  { id: 'p-D-4A', site: 'africapool', num: 'D-4A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-D-4B', site: 'africapool', num: 'D-4B', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-D-4C', site: 'africapool', num: 'D-4C', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'L.G. THERMIQUE', clientName: 'Sami Naciri', category: 'Pompes à chaleur' },
-  { id: 'p-E-4A', site: 'africapool', num: 'E-4A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'Spasauna', clientName: 'Khadija Bennani', category: 'Saunas & Hammams' },
+  { id: 'p-D-4C', site: 'africapool', num: 'D-4C', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-E-4A', site: 'africapool', num: 'E-4A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-E-4B', site: 'africapool', num: 'E-4B', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-F-4A', site: 'africapool', num: 'F-4A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'ATLANTA POMPES', clientName: 'Mehdi Naciri', category: 'Pompes de circulation' },
+  { id: 'p-F-4A', site: 'africapool', num: 'F-4A', hall: 'Hall 1', area: 36, pricePerM2: 1600, status: 'vendu', companyName: 'ATLANTA POMPE', clientName: 'Belkacem Achaour', category: 'Pompes & Moteurs' },
   { id: 'p-F-4B', site: 'africapool', num: 'F-4B', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-G-4A', site: 'africapool', num: 'G-4A', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-G-4B', site: 'africapool', num: 'G-4B', hall: 'Hall 1', area: 54, pricePerM2: 2800, status: 'disponible' },
 
-  // Row 3 (Paledo, Poolspa, Gamis, Verso, Zen, etc.)
-  { id: 'p-B-3A', site: 'africapool', num: 'B-3A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'PALEDO', clientName: 'Karim Slaoui', category: 'Piscines & Équipements' },
-  { id: 'p-B-3B', site: 'africapool', num: 'B-3B', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'POOLSPA', clientName: 'Said Bennani', category: 'Spas & Balnéothérapie' },
-  { id: 'p-C-4A', site: 'africapool', num: 'C-4A', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'reserve', companyName: 'Réservé Option C-4A', clientName: 'Nabil Chraibi' },
-  { id: 'p-D-3A', site: 'africapool', num: 'D-3A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'reserve', companyName: 'Gamis', clientName: 'Mehdi Rahho', category: 'Traitement de l\'eau' },
-  { id: 'p-E-3A', site: 'africapool', num: 'E-3A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'VERSO SIGNATURE', clientName: 'Yassine Alami', category: 'Architecture extérieure' },
-  { id: 'p-E-3B', site: 'africapool', num: 'E-3B', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'Water Tech', clientName: 'Anas Ouazzani', category: 'Filtration' },
+  // Row 3
+  { id: 'p-B-3A', site: 'africapool', num: 'B-3A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-B-3B', site: 'africapool', num: 'B-3B', hall: 'Hall 1', area: 18, pricePerM2: 1250, status: 'vendu', companyName: 'First Water', clientName: 'Nawal', category: 'Traitement de l\'eau' },
+  { id: 'p-C-4A', site: 'africapool', num: 'C-4A', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-D-3A', site: 'africapool', num: 'D-3A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'verso signature', clientName: 'tarik bensadik', category: 'Architecture extérieure' },
+  { id: 'p-E-3A', site: 'africapool', num: 'E-3A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'Paledo', clientName: 'Oussama Amine', category: 'Piscines & Équipements' },
+  { id: 'p-E-3B', site: 'africapool', num: 'E-3B', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-E-3C', site: 'africapool', num: 'E-3C', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-F-3A', site: 'africapool', num: 'F-3A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'Zen Piscine', clientName: 'Samira Belkadi', category: 'Aménagement paysager' },
-  { id: 'p-F-3B', site: 'africapool', num: 'F-3B', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'vendu', companyName: 'AZUL IZMAWN', clientName: 'Omar Benjelloun', category: 'Revêtements' },
-  { id: 'p-F-3C', site: 'africapool', num: 'F-3C', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-F-3A', site: 'africapool', num: 'F-3A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-F-3B', site: 'africapool', num: 'F-3B', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-F-3C', site: 'africapool', num: 'F-3C', hall: 'Hall 1', area: 18, pricePerM2: 1400, status: 'vendu', companyName: 'saya line', clientName: 'tarek sekkat', category: 'Design & Aménagement' },
   { id: 'p-G-3A', site: 'africapool', num: 'G-3A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'disponible' },
 
   // Row 2
-  { id: 'p-B-2A', site: 'africapool', num: 'B-2A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'reserve', companyName: 'Réservé B-2A' },
+  { id: 'p-B-2A', site: 'africapool', num: 'B-2A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-C-2A', site: 'africapool', num: 'C-2A', hall: 'Hall 1', area: 18, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-C-2B', site: 'africapool', num: 'C-2B', hall: 'Hall 1', area: 54, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-D-2A', site: 'africapool', num: 'D-2A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'vendu', companyName: 'Frio Equipement', clientName: 'Youssef El Amrani', category: 'Froid industriel & Spas' },
-  { id: 'p-E-2A', site: 'africapool', num: 'E-2A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'vendu', companyName: 'Desjoyaux', clientName: 'Khadija Bennani', category: 'Piscines monoblocs' },
-  { id: 'p-F-2A', site: 'africapool', num: 'F-2A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'reserve', companyName: 'Réservé F-2A' },
+  { id: 'p-D-2A', site: 'africapool', num: 'D-2A', hall: 'Hall 1', area: 72, pricePerM2: 1000, status: 'vendu', companyName: 'Frio Equipement', clientName: 'mohamed', category: 'Froid industriel & Spas' },
+  { id: 'p-E-2A', site: 'africapool', num: 'E-2A', hall: 'Hall 1', area: 72, pricePerM2: 1000, status: 'vendu', companyName: 'HWG - hitech water group', clientName: 'Yoan Di cosimo', category: 'Équipements de Piscine' },
+  { id: 'p-F-2A', site: 'africapool', num: 'F-2A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-G-2A', site: 'africapool', num: 'G-2A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'disponible' },
 
-  // Row 1 (Bottom row)
+  // Row 1
   { id: 'p-B-1A', site: 'africapool', num: 'B-1A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'disponible' },
-  { id: 'p-C-1A', site: 'africapool', num: 'C-1A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'vendu', companyName: 'AIR EAU SOLUTION', clientName: 'Rachid Alami', category: 'Hydraulique' },
-  { id: 'p-D-1A', site: 'africapool', num: 'D-1A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'reserve', companyName: 'Réservé WG', clientName: 'Idriss Filali', category: 'Wellness solutions' },
-  { id: 'p-E-1A', site: 'africapool', num: 'E-1A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'vendu', companyName: 'MASSOR', clientName: 'Sarah Touzani', category: 'Piscines Naturelles' },
-  { id: 'p-F-1A', site: 'africapool', num: 'F-1A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'AAFM', clientName: 'Amine Guessous', category: 'Association piscine' },
-  { id: 'p-F-1B', site: 'africapool', num: 'F-1B', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'vendu', companyName: 'UPEK', clientName: 'Karim Slaoui', category: 'Matériaux de Construction' },
+  { id: 'p-C-1A', site: 'africapool', num: 'C-1A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-D-1A', site: 'africapool', num: 'D-1A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-E-1A', site: 'africapool', num: 'E-1A', hall: 'Hall 1', area: 18, pricePerM2: 1800, status: 'vendu', companyName: 'POOL SPA', clientName: 'OUAFA lidya', category: 'Spas & Balnéothérapie' },
+  { id: 'p-F-1A', site: 'africapool', num: 'F-1A', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'disponible' },
+  { id: 'p-F-1B', site: 'africapool', num: 'F-1B', hall: 'Hall 1', area: 36, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-G-1A', site: 'africapool', num: 'G-1A', hall: 'Hall 1', area: 72, pricePerM2: 2800, status: 'disponible' },
 
-  // Column H (yellow vertical stands on RHS)
+  // Column H
   { id: 'p-H-1A', site: 'africapool', num: 'H-1A', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-H-1B', site: 'africapool', num: 'H-1B', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
   { id: 'p-H-1C', site: 'africapool', num: 'H-1C', hall: 'Hall 1', area: 9, pricePerM2: 2800, status: 'disponible' },
@@ -547,121 +316,208 @@ export const initialStands: Stand[] = [
 
 export const initialTransactions: Transaction[] = [
   {
-    id: 't1',
-    num: 'DEV-2024-156',
-    clientName: 'Youssef El Amrani',
-    companyName: 'GreenTech Solutions',
-    site: 'gardenexpo',
-    type: 'devis',
-    amount: 24500,
-    status: 'envoye',
-    date: '2024-05-18',
-    dueDate: '2024-06-18',
-    items: [
-      { id: 'i1', description: 'Réservation de Stand de Jardin - 9m²', quantity: 1, unitPrice: 22500 },
-      { id: 'i2', description: 'Frais de branchement électrique', quantity: 1, unitPrice: 2000 }
-    ],
-    notes: 'Devis de réservation de base envoyé après premier appel téléphonique.'
-  },
-  {
-    id: 't2',
-    num: 'DEV-2024-155',
-    clientName: 'Khadija Bennani',
-    companyName: 'AquaPools Maroc',
+    id: 't-ap-1',
+    num: 'FA-2026-001',
+    clientName: 'youssef Elhafid',
+    companyName: 'CCEI',
     site: 'africapool',
-    type: 'devis',
-    amount: 85000,
-    status: 'negociation',
-    date: '2024-05-17',
-    dueDate: '2024-06-17',
-    items: [
-      { id: 'i3', description: 'Stand d\'angle Premium Hall 1 - 27m²', quantity: 1, unitPrice: 75600 },
-      { id: 'i4', description: 'Sponsorisation Catalogue Official', quantity: 1, unitPrice: 5000 },
-      { id: 'i5', description: 'Badges VIP additionnels', quantity: 4, unitPrice: 1100 }
-    ],
-    notes: 'Exposant régulier. Négociation en cours d\'un rabais de 5% sur le forfait global.'
-  },
-  {
-    id: 't3',
-    num: 'DEV-2024-154',
-    clientName: 'Karim Slaoui',
-    companyName: 'Nature & Paysage',
-    site: 'gardenexpo',
-    type: 'devis',
-    amount: 60000,
-    status: 'envoye',
-    date: '2024-05-15',
-    dueDate: '2024-06-15',
-    items: [
-      { id: 'i6', description: 'Espace Pépinière extérieur - 50m²', quantity: 1, unitPrice: 50000 },
-      { id: 'i7', description: 'Pack Communication Digital', quantity: 1, unitPrice: 10000 }
-    ],
-    notes: 'Validé par le commercial régional, en attente de signature du client.'
-  },
-  {
-    id: 't4',
-    num: 'DEV-2024-153',
-    clientName: 'Chen Wei',
-    companyName: 'China Water Tech',
-    site: 'africapool',
-    type: 'devis',
-    amount: 110000,
-    status: 'negociation',
-    date: '2024-05-14',
-    dueDate: '2024-06-14',
-    items: [
-      { id: 'i8', description: 'Stand Central Îlot - 36m²', quantity: 2, unitPrice: 50000 },
-      { id: 'i9', description: 'Frais de montage et nettoyage spécifique', quantity: 1, unitPrice: 10000 }
-    ],
-    notes: 'Prise de contact au salon de Guangzhou. Discussions opérationnelles sur l\'importation temporaire de matériel.'
-  },
-  {
-    id: 't5',
-    num: 'DEV-2024-152',
-    clientName: 'Amine Guessous',
-    companyName: 'Deco Jardin',
-    site: 'gardenexpo',
-    type: 'devis',
-    amount: 40000,
-    status: 'envoye',
-    date: '2024-05-10',
-    dueDate: '2024-06-10',
-    items: [
-      { id: 'i10', description: 'Stand Hall A - 12m²', quantity: 1, unitPrice: 30000 },
-      { id: 'i11', description: 'Vitrine rétro-éclairée et mobilier de base', quantity: 1, unitPrice: 10000 }
-    ]
-  },
-  {
-    id: 't6',
-    num: 'FA-2024-098',
-    clientName: 'Imane Slaoui',
-    companyName: 'Poteries de Safi',
-    site: 'gardenexpo',
     type: 'facture',
     amount: 45000,
     status: 'paye',
-    date: '2024-04-10',
-    dueDate: '2024-05-10',
+    date: '2026-05-10',
+    dueDate: '2026-06-10',
+    advancePaid: 27000,
     items: [
-      { id: 'i12', description: 'Stand d\'exposition de terre cuite - 18m²', quantity: 1, unitPrice: 45000 }
+      { id: 'item-1', description: 'Stand d\'angle 36m² (surface nue)', quantity: 1, unitPrice: 45000 }
     ],
-    notes: 'Payé par virement bancaire. Reçu transmis.'
+    notes: 'Exposant validé'
   },
   {
-    id: 't7',
-    num: 'FA-2024-099',
-    clientName: 'Said Bennani',
-    companyName: 'Gazon du Sud',
-    site: 'gardenexpo',
+    id: 't-ap-2',
+    num: 'FA-2026-002',
+    clientName: 'Nawal',
+    companyName: 'First Water',
+    site: 'africapool',
     type: 'facture',
-    amount: 28800,
-    status: 'en_retard',
-    date: '2024-03-01',
-    dueDate: '2024-04-01',
+    amount: 24000,
+    status: 'paye',
+    date: '2026-05-12',
+    dueDate: '2026-06-12',
+    advancePaid: 0,
     items: [
-      { id: 'i13', description: 'Exposition Pelouse Premium en rouleau', quantity: 12, unitPrice: 2400 }
+      { id: 'item-2', description: 'Stand 18m² (surface équipé) + Frais d\'inscription', quantity: 1, unitPrice: 24000 }
     ],
-    notes: 'Facture en souffrance. Relance envoyée par email le 10 avril.'
+    notes: 'Exposant validé - Reliquat complet à régler'
+  },
+  {
+    id: 't-ap-3',
+    num: 'FA-2026-003',
+    clientName: 'Belkacem Achaour ( Gérant )',
+    companyName: 'ATLANTA POMPE',
+    site: 'africapool',
+    type: 'facture',
+    amount: 57000,
+    status: 'paye',
+    date: '2026-05-15',
+    dueDate: '2026-06-15',
+    advancePaid: 34200,
+    items: [
+      { id: 'item-3', description: 'Stand 36m² (surface équipé)', quantity: 1, unitPrice: 57000 }
+    ],
+    notes: 'Exposant validé'
+  },
+  {
+    id: 't-ap-4',
+    num: 'FA-2026-004',
+    clientName: 'mohamed',
+    companyName: 'Frio Equipement',
+    site: 'africapool',
+    type: 'facture',
+    amount: 73500,
+    status: 'paye',
+    date: '2026-05-18',
+    dueDate: '2026-06-18',
+    advancePaid: 44100,
+    items: [
+      { id: 'item-4', description: 'Stand 72m² (surface nue) + Frais d\'inscription', quantity: 1, unitPrice: 73500 }
+    ],
+    notes: 'Exposant validé'
+  },
+  {
+    id: 't-ap-5',
+    num: 'FA-2026-005',
+    clientName: 'Oussama Amine',
+    companyName: 'Paledo',
+    site: 'africapool',
+    type: 'facture',
+    amount: 41666.67,
+    status: 'paye',
+    date: '2026-05-20',
+    dueDate: '2026-06-20',
+    advancePaid: 25000,
+    items: [
+      { id: 'item-5', description: 'Stand 36m² (surface nue) - Forfait Global', quantity: 1, unitPrice: 41666.67 }
+    ],
+    notes: 'Exposant validé'
+  },
+  {
+    id: 't-ap-6',
+    num: 'FA-2026-006',
+    clientName: 'tarek sekkat',
+    companyName: 'saya line',
+    site: 'africapool',
+    type: 'facture',
+    amount: 25200,
+    status: 'paye',
+    date: '2026-05-22',
+    dueDate: '2026-06-22',
+    advancePaid: 15120,
+    items: [
+      { id: 'item-6', description: 'Stand 18m² (surface NUE)', quantity: 1, unitPrice: 25200 }
+    ],
+    notes: 'Exposant validé'
+  },
+  {
+    id: 't-ap-7',
+    num: 'FA-2026-007',
+    clientName: 'OUAFA lidya',
+    companyName: 'POOL SPA',
+    site: 'africapool',
+    type: 'facture',
+    amount: 34800,
+    status: 'paye',
+    date: '2026-05-24',
+    dueDate: '2026-06-24',
+    advancePaid: 20000,
+    items: [
+      { id: 'item-7', description: 'Stand 18m² (surface équipé) + Frais d\'inscription', quantity: 1, unitPrice: 34800 }
+    ],
+    notes: 'Exposant validé'
+  },
+  {
+    id: 't-ap-8',
+    num: 'FA-2026-008',
+    clientName: 'Yoan Di cosimo',
+    companyName: 'HWG - hitech water group',
+    site: 'africapool',
+    type: 'facture',
+    amount: 58333.33,
+    status: 'paye',
+    date: '2026-05-26',
+    dueDate: '2026-06-26',
+    advancePaid: 10000,
+    items: [
+      { id: 'item-8', description: 'Stand 72m² (surface NUE) - Forfait Global', quantity: 1, unitPrice: 58333.33 }
+    ],
+    notes: 'Exposant validé'
+  },
+  {
+    id: 't-ap-9',
+    num: 'FA-2026-009',
+    clientName: 'SARA',
+    companyName: 'med yassine sanitaire ALTEZA',
+    site: 'africapool',
+    type: 'facture',
+    amount: 45600,
+    status: 'paye',
+    date: '2026-05-28',
+    dueDate: '2026-06-28',
+    advancePaid: 0,
+    items: [
+      { id: 'item-9', description: 'Stand 18m² EQUIPE + Frais d\'inscription', quantity: 1, unitPrice: 45600 }
+    ],
+    notes: 'Exposant validé - Reliquat compet'
+  },
+  {
+    id: 't-ap-10',
+    num: 'FA-2026-010',
+    clientName: 'DAISY',
+    companyName: 'swin.led',
+    site: 'africapool',
+    type: 'facture',
+    amount: 22500,
+    status: 'paye',
+    date: '2026-05-30',
+    dueDate: '2026-06-30',
+    advancePaid: 0,
+    items: [
+      { id: 'item-10', description: 'Stand 9m² EQUIPE', quantity: 1, unitPrice: 22500 }
+    ],
+    notes: 'Exposant validé'
+  },
+  {
+    id: 't-ap-11',
+    num: 'FA-2026-011',
+    clientName: 'MOHAMED',
+    companyName: 'MISR POOL TECHNOLOGY',
+    site: 'africapool',
+    type: 'facture',
+    amount: 16500,
+    status: 'paye',
+    date: '2026-06-01',
+    dueDate: '2026-07-01',
+    advancePaid: 0,
+    items: [
+      { id: 'item-11', description: 'Stand 9m² EQUIPE', quantity: 1, unitPrice: 16500 }
+    ],
+    notes: 'Exposant validé'
+  },
+  {
+    id: 't-ap-12',
+    num: 'FA-2026-012',
+    clientName: 'tarik bensadik',
+    companyName: 'verso signature',
+    site: 'africapool',
+    type: 'facture',
+    amount: 37500,
+    status: 'paye',
+    date: '2026-06-02',
+    dueDate: '2026-07-02',
+    advancePaid: 0,
+    items: [
+      { id: 'item-12', description: 'Stand 36m² NUE - Tarifs direct signature', quantity: 1, unitPrice: 37500 }
+    ],
+    notes: 'Exposant validé'
   }
 ];
 

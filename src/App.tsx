@@ -256,38 +256,8 @@ export default function App() {
   // Synchronise state changes to database without any LocalStorage
   useEffect(() => {
     if (!isInitiallyLoaded) return;
-    if (stands.length > 0) {
-      saveToDatabase(stands, contacts, transactions, campaigns, tasks);
-    }
-  }, [stands, isInitiallyLoaded]);
-
-  useEffect(() => {
-    if (!isInitiallyLoaded) return;
-    if (contacts.length > 0) {
-      saveToDatabase(stands, contacts, transactions, campaigns, tasks);
-    }
-  }, [contacts, isInitiallyLoaded]);
-
-  useEffect(() => {
-    if (!isInitiallyLoaded) return;
-    if (transactions.length > 0) {
-      saveToDatabase(stands, contacts, transactions, campaigns, tasks);
-    }
-  }, [transactions, isInitiallyLoaded]);
-
-  useEffect(() => {
-    if (!isInitiallyLoaded) return;
-    if (campaigns.length > 0) {
-      saveToDatabase(stands, contacts, transactions, campaigns, tasks);
-    }
-  }, [campaigns, isInitiallyLoaded]);
-
-  useEffect(() => {
-    if (!isInitiallyLoaded) return;
-    if (tasks.length > 0) {
-      saveToDatabase(stands, contacts, transactions, campaigns, tasks);
-    }
-  }, [tasks, isInitiallyLoaded]);
+    saveToDatabase(stands, contacts, transactions, campaigns, tasks);
+  }, [stands, contacts, transactions, campaigns, tasks, isInitiallyLoaded]);
 
 
   // Decouple tabs naming header

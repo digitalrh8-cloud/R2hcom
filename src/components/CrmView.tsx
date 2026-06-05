@@ -884,6 +884,22 @@ export default function CrmView({
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </>
+                            ) : contact.role === 'partner_media' ? (
+                              <>
+                                <span className="text-[9px] px-2 py-0.5 bg-purple-50 text-purple-700 font-bold rounded-md uppercase border border-purple-200">
+                                  🎥 Média Gratuit
+                                </span>
+                                <span className="text-[9.5px] px-2 py-1 bg-slate-100 text-slate-500 rounded-lg font-bold border border-slate-200 select-none inline-flex items-center gap-1 opacity-80" title="Un partenaire média n'est pas facturable">
+                                  🚫 Non facturé
+                                </span>
+                                <button
+                                  onClick={() => handleDeleteContact(contact.id, contact.name)}
+                                  className="p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-lg transition-all cursor-pointer border border-[#E8E6DE]/40"
+                                  title="Supprimer le partenaire média"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </>
                             ) : (
                               <button
                                 onClick={() => handleDeleteContact(contact.id, contact.name)}

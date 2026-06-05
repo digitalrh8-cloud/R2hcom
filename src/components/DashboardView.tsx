@@ -485,7 +485,7 @@ export default function DashboardView({
                   ...c,
                   company: editCompany.trim(),
                   name: editClient.trim(),
-                  role: editStatus === 'vendu' || editStatus === 'sponsorise' ? 'client' : 'prospect'
+                  role: editStatus === 'vendu' ? 'client' : editStatus === 'sponsorise' ? 'partner_media' : 'prospect'
                 };
               }
               return c;
@@ -499,7 +499,7 @@ export default function DashboardView({
                   return {
                     ...c,
                     name: editClient.trim(),
-                    role: editStatus === 'vendu' || editStatus === 'sponsorise' ? 'client' : 'prospect',
+                    role: editStatus === 'vendu' ? 'client' : editStatus === 'sponsorise' ? 'partner_media' : 'prospect',
                     standNumber: selectedStand.num
                   };
                 }
@@ -514,7 +514,7 @@ export default function DashboardView({
                 email: `info@${editCompany.trim().toLowerCase().replace(/[^a-z0-9]/g, '') || 'exposant'}.ma`,
                 phone: '+212 660 000 000',
                 site: selectedSite,
-                role: editStatus === 'vendu' || editStatus === 'sponsorise' ? 'client' : 'prospect',
+                role: editStatus === 'vendu' ? 'client' : editStatus === 'sponsorise' ? 'partner_media' : 'prospect',
                 dateAdded: new Date().toISOString().split('T')[0],
                 notes: `Créé automatiquement lors de la réservation du stand ${selectedStand.num} sur le plan.`,
                 standNumber: selectedStand.num
