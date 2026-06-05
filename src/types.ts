@@ -31,6 +31,7 @@ export interface Contact {
   standType?: 'surface_nue' | 'equipe' | 'personalise' | 'exceptionnel';
   exceptionalPrice?: number;
   standArea?: number;
+  includeRegistrationFee?: boolean;
 }
 
 export type StandStatus = 'disponible' | 'reserve' | 'vendu' | 'sponsorise';

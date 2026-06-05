@@ -96,6 +96,7 @@ export default function CrmView({
   const [newStandType, setNewStandType] = useState<'surface_nue' | 'equipe' | 'personalise' | 'exceptionnel'>('surface_nue');
   const [newExceptionalPrice, setNewExceptionalPrice] = useState<string>('');
   const [newStandArea, setNewStandArea] = useState<string>('');
+  const [newIncludeRegFee, setNewIncludeRegFee] = useState<boolean>(true);
 
   // Calculate sorted free stands for the selected site
   const freeStands = stands
@@ -116,6 +117,7 @@ export default function CrmView({
   const [editStandType, setEditStandType] = useState<'surface_nue' | 'equipe' | 'personalise' | 'exceptionnel'>('surface_nue');
   const [editExceptionalPrice, setEditExceptionalPrice] = useState<string>('');
   const [editStandArea, setEditStandArea] = useState<string>('');
+  const [editIncludeRegFee, setEditIncludeRegFee] = useState<boolean>(true);
 
   // Calculate sorted free stands for editing site, including the contact's current stand
   const editFreeStands = stands
@@ -427,7 +429,8 @@ export default function CrmView({
       prospectStatus: newRole === 'prospect' ? newProspectStatus : undefined,
       standType: newRole === 'prospect' ? newStandType : undefined,
       exceptionalPrice: newRole === 'prospect' && !isNaN(parsedPrice) && parsedPrice >= 0 ? parsedPrice : undefined,
-      standArea: newRole === 'prospect' && !isNaN(parsedArea) && parsedArea >= 0 ? parsedArea : undefined
+      standArea: newRole === 'prospect' && !isNaN(parsedArea) && parsedArea >= 0 ? parsedArea : undefined,
+      includeRegistrationFee: newRole === 'prospect' ? newIncludeRegFee : undefined
     };
 
     setContacts(prev => [newContact, ...prev]);
@@ -457,6 +460,7 @@ export default function CrmView({
     setNewStandType('surface_nue');
     setNewExceptionalPrice('');
     setNewStandArea('');
+    setNewIncludeRegFee(true);
     setShowAddForm(false);
     triggerToast(
       newRole === 'client' 
@@ -540,6 +544,7 @@ export default function CrmView({
     setEditStandType(contact.standType || 'surface_nue');
     setEditExceptionalPrice(contact.exceptionalPrice ? String(contact.exceptionalPrice) : '');
     setEditStandArea(contact.standArea ? String(contact.standArea) : '');
+    setEditIncludeRegFee(contact.includeRegistrationFee !== false); // default to true if undefined or true
   };
 
   // Save changes from Edit modal
@@ -571,7 +576,8 @@ export default function CrmView({
           prospectStatus: editRole === 'prospect' ? editProspectStatus : undefined,
           standType: editRole === 'prospect' ? editStandType : undefined,
           exceptionalPrice: editRole === 'prospect' && !isNaN(parsedEditPrice) && parsedEditPrice >= 0 ? parsedEditPrice : undefined,
-          standArea: editRole === 'prospect' && !isNaN(parsedEditArea) && parsedEditArea >= 0 ? parsedEditArea : undefined
+          standArea: editRole === 'prospect' && !isNaN(parsedEditArea) && parsedEditArea >= 0 ? parsedEditArea : undefined,
+          includeRegistrationFee: editRole === 'prospect' ? editIncludeRegFee : undefined
         };
       }
       return c;
@@ -592,7 +598,8 @@ export default function CrmView({
         prospectStatus: editRole === 'prospect' ? editProspectStatus : undefined,
         standType: editRole === 'prospect' ? editStandType : undefined,
         exceptionalPrice: editRole === 'prospect' && !isNaN(parsedEditPrice) && parsedEditPrice >= 0 ? parsedEditPrice : undefined,
-        standArea: editRole === 'prospect' && !isNaN(parsedEditArea) && parsedEditArea >= 0 ? parsedEditArea : undefined
+        standArea: editRole === 'prospect' && !isNaN(parsedEditArea) && parsedEditArea >= 0 ? parsedEditArea : undefined,
+        includeRegistrationFee: editRole === 'prospect' ? editIncludeRegFee : undefined
       });
     }
 
@@ -1003,6 +1010,34 @@ export default function CrmView({
                           />
                         </div>
 
+                        <div className="space-y-1 col-span-2">
+                          <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Frais d'enregistrement d'Enquête (2500 MAD HT)</label>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setNewIncludeRegFee(true)}
+                              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+                                newIncludeRegFee 
+                                  ? 'bg-[#A68A64] text-white border-[#A68A64] shadow-xs' 
+                                  : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-slate-50'
+                              }`}
+                            >
+                              ✅ OUI (+2,500 MAD)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNewIncludeRegFee(false)}
+                              className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+                                !newIncludeRegFee 
+                                  ? 'bg-[#FAF9F5] text-rose-700 border-[#E8E6DE] shadow-inner font-bold' 
+                                  : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-slate-50'
+                              }`}
+                            >
+                              ❌ NON (Exclure)
+                            </button>
+                          </div>
+                        </div>
+
                         {(newStandType === 'personalise' || newStandType === 'exceptionnel') && (
                           <div className="space-y-1 col-span-2">
                             <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Prix Total Manuel (MAD)</label>
@@ -1031,8 +1066,14 @@ export default function CrmView({
                           formulaDesc = `${area} m² x 2400 MAD`;
                         } else {
                           amountHT = parseFloat(newExceptionalPrice) || 0;
-                          formulaDesc = "Saisie manuelle";
+                          formulaDesc = "Manuel";
                         }
+
+                        if (newIncludeRegFee) {
+                          amountHT += 2500;
+                          formulaDesc += " + 2500 MAD Enregistrement";
+                        }
+
                         const tvaAmount = amountHT * 0.20;
                         const amountTTC = amountHT * 1.20;
 
@@ -1214,14 +1255,29 @@ export default function CrmView({
                         } else {
                           amountHT = selectedContact.exceptionalPrice || 0;
                         }
+                        const preRegAmount = amountHT;
+                        const includeReg = selectedContact.includeRegistrationFee !== false;
+                        if (includeReg) {
+                          amountHT += 2500;
+                        }
                         const tvaAmount = amountHT * 0.20;
                         const amountTTC = amountHT * 1.20;
 
                         return (
-                          <div className="space-y-1.5 text-xs">
+                          <div className="space-y-1.5 text-xs font-sans">
                             <div className="flex justify-between items-center text-[11px] text-[#7A7667]">
-                              <span>Total HT {area > 0 && `(${area} m²)`} :</span>
-                              <span className="font-bold font-mono text-[#2D2D2D]">{amountHT.toLocaleString()} MAD</span>
+                              <span>Total HT de base {area > 0 && `(${area} m²)`} :</span>
+                              <span className="font-semibold font-mono text-[#2D2D2D]">{preRegAmount.toLocaleString()} MAD</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[11px] text-[#7A7667]">
+                              <span>Frais d'enregistrement :</span>
+                              <span className={`font-semibold font-mono ${includeReg ? 'text-amber-700' : 'text-slate-400 line-through'}`}>
+                                {includeReg ? '+2 500 MAD (Inclus)' : '0 MAD (Exclu)'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-[11.5px] font-bold text-[#A68A64] border-t border-[#E8E6DE]/30 pt-1">
+                              <span>Total HT :</span>
+                              <span className="font-mono">{amountHT.toLocaleString()} MAD</span>
                             </div>
                             <div className="flex justify-between items-center text-[11px] text-[#7A7667] border-dashed border-b border-[#E8E6DE]/40 pb-1.5">
                               <span>TVA (20%) :</span>
@@ -1647,6 +1703,34 @@ export default function CrmView({
                       />
                     </div>
 
+                    <div className="space-y-1 col-span-2">
+                      <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Frais d'enregistrement d'Enquête (2500 MAD HT)</label>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditIncludeRegFee(true)}
+                          className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+                            editIncludeRegFee 
+                              ? 'bg-[#A68A64] text-white border-[#A68A64] shadow-xs' 
+                              : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-slate-50'
+                          }`}
+                        >
+                          ✅ OUI (+2,500 MAD)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditIncludeRegFee(false)}
+                          className={`flex-1 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+                            !editIncludeRegFee 
+                              ? 'bg-[#FAF9F5] text-rose-700 border-[#E8E6DE] shadow-inner font-bold' 
+                              : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-slate-50'
+                          }`}
+                        >
+                          ❌ NON (Exclure)
+                        </button>
+                      </div>
+                    </div>
+
                     {(editStandType === 'personalise' || editStandType === 'exceptionnel') && (
                       <div className="space-y-1 col-span-2">
                         <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Prix Total Manuel (MAD)</label>
@@ -1675,8 +1759,14 @@ export default function CrmView({
                       formulaDesc = `${area} m² x 2400 MAD`;
                     } else {
                       amountHT = parseFloat(editExceptionalPrice) || 0;
-                      formulaDesc = "Saisie manuelle";
+                      formulaDesc = "Manuel";
                     }
+
+                    if (editIncludeRegFee) {
+                      amountHT += 2500;
+                      formulaDesc += " + 2500 MAD Enregistrement";
+                    }
+
                     const tvaAmount = amountHT * 0.20;
                     const amountTTC = amountHT * 1.20;
 

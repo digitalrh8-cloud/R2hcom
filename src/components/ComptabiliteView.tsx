@@ -59,6 +59,7 @@ export default function ComptabiliteView({
     { description: 'Réservation de Stand d\'exposition', quantity: 1, unitPrice: 24500 }
   ]);
   const [formNotes, setFormNotes] = useState('');
+  const [formIncludeRegFee, setFormIncludeRegFee] = useState<boolean>(true);
 
   // Toast
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -96,7 +97,8 @@ export default function ComptabiliteView({
     if (!formCompany || !formClient || formItems.length === 0) return;
 
     // Calculate total amount
-    const totalRaw = formItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const regFeeVal = formIncludeRegFee ? 2500 : 0;
+    const totalRaw = formItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) + regFeeVal;
 
     const docItems: TransactionItem[] = formItems.map((it, i) => ({
       id: `it_${Date.now()}_${i}`,
@@ -104,6 +106,15 @@ export default function ComptabiliteView({
       quantity: Number(it.quantity),
       unitPrice: Number(it.unitPrice)
     }));
+
+    if (formIncludeRegFee) {
+      docItems.push({
+        id: `it_reg_${Date.now()}`,
+        description: "Frais d'enregistrement obligatoires",
+        quantity: 1,
+        unitPrice: 2500
+      });
+    }
 
     const docNum = formType === 'devis' 
       ? `DEV-2024-${150 + transactions.length}` 
@@ -134,6 +145,7 @@ export default function ComptabiliteView({
     setFormCompany('');
     setFormClient('');
     setFormNotes('');
+    setFormIncludeRegFee(true);
   };
 
   // Switch status of invoice (e.g. mark as payed)
@@ -583,6 +595,35 @@ export default function ComptabiliteView({
                       <span>Régime de Commerce Standard</span>
                       <span className="text-blue-500">20.00 %</span>
                     </div>
+                  </div>
+                </div>
+
+                {/* Registration Fee Select Buttons */}
+                <div className="bg-[#FAF9F6] border border-[#E8E6DE]/80 rounded-xl p-3 my-1 space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Inclure les Frais d'enregistrement ? (2500 MAD HT)</span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormIncludeRegFee(true)}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                        formIncludeRegFee 
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-2xs' 
+                          : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      ✅ OUI (+2,500 DH HT)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormIncludeRegFee(false)}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                        !formIncludeRegFee 
+                          ? 'bg-slate-800 text-white border-slate-800 shadow-2xs' 
+                          : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      ❌ NON (Sans frais)
+                    </button>
                   </div>
                 </div>
 
