@@ -99,6 +99,7 @@ export default function CrmView({
   const [newIncludeRegFee, setNewIncludeRegFee] = useState<boolean>(true);
   const [newRegFeeMode, setNewRegFeeMode] = useState<'yes' | 'no' | 'manual'>('yes');
   const [newRegFeeManualAmount, setNewRegFeeManualAmount] = useState<string>('2500');
+  const [newIncludeTva, setNewIncludeTva] = useState<boolean>(true);
 
   // Calculate sorted free stands for the selected site
   const freeStands = stands
@@ -107,6 +108,7 @@ export default function CrmView({
 
   // Edit Modal State
   const [editModalContact, setEditModalContact] = useState<Contact | null>(null);
+  const [editIncludeTva, setEditIncludeTva] = useState<boolean>(true);
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
@@ -448,7 +450,8 @@ export default function CrmView({
       exceptionalPrice: newRole === 'prospect' && !isNaN(parsedPrice) && parsedPrice >= 0 ? parsedPrice : undefined,
       standArea: newRole === 'prospect' && !isNaN(parsedArea) && parsedArea >= 0 ? parsedArea : undefined,
       includeRegistrationFee: newRole === 'prospect' ? (newRegFeeMode !== 'no') : undefined,
-      registrationFeeAmount: newRole === 'prospect' ? (newRegFeeMode === 'manual' ? (parseFloat(newRegFeeManualAmount) || 0) : (newRegFeeMode === 'yes' ? 2500 : 0)) : undefined
+      registrationFeeAmount: newRole === 'prospect' ? (newRegFeeMode === 'manual' ? (parseFloat(newRegFeeManualAmount) || 0) : (newRegFeeMode === 'yes' ? 2500 : 0)) : undefined,
+      includeTva: newRole === 'prospect' ? newIncludeTva : undefined
     };
 
     setContacts(prev => [newContact, ...prev]);
@@ -481,6 +484,7 @@ export default function CrmView({
     setNewIncludeRegFee(true);
     setNewRegFeeMode('yes');
     setNewRegFeeManualAmount('2500');
+    setNewIncludeTva(true);
     setShowAddForm(false);
     triggerToast(
       newRole === 'client' 
@@ -565,6 +569,7 @@ export default function CrmView({
     setEditExceptionalPrice(contact.exceptionalPrice ? String(contact.exceptionalPrice) : '');
     setEditStandArea(contact.standArea ? String(contact.standArea) : '');
     setEditIncludeRegFee(contact.includeRegistrationFee !== false); // default to true if undefined or true
+    setEditIncludeTva(contact.includeTva !== false);
     
     if (contact.includeRegistrationFee === false) {
       setEditRegFeeMode('no');
@@ -611,7 +616,8 @@ export default function CrmView({
           exceptionalPrice: editRole === 'prospect' && !isNaN(parsedEditPrice) && parsedEditPrice >= 0 ? parsedEditPrice : undefined,
           standArea: editRole === 'prospect' && !isNaN(parsedEditArea) && parsedEditArea >= 0 ? parsedEditArea : undefined,
           includeRegistrationFee: editRole === 'prospect' ? (editRegFeeMode !== 'no') : undefined,
-          registrationFeeAmount: editRole === 'prospect' ? (editRegFeeMode === 'manual' ? (parseFloat(editRegFeeManualAmount) || 0) : (editRegFeeMode === 'yes' ? 2500 : 0)) : undefined
+          registrationFeeAmount: editRole === 'prospect' ? (editRegFeeMode === 'manual' ? (parseFloat(editRegFeeManualAmount) || 0) : (editRegFeeMode === 'yes' ? 2500 : 0)) : undefined,
+          includeTva: editRole === 'prospect' ? editIncludeTva : undefined
         };
       }
       return c;
@@ -634,7 +640,8 @@ export default function CrmView({
         exceptionalPrice: editRole === 'prospect' && !isNaN(parsedEditPrice) && parsedEditPrice >= 0 ? parsedEditPrice : undefined,
         standArea: editRole === 'prospect' && !isNaN(parsedEditArea) && parsedEditArea >= 0 ? parsedEditArea : undefined,
         includeRegistrationFee: editRole === 'prospect' ? (editRegFeeMode !== 'no') : undefined,
-        registrationFeeAmount: editRole === 'prospect' ? (editRegFeeMode === 'manual' ? (parseFloat(editRegFeeManualAmount) || 0) : (editRegFeeMode === 'yes' ? 2500 : 0)) : undefined
+        registrationFeeAmount: editRole === 'prospect' ? (editRegFeeMode === 'manual' ? (parseFloat(editRegFeeManualAmount) || 0) : (editRegFeeMode === 'yes' ? 2500 : 0)) : undefined,
+        includeTva: editRole === 'prospect' ? editIncludeTva : undefined
       });
     }
 
@@ -1133,6 +1140,34 @@ export default function CrmView({
                           )}
                         </div>
 
+                        <div className="space-y-1 col-span-2">
+                          <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Assujetti à la TVA 20% ?</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setNewIncludeTva(true)}
+                              className={`py-2 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
+                                newIncludeTva 
+                                  ? 'bg-[#A68A64] text-white border-[#A68A64] shadow-xs' 
+                                  : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-[#F8F7F2]'
+                              }`}
+                            >
+                              ✅ Oui (+20% TVA)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNewIncludeTva(false)}
+                              className={`py-2 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
+                                !newIncludeTva 
+                                  ? 'bg-[#FAF9F5] text-rose-700 border-[#E8E6DE] shadow-inner font-bold' 
+                                  : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-[#F8F7F2]'
+                              }`}
+                            >
+                              ❌ Non (Exclu)
+                            </button>
+                          </div>
+                        </div>
+
                         {(newStandType === 'personalise' || newStandType === 'exceptionnel') && (
                           <div className="space-y-1 col-span-2">
                             <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Prix Total Manuel (MAD)</label>
@@ -1173,13 +1208,13 @@ export default function CrmView({
                           formulaDesc += ` + ${manualAmount} MAD Enregistrement (manuel)`;
                         }
 
-                        const tvaAmount = amountHT * 0.20;
-                        const amountTTC = amountHT * 1.20;
+                        const tvaAmount = newIncludeTva ? (amountHT * 0.20) : 0;
+                        const amountTTC = amountHT + tvaAmount;
 
                         return (
                           <div className="bg-[#FDFDFB] border border-[#E8E6DE]/70 rounded-2xl p-4.5 space-y-2.5 text-xs text-[#7A7667] shadow-3xs w-full col-span-2">
                             <div className="flex justify-between items-center text-[10px] font-bold text-[#A68A64] border-b border-[#E8E6DE]/50 pb-1.5 mb-1">
-                              <span>SIMULATEUR DE TARIF (HT + TVA 20%)</span>
+                              <span>SIMULATEUR DE TARIF (HT + TVA {newIncludeTva ? '20%' : '0% (Exonérée)'})</span>
                               <span className="font-mono text-slate-400">({formulaDesc})</span>
                             </div>
                             <div className="flex justify-between items-center">
@@ -1188,7 +1223,7 @@ export default function CrmView({
                             </div>
                             <div className="flex justify-between items-center text-[#7A7667] border-dashed border-b border-[#E8E6DE]/55 pb-2">
                               <span className="font-medium text-[11.5px] items-center gap-1">
-                                TVA (20% par défaut) :
+                                TVA ({newIncludeTva ? '20%' : '0% - Exonérée'}) :
                               </span>
                               <span className="font-bold font-mono text-slate-600">+{tvaAmount.toLocaleString()} MAD</span>
                             </div>
@@ -1365,8 +1400,9 @@ export default function CrmView({
                           ? (selectedContact.registrationFeeAmount !== undefined ? selectedContact.registrationFeeAmount : 2500)
                           : 0;
                         amountHT += regAmount;
-                        const tvaAmount = amountHT * 0.20;
-                        const amountTTC = amountHT * 1.20;
+                        const hasTva = selectedContact.includeTva !== false;
+                        const tvaAmount = hasTva ? amountHT * 0.20 : 0;
+                        const amountTTC = amountHT + tvaAmount;
 
                         return (
                           <div className="space-y-1.5 text-xs font-sans">
@@ -1385,7 +1421,7 @@ export default function CrmView({
                               <span className="font-mono">{amountHT.toLocaleString()} MAD</span>
                             </div>
                             <div className="flex justify-between items-center text-[11px] text-[#7A7667] border-dashed border-b border-[#E8E6DE]/40 pb-1.5">
-                              <span>TVA (20%) :</span>
+                              <span>TVA ({hasTva ? '20%' : '0% - Exonérée'}) :</span>
                               <span className="font-semibold font-mono text-slate-500">+{tvaAmount.toLocaleString()} MAD</span>
                             </div>
                             <div className="flex justify-between items-center pt-1 font-bold">
@@ -1916,59 +1952,88 @@ export default function CrmView({
                         />
                       </div>
                     )}
-                  </div>
 
-                  {/* Simulator with HT, TVA 20% & TTC */}
-                  {(() => {
-                    const area = parseFloat(editStandArea) || 0;
-                    let amountHT = 0;
-                    let formulaDesc = "";
-                    if (editStandType === 'surface_nue') {
-                      amountHT = area * 1800;
-                      formulaDesc = `${area} m² x 1800 MAD`;
-                    } else if (editStandType === 'equipe') {
-                      amountHT = area * 2400;
-                      formulaDesc = `${area} m² x 2400 MAD`;
-                    } else {
-                      amountHT = parseFloat(editExceptionalPrice) || 0;
-                      formulaDesc = "Manuel";
-                    }
-
-                    if (editRegFeeMode === 'yes') {
-                      amountHT += 2500;
-                      formulaDesc += " + 2500 MAD Enregistrement";
-                    } else if (editRegFeeMode === 'manual') {
-                      const manualAmount = parseFloat(editRegFeeManualAmount) || 0;
-                      amountHT += manualAmount;
-                      formulaDesc += ` + ${manualAmount} MAD Enregistrement (manuel)`;
-                    }
-
-                    const tvaAmount = amountHT * 0.20;
-                    const amountTTC = amountHT * 1.20;
-
-                    return (
-                      <div className="bg-[#FDFDFB] border border-[#E8E6DE]/70 rounded-2xl p-4.5 space-y-2.5 text-xs text-[#7A7667] shadow-3xs w-full col-span-2">
-                        <div className="flex justify-between items-center text-[10px] font-bold text-[#A68A64] border-b border-[#E8E6DE]/50 pb-1.5 mb-1">
-                          <span>SIMULATEUR DE TARIF (HT + TVA 20%)</span>
-                          <span className="font-mono text-slate-400">({formulaDesc})</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-[11px]">Total HT :</span>
-                          <span className="font-bold font-mono text-[#2D2D2D]">{amountHT.toLocaleString()} MAD</span>
-                        </div>
-                        <div className="flex justify-between items-center text-[#7A7667] border-dashed border-b border-[#E8E6DE]/55 pb-2">
-                          <span className="font-medium text-[11.5px] items-center gap-1">
-                            TVA (20% par défaut) :
-                          </span>
-                          <span className="font-bold font-mono text-slate-600">+{tvaAmount.toLocaleString()} MAD</span>
-                        </div>
-                        <div className="flex justify-between items-center pt-1">
-                          <span className="font-black text-[#2D2D2D] text-[11.5px]">NET À PAYER TTC :</span>
-                          <span className="font-black font-mono text-[#A68A64] text-sm bg-amber-50/50 px-2 py-1 rounded-lg border border-amber-150">{amountTTC.toLocaleString()} MAD</span>
-                        </div>
+                    <div className="space-y-1 col-span-2">
+                      <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Assujetti à la TVA 20% ?</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditIncludeTva(true)}
+                          className={`py-2 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
+                            editIncludeTva 
+                              ? 'bg-[#A68A64] text-white border-[#A68A64] shadow-xs' 
+                              : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-[#F8F7F2]'
+                          }`}
+                        >
+                          ✅ Oui (+20% TVA)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditIncludeTva(false)}
+                          className={`py-2 rounded-xl text-xs font-semibold border transition cursor-pointer text-center ${
+                            !editIncludeTva 
+                              ? 'bg-[#FAF9F5] text-rose-700 border-[#E8E6DE] shadow-inner font-bold' 
+                              : 'bg-white text-[#7A7667] border-[#E8E6DE] hover:bg-[#F8F7F2]'
+                          }`}
+                        >
+                          ❌ Non (Exclu)
+                        </button>
                       </div>
-                    );
-                  })()}
+                    </div>
+
+                    {/* Simulator with HT, TVA 20% & TTC */}
+                    {(() => {
+                      const area = parseFloat(editStandArea) || 0;
+                      let amountHT = 0;
+                      let formulaDesc = "";
+                      if (editStandType === 'surface_nue') {
+                        amountHT = area * 1800;
+                        formulaDesc = `${area} m² x 1800 MAD`;
+                      } else if (editStandType === 'equipe') {
+                        amountHT = area * 2400;
+                        formulaDesc = `${area} m² x 2400 MAD`;
+                      } else {
+                        amountHT = parseFloat(editExceptionalPrice) || 0;
+                        formulaDesc = "Manuel";
+                      }
+
+                      if (editRegFeeMode === 'yes') {
+                        amountHT += 2500;
+                        formulaDesc += " + 2500 MAD Enregistrement";
+                      } else if (editRegFeeMode === 'manual') {
+                        const manualAmount = parseFloat(editRegFeeManualAmount) || 0;
+                        amountHT += manualAmount;
+                        formulaDesc += ` + ${manualAmount} MAD Enregistrement (manuel)`;
+                      }
+
+                      const tvaAmount = editIncludeTva ? (amountHT * 0.20) : 0;
+                      const amountTTC = amountHT + tvaAmount;
+
+                      return (
+                        <div className="bg-[#FDFDFB] border border-[#E8E6DE]/70 rounded-2xl p-4.5 space-y-2.5 text-xs text-[#7A7667] shadow-3xs w-full col-span-2">
+                          <div className="flex justify-between items-center text-[10px] font-bold text-[#A68A64] border-b border-[#E8E6DE]/50 pb-1.5 mb-1">
+                            <span>SIMULATEUR DE TARIF (HT + TVA {editIncludeTva ? '20%' : '0% (Exonérée)'})</span>
+                            <span className="font-mono text-slate-400">({formulaDesc})</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-[11px]">Total HT :</span>
+                            <span className="font-bold font-mono text-[#2D2D2D]">{amountHT.toLocaleString()} MAD</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[#7A7667] border-dashed border-b border-[#E8E6DE]/55 pb-2">
+                            <span className="font-medium text-[11.5px] items-center gap-1">
+                              TVA ({editIncludeTva ? '20%' : '0% - Exonérée'}) :
+                            </span>
+                            <span className="font-bold font-mono text-slate-600">+{tvaAmount.toLocaleString()} MAD</span>
+                          </div>
+                          <div className="flex justify-between items-center pt-1">
+                            <span className="font-black text-[#2D2D2D] text-[11.5px]">NET À PAYER TTC :</span>
+                            <span className="font-black font-mono text-[#A68A64] text-sm bg-amber-50/50 px-2 py-1 rounded-lg border border-amber-150">{amountTTC.toLocaleString()} MAD</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                  </div>
                 </div>
               )}
 

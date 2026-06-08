@@ -33,6 +33,7 @@ export interface Contact {
   standArea?: number;
   includeRegistrationFee?: boolean;
   registrationFeeAmount?: number;
+  includeTva?: boolean;
 }
 
 export type StandStatus = 'disponible' | 'reserve' | 'vendu' | 'sponsorise';
@@ -74,6 +75,7 @@ export interface Transaction {
   items: TransactionItem[];
   notes?: string;
   advancePaid?: number;
+  includeTva?: boolean;
 }
 
 export interface Campaign {

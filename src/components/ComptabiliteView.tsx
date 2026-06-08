@@ -82,6 +82,7 @@ export default function ComptabiliteView({
   ]);
   const [formNotes, setFormNotes] = useState('');
   const [formIncludeRegFee, setFormIncludeRegFee] = useState<boolean>(true);
+  const [formIncludeTva, setFormIncludeTva] = useState<boolean>(true);
 
   // Toast
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -154,7 +155,8 @@ export default function ComptabiliteView({
       date: new Date().toISOString().split('T')[0],
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       items: docItems,
-      notes: formNotes
+      notes: formNotes,
+      includeTva: formIncludeTva
     };
 
     setTransactions(prev => [newDoc, ...prev]);
@@ -168,6 +170,7 @@ export default function ComptabiliteView({
     setFormClient('');
     setFormNotes('');
     setFormIncludeRegFee(true);
+    setFormIncludeTva(true);
   };
 
   // Switch status of invoice (e.g. mark as payed)
@@ -211,8 +214,9 @@ export default function ComptabiliteView({
 
   const downloadDocument = (receipt: Transaction) => {
     const totalHT = receipt.amount;
-    const tva = totalHT * 0.2;
-    const totalTTC = totalHT * 1.2;
+    const hasTva = receipt.includeTva !== false;
+    const tva = hasTva ? totalHT * 0.2 : 0;
+    const totalTTC = totalHT + tva;
     const siteLabel = receipt.site === 'africapool' ? 'Africa Pool & Spa Expo 2025' : receipt.site === 'gardenexpo' ? 'Garden Expo Africa 2025' : 'R2H Communication';
     
     // Create a hidden, isolated iframe for beautiful PDF vector rendering
@@ -367,7 +371,7 @@ export default function ComptabiliteView({
                 <span style="font-family: 'JetBrains Mono', monospace; font-weight: bold; color: #2d2d2d;">${totalHT.toLocaleString('fr-FR')} MAD</span>
               </div>
               <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 10px; color: #7a7667; font-weight: 500;">
-                <span>TVA EXIGIBLE (20.00%) :</span>
+                <span>TVA EXIGIBLE (${hasTva ? '20.00%' : '0% - Exonérée'}) :</span>
                 <span style="font-family: 'JetBrains Mono', monospace; font-weight: bold; color: #2d2d2d;">${tva.toLocaleString('fr-FR')} MAD</span>
               </div>
               <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #e8e6de; font-size: 12.5px; margin-top: 4px;">
@@ -511,17 +515,25 @@ export default function ComptabiliteView({
                           <p className="text-[10px] text-slate-400 mt-0.5">{trans.clientName} • {trans.date}</p>
                         </td>
                         <td className="px-5 py-3">
-                          <span className="font-mono font-medium text-slate-800">{(trans.amount * 1.2).toLocaleString()} MAD</span>
-                          {trans.advancePaid && trans.advancePaid > 0 && trans.type === 'facture' ? (
-                            <div className="mt-1 flex flex-col gap-0.5 select-none">
-                              <span className="text-[9px] bg-emerald-50/85 text-emerald-700 px-1.5 py-0.5 rounded-md font-semibold font-sans w-fit">
-                                Avance : -{trans.advancePaid.toLocaleString()} MAD
-                              </span>
-                              <span className="text-[9px] bg-amber-50/85 text-amber-700 px-1.5 py-0.5 rounded-md font-bold font-sans w-fit">
-                                Reste : {(trans.amount * 1.2 - trans.advancePaid).toLocaleString()} MAD
-                              </span>
-                            </div>
-                          ) : null}
+                          {(() => {
+                            const transHasTva = trans.includeTva !== false;
+                            const transTtc = transHasTva ? trans.amount * 1.2 : trans.amount;
+                            return (
+                              <>
+                                <span className="font-mono font-medium text-slate-800">{transTtc.toLocaleString()} MAD</span>
+                                {trans.advancePaid && trans.advancePaid > 0 && trans.type === 'facture' ? (
+                                  <div className="mt-1 flex flex-col gap-0.5 select-none">
+                                    <span className="text-[9px] bg-emerald-50/85 text-emerald-700 px-1.5 py-0.5 rounded-md font-semibold font-sans w-fit">
+                                      Avance : -{trans.advancePaid.toLocaleString()} MAD
+                                    </span>
+                                    <span className="text-[9px] bg-amber-50/85 text-amber-700 px-1.5 py-0.5 rounded-md font-bold font-sans w-fit">
+                                      Reste : {(transTtc - trans.advancePaid).toLocaleString()} MAD
+                                    </span>
+                                  </div>
+                                ) : null}
+                              </>
+                            );
+                          })()}
                         </td>
                         <td className="px-5 py-3">
                           <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full text-slate-500 font-medium font-sans">
@@ -636,10 +648,30 @@ export default function ComptabiliteView({
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase">Taux de TVA marocain</label>
-                    <div className="w-full p-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-500 font-mono font-medium flex items-center justify-between select-none">
-                      <span>Régime de Commerce Standard</span>
-                      <span className="text-blue-500">20.00 %</span>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase">Appliquer la TVA (20%) ?</label>
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setFormIncludeTva(true)}
+                        className={`flex-1 py-1 px-2 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
+                          formIncludeTva 
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-2xs' 
+                            : 'bg-white text-[#7A7667] border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        ✅ Oui
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormIncludeTva(false)}
+                        className={`flex-1 py-1 px-2 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
+                          !formIncludeTva 
+                            ? 'bg-rose-700 text-white border-rose-700 shadow-2xs font-bold' 
+                            : 'bg-white text-[#7A7667] border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        ❌ Non
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -891,34 +923,41 @@ export default function ComptabiliteView({
                     </div>
 
                     {/* HT + VAT 20% + TTC summary block */}
-                    <div className="w-full sm:max-w-[200px] border-t-2 border-slate-200 pt-2.5">
-                      <div className="space-y-1 text-right font-sans text-[10px]">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400 font-medium font-sans">TOTAL HT :</span>
-                          <span className="font-mono font-medium text-slate-800">{focusReceipt.amount.toLocaleString()} MAD</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400 font-medium font-sans">TVA (20.00%) :</span>
-                          <span className="font-mono font-medium text-slate-800">{(focusReceipt.amount * 0.2).toLocaleString()} MAD</span>
-                        </div>
-                        <div className="flex justify-between border-t border-slate-100 pt-1 text-xs select-none">
-                          <span className="font-bold text-slate-900">NET À PAYER TTC:</span>
-                          <span className="font-mono font-bold text-blue-600">{(focusReceipt.amount * 1.2).toLocaleString()} MAD</span>
-                        </div>
-                        {focusReceipt.advancePaid && focusReceipt.advancePaid > 0 ? (
-                          <>
-                            <div className="flex justify-between text-emerald-600 font-semibold font-sans mt-1">
-                              <span>AVANCE REÇUE :</span>
-                              <span className="font-mono">-{focusReceipt.advancePaid.toLocaleString()} MAD</span>
+                    {(() => {
+                      const hasTva = focusReceipt.includeTva !== false;
+                      const tvaAmount = hasTva ? focusReceipt.amount * 0.2 : 0;
+                      const ttcAmount = hasTva ? focusReceipt.amount * 1.2 : focusReceipt.amount;
+                      return (
+                        <div className="w-full sm:max-w-[200px] border-t-2 border-slate-200 pt-2.5">
+                          <div className="space-y-1 text-right font-sans text-[10px]">
+                            <div className="flex justify-between">
+                              <span className="text-slate-400 font-medium font-sans">TOTAL HT :</span>
+                              <span className="font-mono font-medium text-slate-800">{focusReceipt.amount.toLocaleString()} MAD</span>
                             </div>
-                            <div className="flex justify-between border-t border-dashed border-slate-200 pt-1 text-xs font-bold text-amber-700">
-                              <span>RESTE À PAYER :</span>
-                              <span className="font-mono">{(focusReceipt.amount * 1.2 - focusReceipt.advancePaid).toLocaleString()} MAD</span>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400 font-medium font-sans">TVA ({hasTva ? '20.00%' : '0% (Exonérée)'}) :</span>
+                              <span className="font-mono font-medium text-slate-800">{tvaAmount.toLocaleString()} MAD</span>
                             </div>
-                          </>
-                        ) : null}
-                      </div>
-                    </div>
+                            <div className="flex justify-between border-t border-slate-100 pt-1 text-xs select-none">
+                              <span className="font-bold text-slate-900">NET À PAYER TTC:</span>
+                              <span className="font-mono font-bold text-blue-600">{ttcAmount.toLocaleString()} MAD</span>
+                            </div>
+                            {focusReceipt.advancePaid && focusReceipt.advancePaid > 0 ? (
+                              <>
+                                <div className="flex justify-between text-emerald-600 font-semibold font-sans mt-1">
+                                  <span>AVANCE REÇUE :</span>
+                                  <span className="font-mono">-{focusReceipt.advancePaid.toLocaleString()} MAD</span>
+                                </div>
+                                <div className="flex justify-between border-t border-dashed border-slate-200 pt-1 text-xs font-bold text-amber-700">
+                                  <span>RESTE À PAYER :</span>
+                                  <span className="font-mono">{(ttcAmount - focusReceipt.advancePaid).toLocaleString()} MAD</span>
+                                </div>
+                              </>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Bottom administrative footer conditions */}
@@ -943,47 +982,55 @@ export default function ComptabiliteView({
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase">Montant de l'avance (MAD)</label>
-                        <div className="relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono font-bold text-[10px]">MAD</span>
-                          <input
-                            type="number"
-                            min="0"
-                            max={Math.round(focusReceipt.amount * 1.2)}
-                            value={advanceInput}
-                            onChange={(e) => setAdvanceInput(e.target.value)}
-                            placeholder="0.00"
-                            className="w-full pl-12 pr-2.5 py-2 bg-white border border-slate-200 rounded-xl outline-hidden text-slate-800 font-mono font-bold text-xs"
-                          />
-                        </div>
-                      </div>
+                      {(() => {
+                        const hasTva = focusReceipt.includeTva !== false;
+                        const multiplier = hasTva ? 1.2 : 1.0;
+                        return (
+                          <>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase">Montant de l'avance (MAD)</label>
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-mono font-bold text-[10px]">MAD</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={Math.round(focusReceipt.amount * multiplier)}
+                                  value={advanceInput}
+                                  onChange={(e) => setAdvanceInput(e.target.value)}
+                                  placeholder="0.00"
+                                  className="w-full pl-12 pr-2.5 py-2 bg-white border border-slate-200 rounded-xl outline-hidden text-slate-800 font-mono font-bold text-xs"
+                                />
+                              </div>
+                            </div>
 
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Raccourcis d'acompte</label>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const val = Math.round((focusReceipt.amount * 1.2) * 0.3);
-                              setAdvanceInput(String(val));
-                            }}
-                            className="px-2 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-center cursor-pointer text-[10px] transition-colors"
-                          >
-                            30% (Acompte)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const val = Math.round((focusReceipt.amount * 1.2) * 0.5);
-                              setAdvanceInput(String(val));
-                            }}
-                            className="px-2 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-center cursor-pointer text-[10px] transition-colors"
-                          >
-                            50% (Acompte)
-                          </button>
-                        </div>
-                      </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Raccourcis d'acompte</label>
+                              <div className="grid grid-cols-2 gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const val = Math.round((focusReceipt.amount * multiplier) * 0.3);
+                                    setAdvanceInput(String(val));
+                                  }}
+                                  className="px-2 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-center cursor-pointer text-[10px] transition-colors"
+                                >
+                                  30% (Acompte)
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const val = Math.round((focusReceipt.amount * multiplier) * 0.5);
+                                    setAdvanceInput(String(val));
+                                  }}
+                                  className="px-2 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold rounded-lg text-center cursor-pointer text-[10px] transition-colors"
+                                >
+                                  50% (Acompte)
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1016,7 +1063,9 @@ export default function ComptabiliteView({
 
                     {/* Display calculations indicators */}
                     {(() => {
-                      const amtTTC = focusReceipt.amount * 1.2;
+                      const hasTva = focusReceipt.includeTva !== false;
+                      const multiplier = hasTva ? 1.2 : 1.0;
+                      const amtTTC = focusReceipt.amount * multiplier;
                       const advVal = parseFloat(advanceInput) || 0;
                       const restVal = Math.max(0, amtTTC - advVal);
                       return (
