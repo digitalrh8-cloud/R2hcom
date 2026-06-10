@@ -254,6 +254,7 @@ export default function CrmView({
   const [invoiceModalContact, setInvoiceModalContact] = useState<Contact | null>(null);
   const [customInvoiceItems, setCustomInvoiceItems] = useState<TransactionItem[]>([]);
   const [invoiceNotes, setInvoiceNotes] = useState<string>('');
+  const [invoiceIncludeTva, setInvoiceIncludeTva] = useState<boolean>(true);
 
   const handleOpenInvoiceGenerator = (contact: Contact) => {
     // Step 1: Find matching stands
@@ -274,21 +275,26 @@ export default function CrmView({
 
     if (matchedStands.length > 0) {
       initialItems = matchedStands.map((stand, idx) => {
-        let finalPrice = stand.area * (stand.pricePerM2 || 2500);
-        let categoryLabel = "Surface Nue";
+        let finalPrice = 0;
+        let categoryLabel = "";
         
-        if (stand.standType === 'equipe') {
-          categoryLabel = "Stand Équipé";
-          finalPrice = stand.area * ((stand.pricePerM2 || 2500) + 500);
-        } else if (stand.standType === 'personalise') {
-          categoryLabel = "Stand Personnalisé";
-          finalPrice = stand.area * ((stand.pricePerM2 || 2500) + 1200);
-        }
-        
-        // Exceptional price overrides default calculations if configured
-        if (stand.exceptionalPrice !== undefined && stand.exceptionalPrice !== null && stand.exceptionalPrice > 0) {
-          finalPrice = stand.exceptionalPrice;
-          categoryLabel += " - Tarif Exceptionnel";
+        const isExceptionalOrPersonalise = 
+          stand.standType === 'personalise' || 
+          (stand.exceptionalPrice !== undefined && stand.exceptionalPrice !== null && stand.exceptionalPrice > 0) ||
+          contact.standType === 'personalise' || 
+          contact.standType === 'exceptionnel';
+
+        if (isExceptionalOrPersonalise) {
+          finalPrice = stand.exceptionalPrice || contact.exceptionalPrice || 0;
+          categoryLabel = (stand.standType === 'personalise' || contact.standType === 'personalise') ? "Stand Personnalisé" : "Tarif Exceptionnel";
+        } else {
+          finalPrice = stand.area * (stand.pricePerM2 || 2500);
+          categoryLabel = "Surface Nue";
+          
+          if (stand.standType === 'equipe') {
+            categoryLabel = "Stand Équipé";
+            finalPrice = stand.area * ((stand.pricePerM2 || 2500) + 500);
+          }
         }
 
         return {
@@ -308,18 +314,31 @@ export default function CrmView({
     } else {
       const selectedSiteConfig = sitesList.find(s => s.id === contact.site);
       const siteTag = selectedSiteConfig ? selectedSiteConfig.logoText : 'R2H Event';
-      const rate = selectedSiteConfig && selectedSiteConfig.id === 'africapool' ? 2800 : 2500;
-      initialItems = [
-        {
-          id: `item_df_${Date.now()}`,
-          description: `Réservation de Stand d'exposition standard (${siteTag}) - 18m²`,
-          quantity: 1,
-          unitPrice: 18 * rate
-        }
-      ];
+      
+      if (contact.standType === 'personalise' || contact.standType === 'exceptionnel') {
+        const title = contact.standType === 'personalise' ? 'Stand Personnalisé' : 'Tarif Exceptionnel';
+        initialItems = [
+          {
+            id: `item_df_${Date.now()}`,
+            description: `Réservation de Stand (${title})${contact.standArea ? ` - ${contact.standArea}m²` : ''}`,
+            quantity: 1,
+            unitPrice: contact.exceptionalPrice || 0
+          }
+        ];
+      } else {
+        const rate = selectedSiteConfig && selectedSiteConfig.id === 'africapool' ? 2800 : 2500;
+        initialItems = [
+          {
+            id: `item_df_${Date.now()}`,
+            description: `Réservation de Stand d'exposition standard (${siteTag}) - 18m²`,
+            quantity: 1,
+            unitPrice: 18 * rate
+          }
+        ];
+      }
     }
 
-    if (contact.includeRegistrationFee !== false) {
+    if (contact.includeRegistrationFee !== false && contact.standType !== 'personalise' && contact.standType !== 'exceptionnel') {
       const alreadyHasRegFee = initialItems.some(item => item.description.toLowerCase().includes("enregistrement"));
       if (!alreadyHasRegFee) {
         const regAmount = contact.registrationFeeAmount !== undefined ? contact.registrationFeeAmount : 2500;
@@ -333,6 +352,7 @@ export default function CrmView({
     }
 
     setCustomInvoiceItems(initialItems);
+    setInvoiceIncludeTva(contact.includeTva !== false);
     setInvoiceNotes(`Facture d'exposant formulée en fonction des tarifs et des emplacements validés pour le salon ${
       sitesList.find(s => s.id === contact.site)?.name || 'R2H Communication'
     }.`);
@@ -384,7 +404,8 @@ export default function CrmView({
       date: new Date().toISOString().split('T')[0],
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       items: customInvoiceItems,
-      notes: invoiceNotes
+      notes: invoiceNotes,
+      includeTva: invoiceIncludeTva
     };
 
     setTransactions(prev => [newInvoice, ...prev]);
@@ -1199,10 +1220,10 @@ export default function CrmView({
                           formulaDesc = "Manuel";
                         }
 
-                        if (newRegFeeMode === 'yes') {
+                        if (newRegFeeMode === 'yes' && newStandType !== 'personalise' && newStandType !== 'exceptionnel') {
                           amountHT += 2500;
                           formulaDesc += " + 2500 MAD Enregistrement";
-                        } else if (newRegFeeMode === 'manual') {
+                        } else if (newRegFeeMode === 'manual' && newStandType !== 'personalise' && newStandType !== 'exceptionnel') {
                           const manualAmount = parseFloat(newRegFeeManualAmount) || 0;
                           amountHT += manualAmount;
                           formulaDesc += ` + ${manualAmount} MAD Enregistrement (manuel)`;
@@ -1395,7 +1416,7 @@ export default function CrmView({
                           amountHT = selectedContact.exceptionalPrice || 0;
                         }
                         const preRegAmount = amountHT;
-                        const includeReg = selectedContact.includeRegistrationFee !== false;
+                        const includeReg = selectedContact.includeRegistrationFee !== false && selectedContact.standType !== 'personalise' && selectedContact.standType !== 'exceptionnel';
                         const regAmount = includeReg 
                           ? (selectedContact.registrationFeeAmount !== undefined ? selectedContact.registrationFeeAmount : 2500)
                           : 0;
@@ -1642,17 +1663,73 @@ export default function CrmView({
                 </table>
               </div>
 
-              {/* Total Calculation Display */}
-              {customInvoiceItems.length > 0 && (
-                <div className="flex justify-end p-4 bg-[#F8F7F2]/50 border border-[#E8E6DE]/40 rounded-2xl">
-                  <div className="text-right space-y-1">
-                    <p className="text-[10px] text-[#7A7667] font-bold uppercase tracking-wider">Montant Total HT</p>
-                    <p className="text-lg font-serif font-black text-[#2D2D2D]">
-                      {customInvoiceItems.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0).toLocaleString('fr-FR')} <span className="text-xs font-sans font-medium text-[#7A7667]">MAD</span>
-                    </p>
+              {/* TVA Toggle and Calculation Display */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* TVA Choice Option */}
+                <div className="flex flex-col justify-center bg-[#F8F7F2]/40 border border-[#E8E6DE]/50 rounded-2xl p-4 text-xs space-y-2">
+                  <div>
+                    <p className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Appliquer la TVA (20%) ?</p>
+                    <p className="text-[10px] text-[#7A7667]/80 mt-0.5">Décidez si cette facture est assujettie à la TVA de 20%.</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setInvoiceIncludeTva(true)}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
+                        invoiceIncludeTva 
+                          ? 'bg-[#A68A64] text-white border-[#A68A64] shadow-2xs font-bold' 
+                          : 'bg-white text-[#7A7667] border-slate-200 hover:bg-[#F8F7F2]'
+                      }`}
+                    >
+                      Oui
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInvoiceIncludeTva(false)}
+                      className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold border transition cursor-pointer text-center ${
+                        !invoiceIncludeTva 
+                          ? 'bg-[#FAF9F5] text-rose-750 border-[#E8E6DE] shadow-inner font-bold' 
+                          : 'bg-white text-[#7A7667] border-slate-200 hover:bg-[#F8F7F2]'
+                      }`}
+                    >
+                      Non
+                    </button>
                   </div>
                 </div>
-              )}
+
+                {/* Total Calculation Display */}
+                {customInvoiceItems.length > 0 && (
+                  (() => {
+                    const totalHT = customInvoiceItems.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
+                    const tvaAmount = invoiceIncludeTva ? totalHT * 0.20 : 0;
+                    const totalTTC = totalHT + tvaAmount;
+                    return (
+                      <div className="bg-[#FDFDFB] border border-[#E8E6DE]/70 rounded-2xl p-4 space-y-2 text-xs text-[#7A7667] shadow-3xs">
+                        <div className="flex justify-between items-center text-[#7A7667]">
+                          <span>Total HT :</span>
+                          <span className="font-bold font-mono text-slate-700">
+                            {totalHT.toLocaleString('fr-FR')} MAD
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between items-center text-[#7A7667] border-dashed border-b border-[#E8E6DE]/55 pb-1.5 py-0.5">
+                          <span>TVA ({invoiceIncludeTva ? '20%' : '0% - Exonérée'}) :</span>
+                          <span className="font-bold font-mono text-slate-600">
+                            {invoiceIncludeTva ? `+${tvaAmount.toLocaleString('fr-FR')}` : '0'} MAD
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between items-center text-[#2D2D2D] pt-1">
+                          <span className="font-serif font-black text-[12px] uppercase tracking-tight">TOTAL TTC :</span>
+                          <span className="font-bold font-mono text-sm text-[#4D5E4A]">
+                            {totalTTC.toLocaleString('fr-FR')} MAD
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
+              </div>
             </div>
 
             {/* Note block */}
@@ -1997,10 +2074,10 @@ export default function CrmView({
                         formulaDesc = "Manuel";
                       }
 
-                      if (editRegFeeMode === 'yes') {
+                      if (editRegFeeMode === 'yes' && editStandType !== 'personalise' && editStandType !== 'exceptionnel') {
                         amountHT += 2500;
                         formulaDesc += " + 2500 MAD Enregistrement";
-                      } else if (editRegFeeMode === 'manual') {
+                      } else if (editRegFeeMode === 'manual' && editStandType !== 'personalise' && editStandType !== 'exceptionnel') {
                         const manualAmount = parseFloat(editRegFeeManualAmount) || 0;
                         amountHT += manualAmount;
                         formulaDesc += ` + ${manualAmount} MAD Enregistrement (manuel)`;

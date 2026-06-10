@@ -82,7 +82,7 @@ export default function ComptabiliteView({
   ]);
   const [formNotes, setFormNotes] = useState('');
   const [formIncludeRegFee, setFormIncludeRegFee] = useState<boolean>(true);
-  const [formIncludeTva, setFormIncludeTva] = useState<boolean>(true);
+  const [formIncludeTva, setFormIncludeTva] = useState<boolean>(false);
 
   // Toast
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -170,7 +170,7 @@ export default function ComptabiliteView({
     setFormClient('');
     setFormNotes('');
     setFormIncludeRegFee(true);
-    setFormIncludeTva(true);
+    setFormIncludeTva(false);
   };
 
   // Switch status of invoice (e.g. mark as payed)
