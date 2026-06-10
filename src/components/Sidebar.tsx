@@ -31,7 +31,8 @@ import {
   ChevronRight,
   Sparkles,
   LogOut,
-  X
+  X,
+  Globe
 } from 'lucide-react';
 import { SiteId } from '../types';
 import R2HLogo from './R2HLogo';
@@ -180,6 +181,15 @@ export default function Sidebar({
                 >
                   <Layers className="w-4 h-4 text-[#A68A64]" />
                   <span>📦 Prestataires & Fournisseurs</span>
+                </button>
+                <button 
+                  type="button"
+                  id="nav-partenaires-medias"
+                  onClick={() => handleTabSelect('partenaires-medias')} 
+                  className={getLinkClass('partenaires-medias')}
+                >
+                  <Globe className="w-4 h-4 text-[#A68A64]" />
+                  <span>Partenaires Médias</span>
                 </button>
               </>
             )}

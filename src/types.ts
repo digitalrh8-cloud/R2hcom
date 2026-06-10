@@ -43,6 +43,15 @@ export interface Contact {
   fournisseurType?: 'fournisseur' | 'prestataire';
   fournisseurLogo?: string;
   fournisseurInvoices?: { id: string; label: string; amount: number; date: string; fileUrl: string; status: 'paye' | 'non_paye' }[];
+  
+  // Media Partner properties
+  mediaType?: string; // e.g. 'Presse écrite', 'Télévision', 'Radio', 'Web / Blog', 'Influenceur', 'Autre'
+  mediaAudience?: string; // e.g. 'National', 'Régional', 'International'
+  mediaCoverage?: string; // Audience reach representation (e.g. '500k lecteurs', '1.2M abonnés')
+  mediaStatus?: 'actif' | 'inactif';
+  mediaLogo?: string;
+  mediaInvoices?: { id: string; label: string; amount: number; date: string; fileUrl: string; status: 'paye' | 'non_paye' }[]; // Or similar docs/contracts
+  mediaArticles?: { id: string; label: string; date: string; url?: string; imageProof?: string; reachEst?: number }[];
 }
 
 export type StandStatus = 'disponible' | 'reserve' | 'vendu' | 'sponsorise';

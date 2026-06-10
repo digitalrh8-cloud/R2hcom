@@ -40,6 +40,58 @@ export const initialSites: SiteConfig[] = [
 
 export const initialContacts: Contact[] = [
   {
+    id: 'media-init-1',
+    company: "L'Économiste du Maroc",
+    name: "Amine Belghazi",
+    email: "contact@leconomiste.com",
+    phone: "+212 522-360150",
+    site: "r2h",
+    role: 'partner_media',
+    dateAdded: '2026-06-01',
+    mediaType: "Presse écrite (Papiers)",
+    mediaAudience: "National",
+    mediaCoverage: "450k lecteurs / jour",
+    mediaStatus: 'actif',
+    mediaLogo: '',
+    notes: "Partenaire de presse francophone de premier plan au Maroc. Couverture complète de l'inauguration et diffusion de bannières.",
+    mediaArticles: [
+      {
+        id: 'art-init-1a',
+        label: "Inauguration officielle du Salon de l'immobilier",
+        date: '2026-06-02',
+        url: 'https://leconomiste.com',
+        imageProof: '',
+        reachEst: 120000
+      }
+    ]
+  },
+  {
+    id: 'media-init-2',
+    company: "Medi1 TV Actualités",
+    name: "Karim Tazi",
+    email: "k.tazi@medi1tv.ma",
+    phone: "+212 539-930202",
+    site: "r2h",
+    role: 'partner_media',
+    dateAdded: '2026-05-30',
+    mediaType: "Télévision / Chaîne TV",
+    mediaAudience: "International",
+    mediaCoverage: "2.4M téléspectateurs",
+    mediaStatus: 'actif',
+    mediaLogo: '',
+    notes: "Diffusion de flashs d'information en arabe et français réguliers durant la semaine du grand salon.",
+    mediaArticles: [
+      {
+        id: 'art-init-2a',
+        label: "Reportage direct télévisé - Session plénière",
+        date: '2026-06-02',
+        url: 'https://medi1tv.ma',
+        imageProof: '',
+        reachEst: 500000
+      }
+    ]
+  },
+  {
     id: 'c-ap-1',
     name: 'youssef Elhafid',
     email: 'yelhafid@ccei.ma',

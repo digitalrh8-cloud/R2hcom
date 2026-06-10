@@ -22,6 +22,8 @@ import MarketingView from './components/MarketingView';
 import SettingsView from './components/SettingsView';
 import LoginView from './components/LoginView';
 import FournisseursView from './components/FournisseursView';
+import PartenairesMediasView from './components/PartenairesMediasView';
+
 
 // Browser cookie helpers for local session persistence without localStorage
 function getCookie(name: string): string | null {
@@ -139,8 +141,49 @@ export default function App() {
     setCurrentTab('dashboard');
   };
   
-  // Navigation tabs 'dashboard' | 'prospects' | 'clients' | 'devis' | 'factures' | 'stands' | 'marketing' | 'parametres'
-  const [currentTab, setCurrentTab] = useState<string>('dashboard');
+  // Navigation URL routing support for SPA
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    const path = window.location.pathname;
+    if (path === '/partenaires-medias' || window.location.hash === '#partenaires-medias') {
+      return 'partenaires-medias';
+    }
+    const cleanTab = path.substring(1);
+    if (['dashboard', 'prospects', 'clients', 'fournisseurs', 'devis', 'factures', 'stands', 'marketing', 'parametres'].includes(cleanTab)) {
+      return cleanTab;
+    }
+    return 'dashboard';
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === '/partenaires-medias') {
+        setCurrentTab('partenaires-medias');
+      } else {
+        const hash = window.location.hash;
+        if (hash === '#partenaires-medias') {
+          setCurrentTab('partenaires-medias');
+        } else {
+          const tabFromPath = path.substring(1);
+          if (['dashboard', 'prospects', 'clients', 'fournisseurs', 'devis', 'factures', 'stands', 'marketing', 'parametres'].includes(tabFromPath)) {
+            setCurrentTab(tabFromPath);
+          } else {
+            setCurrentTab('dashboard');
+          }
+        }
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    const currentLoc = window.location.pathname;
+    const targetLoc = currentTab === 'partenaires-medias' ? '/partenaires-medias' : (currentTab === 'dashboard' ? '/' : `/${currentTab}`);
+    if (currentLoc !== targetLoc) {
+      window.history.pushState({}, '', targetLoc);
+    }
+  }, [currentTab]);
 
   // Mobile sidebar visibility toggle drawer
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
@@ -331,6 +374,7 @@ export default function App() {
       case 'prospects': return "Suivi CRM — Prospects Event";
       case 'clients': return "Suivi CRM — Exposants officiels";
       case 'fournisseurs': return "📦 Prestataires & Fournisseurs";
+      case 'partenaires-medias': return "Suivi Relation Presse — Partenaires Médias";
       case 'devis': return "Gestion de Devis Émis";
       case 'factures': return "Transactions & Facturation R2H";
       case 'stands': return "Plan d'Exposition Interactif";
@@ -390,6 +434,15 @@ export default function App() {
       case 'fournisseurs':
         return (
           <FournisseursView 
+            selectedSite={selectedSite}
+            contacts={contacts}
+            setContacts={setContacts}
+            sites={sites}
+          />
+        );
+      case 'partenaires-medias':
+        return (
+          <PartenairesMediasView 
             selectedSite={selectedSite}
             contacts={contacts}
             setContacts={setContacts}
