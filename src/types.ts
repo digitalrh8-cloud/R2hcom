@@ -34,6 +34,15 @@ export interface Contact {
   includeRegistrationFee?: boolean;
   registrationFeeAmount?: number;
   includeTva?: boolean;
+  fournisseurInvoicePhoto?: string;
+  fournisseurAdvancePaid?: 'yes' | 'no';
+  fournisseurInvoiceReceived?: 'yes' | 'no';
+  fournisseurPaymentStatus?: 'paye' | 'non_paye';
+  fournisseurCategory?: string;
+  fournisseurStatus?: 'actif' | 'inactif';
+  fournisseurType?: 'fournisseur' | 'prestataire';
+  fournisseurLogo?: string;
+  fournisseurInvoices?: { id: string; label: string; amount: number; date: string; fileUrl: string; status: 'paye' | 'non_paye' }[];
 }
 
 export type StandStatus = 'disponible' | 'reserve' | 'vendu' | 'sponsorise';

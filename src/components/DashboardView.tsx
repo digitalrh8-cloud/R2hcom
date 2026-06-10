@@ -89,6 +89,15 @@ export default function DashboardView({
     .filter(t => t.status === 'paye' || t.status === 'envoye')
     .reduce((sum, curr) => sum + curr.amount, 0);
 
+  const totalReliquat = siteTransactions
+    .filter(t => t.type === 'facture' && t.status !== 'paye')
+    .reduce((sum, curr) => {
+      const transHasTva = curr.includeTva !== false;
+      const transTtc = transHasTva ? curr.amount * 1.2 : curr.amount;
+      const remaining = transTtc - (curr.advancePaid || 0);
+      return sum + (remaining > 0 ? remaining : 0);
+    }, 0);
+
   const pendingInvoicesCount = siteTransactions.filter(t => t.type === 'facture' && t.status === 'envoye').length;
   const pendingInvoicesSum = siteTransactions
     .filter(t => t.type === 'facture' && t.status === 'envoye')
@@ -665,7 +674,7 @@ export default function DashboardView({
       </div>
 
       {/* KPI Cards section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         {/* Chiffre d'Affaires Card */}
         <div className="bg-white p-6 rounded-3xl border border-[#E8E6DE] shadow-xs relative overflow-hidden flex flex-col justify-between">
           <div>
@@ -681,6 +690,24 @@ export default function DashboardView({
           {/* Sparkline decoration */}
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#A68A64]/10">
             <div className="w-2/3 h-full bg-[#A68A64]"></div>
+          </div>
+        </div>
+
+        {/* Reliquat Card */}
+        <div className="bg-white p-6 rounded-3xl border border-[#E8E6DE] shadow-xs relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <span className="text-[10px] font-bold text-[#A68A64] tracking-wider uppercase">RELIQUAT À PAYER</span>
+            <h3 className="text-2xl font-serif font-black text-rose-700 tracking-tight mt-1">
+              {totalReliquat.toLocaleString()} <span className="text-xs text-[#7A7667] font-sans font-medium">MAD</span>
+            </h3>
+          </div>
+          <div className="mt-4 flex items-center justify-between text-[11px]">
+            <span className="text-rose-600 font-semibold flex items-center gap-0.5">⚠️ Reste TTC</span>
+            <span className="text-[#7A7667]/70">À recouvrer</span>
+          </div>
+          {/* Sparkline decoration */}
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-rose-600/10">
+            <div className="w-1/3 h-full bg-rose-600"></div>
           </div>
         </div>
 

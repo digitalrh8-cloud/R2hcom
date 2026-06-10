@@ -26,7 +26,9 @@ import {
   Plus,
   Trash2,
   RefreshCw,
-  Edit
+  Edit,
+  Upload,
+  Eye
 } from 'lucide-react';
 import { SiteId, SiteConfig, Contact, Stand, Transaction, TransactionItem } from '../types';
 import { initialSites } from '../initialData';
@@ -89,7 +91,15 @@ export default function CrmView({
   const [newPhone, setNewPhone] = useState('');
   const [newCompany, setNewCompany] = useState('');
   const [newSite, setNewSite] = useState<SiteId>(selectedSite === 'r2h' ? 'gardenexpo' : selectedSite);
-  const [newRole, setNewRole] = useState<'prospect' | 'client' | 'partner_media'>('prospect');
+  const [newRole, setNewRole] = useState<'prospect' | 'client' | 'partner_media' | 'fournisseur'>('prospect');
+  
+  // Fournisseur / Prestataire fields
+  const [newFournisseurInvoicePhoto, setNewFournisseurInvoicePhoto] = useState<string>('');
+  const [newFournisseurAdvancePaid, setNewFournisseurAdvancePaid] = useState<'yes' | 'no'>('no');
+  const [newFournisseurInvoiceReceived, setNewFournisseurInvoiceReceived] = useState<'yes' | 'no'>('no');
+  const [newFournisseurPaymentStatus, setNewFournisseurPaymentStatus] = useState<'paye' | 'non_paye'>('non_paye');
+  
+  const [activeInvoicePhoto, setActiveInvoicePhoto] = useState<string | null>(null);
   const [newNotes, setNewNotes] = useState('');
   const [newStandNumber, setNewStandNumber] = useState('');
   const [newProspectStatus, setNewProspectStatus] = useState<'interesse' | 'pas_interesse' | 'a_rappeler' | 'relance' | 'demande_devis'>('interesse');
@@ -124,6 +134,12 @@ export default function CrmView({
   const [editIncludeRegFee, setEditIncludeRegFee] = useState<boolean>(true);
   const [editRegFeeMode, setEditRegFeeMode] = useState<'yes' | 'no' | 'manual'>('yes');
   const [editRegFeeManualAmount, setEditRegFeeManualAmount] = useState<string>('2500');
+
+  // Fournisseur / Prestataire editing fields
+  const [editFournisseurInvoicePhoto, setEditFournisseurInvoicePhoto] = useState<string>('');
+  const [editFournisseurAdvancePaid, setEditFournisseurAdvancePaid] = useState<'yes' | 'no'>('no');
+  const [editFournisseurInvoiceReceived, setEditFournisseurInvoiceReceived] = useState<'yes' | 'no'>('no');
+  const [editFournisseurPaymentStatus, setEditFournisseurPaymentStatus] = useState<'paye' | 'non_paye'>('non_paye');
 
   // Calculate sorted free stands for editing site, including the contact's current stand
   const editFreeStands = stands
@@ -472,7 +488,12 @@ export default function CrmView({
       standArea: newRole === 'prospect' && !isNaN(parsedArea) && parsedArea >= 0 ? parsedArea : undefined,
       includeRegistrationFee: newRole === 'prospect' ? (newRegFeeMode !== 'no') : undefined,
       registrationFeeAmount: newRole === 'prospect' ? (newRegFeeMode === 'manual' ? (parseFloat(newRegFeeManualAmount) || 0) : (newRegFeeMode === 'yes' ? 2500 : 0)) : undefined,
-      includeTva: newRole === 'prospect' ? newIncludeTva : undefined
+      includeTva: newRole === 'prospect' ? newIncludeTva : undefined,
+      
+      fournisseurInvoicePhoto: newRole === 'fournisseur' ? newFournisseurInvoicePhoto : undefined,
+      fournisseurAdvancePaid: newRole === 'fournisseur' ? newFournisseurAdvancePaid : undefined,
+      fournisseurInvoiceReceived: newRole === 'fournisseur' ? newFournisseurInvoiceReceived : undefined,
+      fournisseurPaymentStatus: newRole === 'fournisseur' ? newFournisseurPaymentStatus : undefined
     };
 
     setContacts(prev => [newContact, ...prev]);
@@ -483,7 +504,7 @@ export default function CrmView({
         if (s.site === newSite && s.num.toLowerCase() === formattedStandNumber.toLowerCase()) {
           return {
             ...s,
-            status: (newRole === 'client' || newRole === 'partner_media') ? 'vendu' : 'reserve',
+            status: newRole === 'client' ? 'vendu' : newRole === 'partner_media' ? 'sponsorise' : 'reserve',
             companyName: newCompany,
             clientName: newName
           };
@@ -506,10 +527,16 @@ export default function CrmView({
     setNewRegFeeMode('yes');
     setNewRegFeeManualAmount('2500');
     setNewIncludeTva(true);
+    setNewFournisseurInvoicePhoto('');
+    setNewFournisseurAdvancePaid('no');
+    setNewFournisseurInvoiceReceived('no');
+    setNewFournisseurPaymentStatus('non_paye');
     setShowAddForm(false);
     triggerToast(
       newRole === 'client' 
         ? `Exposant ${newName} ajouté au CRM avec succès.` 
+        : newRole === 'fournisseur'
+        ? `Fournisseur / Prestataire ${newName} ajouté avec succès.`
         : `Prospect ${newName} ajouté au CRM (en attente).`
     );
   };
@@ -592,6 +619,12 @@ export default function CrmView({
     setEditIncludeRegFee(contact.includeRegistrationFee !== false); // default to true if undefined or true
     setEditIncludeTva(contact.includeTva !== false);
     
+    // Hydrate Supplier / Fournisseur fields
+    setEditFournisseurInvoicePhoto(contact.fournisseurInvoicePhoto || '');
+    setEditFournisseurAdvancePaid(contact.fournisseurAdvancePaid || 'no');
+    setEditFournisseurInvoiceReceived(contact.fournisseurInvoiceReceived || 'no');
+    setEditFournisseurPaymentStatus(contact.fournisseurPaymentStatus || 'non_paye');
+    
     if (contact.includeRegistrationFee === false) {
       setEditRegFeeMode('no');
       setEditRegFeeManualAmount('2500');
@@ -638,7 +671,11 @@ export default function CrmView({
           standArea: editRole === 'prospect' && !isNaN(parsedEditArea) && parsedEditArea >= 0 ? parsedEditArea : undefined,
           includeRegistrationFee: editRole === 'prospect' ? (editRegFeeMode !== 'no') : undefined,
           registrationFeeAmount: editRole === 'prospect' ? (editRegFeeMode === 'manual' ? (parseFloat(editRegFeeManualAmount) || 0) : (editRegFeeMode === 'yes' ? 2500 : 0)) : undefined,
-          includeTva: editRole === 'prospect' ? editIncludeTva : undefined
+          includeTva: editRole === 'prospect' ? editIncludeTva : undefined,
+          fournisseurInvoicePhoto: editRole === 'fournisseur' ? editFournisseurInvoicePhoto : undefined,
+          fournisseurAdvancePaid: editRole === 'fournisseur' ? editFournisseurAdvancePaid : undefined,
+          fournisseurInvoiceReceived: editRole === 'fournisseur' ? editFournisseurInvoiceReceived : undefined,
+          fournisseurPaymentStatus: editRole === 'fournisseur' ? editFournisseurPaymentStatus : undefined
         };
       }
       return c;
@@ -662,7 +699,11 @@ export default function CrmView({
         standArea: editRole === 'prospect' && !isNaN(parsedEditArea) && parsedEditArea >= 0 ? parsedEditArea : undefined,
         includeRegistrationFee: editRole === 'prospect' ? (editRegFeeMode !== 'no') : undefined,
         registrationFeeAmount: editRole === 'prospect' ? (editRegFeeMode === 'manual' ? (parseFloat(editRegFeeManualAmount) || 0) : (editRegFeeMode === 'yes' ? 2500 : 0)) : undefined,
-        includeTva: editRole === 'prospect' ? editIncludeTva : undefined
+        includeTva: editRole === 'prospect' ? editIncludeTva : undefined,
+        fournisseurInvoicePhoto: editRole === 'fournisseur' ? editFournisseurInvoicePhoto : undefined,
+        fournisseurAdvancePaid: editRole === 'fournisseur' ? editFournisseurAdvancePaid : undefined,
+        fournisseurInvoiceReceived: editRole === 'fournisseur' ? editFournisseurInvoiceReceived : undefined,
+        fournisseurPaymentStatus: editRole === 'fournisseur' ? editFournisseurPaymentStatus : undefined
       });
     }
 
@@ -684,7 +725,7 @@ export default function CrmView({
 
         // 2b. Assign new stand if provided
         if (newStandNum && s.site === newSite && s.num.toLowerCase() === newStandNum.toLowerCase()) {
-          updatedStand.status = (editRole === 'client' || editRole === 'partner' || editRole === 'partner_media') ? 'vendu' : 'reserve';
+          updatedStand.status = editRole === 'client' ? 'vendu' : (editRole === 'partner' || editRole === 'partner_media') ? 'sponsorise' : 'reserve';
           updatedStand.companyName = editCompany.trim();
           updatedStand.clientName = editName.trim();
         }
@@ -928,6 +969,100 @@ export default function CrmView({
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </>
+                            ) : contact.role === 'fournisseur' ? (
+                              <>
+                                {/* Invoice Photo Trigger */}
+                                {contact.fournisseurInvoicePhoto ? (
+                                  <button
+                                    onClick={() => setActiveInvoicePhoto(contact.fournisseurInvoicePhoto)}
+                                    className="px-2 py-1 bg-emerald-50 hover:bg-emerald-150 border border-emerald-200 text-emerald-800 rounded-lg text-[9px] font-bold shadow-3xs transition cursor-pointer flex items-center gap-1"
+                                    title="Cliquer pour voir la facture / justificatif"
+                                  >
+                                    <Eye className="w-3 h-3 shrink-0" />
+                                    <span>Justificatif</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleOpenEditModal(contact)}
+                                    className="px-2 py-1 bg-amber-50/60 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-lg text-[9px] font-bold shadow-3xs transition cursor-pointer flex items-center gap-1"
+                                    title="Cliquer pour charger la photo"
+                                  >
+                                    <Upload className="w-3 h-3 shrink-0" />
+                                    <span>+ Facture</span>
+                                  </button>
+                                )}
+
+                                {/* Advance Toggle */}
+                                <button
+                                  onClick={() => {
+                                    setContacts(prev => prev.map(c => {
+                                      if (c.id === contact.id) {
+                                        return { ...c, fournisseurAdvancePaid: c.fournisseurAdvancePaid === 'yes' ? 'no' : 'yes' };
+                                      }
+                                      return c;
+                                    }));
+                                    triggerToast(`Avance: ${contact.fournisseurAdvancePaid === 'yes' ? 'Retirée' : 'Réglée'}`);
+                                  }}
+                                  className={`px-2 py-1 rounded-lg text-[9px] font-bold border transition duration-150 ${
+                                    contact.fournisseurAdvancePaid === 'yes'
+                                      ? 'bg-emerald-600 text-white border-emerald-600'
+                                      : 'bg-rose-50 text-rose-800 border-rose-150 hover:bg-rose-100'
+                                  }`}
+                                  title="Avance réglée ? Cliquer pour basculer"
+                                >
+                                  Avance: {contact.fournisseurAdvancePaid === 'yes' ? 'Oui' : 'Non'}
+                                </button>
+
+                                {/* Invoice Received Toggle */}
+                                <button
+                                  onClick={() => {
+                                    setContacts(prev => prev.map(c => {
+                                      if (c.id === contact.id) {
+                                        return { ...c, fournisseurInvoiceReceived: c.fournisseurInvoiceReceived === 'yes' ? 'no' : 'yes' };
+                                      }
+                                      return c;
+                                    }));
+                                    triggerToast(`Facture: ${contact.fournisseurInvoiceReceived === 'yes' ? 'Démarquée comme Non Reçue' : 'Marquée comme Reçue'}`);
+                                  }}
+                                  className={`px-2 py-1 rounded-lg text-[9px] font-bold border transition duration-150 ${
+                                    contact.fournisseurInvoiceReceived === 'yes'
+                                      ? 'bg-emerald-600 text-white border-emerald-600'
+                                      : 'bg-rose-50 text-rose-800 border-rose-150 hover:bg-rose-100'
+                                  }`}
+                                  title="Facture reçue ? Cliquer pour basculer"
+                                >
+                                  Facture: {contact.fournisseurInvoiceReceived === 'yes' ? 'Reçue' : 'Non'}
+                                </button>
+
+                                {/* Paid / Unpaid Status Toggle */}
+                                <button
+                                  onClick={() => {
+                                    setContacts(prev => prev.map(c => {
+                                      if (c.id === contact.id) {
+                                        return { ...c, fournisseurPaymentStatus: c.fournisseurPaymentStatus === 'paye' ? 'non_paye' : 'paye' };
+                                      }
+                                      return c;
+                                    }));
+                                    triggerToast(`Status Règlement: ${contact.fournisseurPaymentStatus === 'paye' ? 'Non réglé' : 'Réglé'}`);
+                                  }}
+                                  className={`px-2.5 py-1 rounded-lg text-[9px] font-extrabold border transition duration-150 shadow-3xs ${
+                                    contact.fournisseurPaymentStatus === 'paye'
+                                      ? 'bg-[#7E8F7A] text-white border-[#7E8F7A]'
+                                      : 'bg-[#A68A64] text-white border-[#A68A64] hover:bg-[#917550]'
+                                  }`}
+                                  title="Règlement final ? Cliquer pour basculer"
+                                >
+                                  {contact.fournisseurPaymentStatus === 'paye' ? '💰 Payé' : '⏳ Non Payé'}
+                                </button>
+
+                                <button
+                                  onClick={() => handleDeleteContact(contact.id, contact.name)}
+                                  className="p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-lg transition-all cursor-pointer border border-[#E8E6DE]/40"
+                                  title="Supprimer le fournisseur"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </>
                             ) : (
                               <button
                                 onClick={() => handleDeleteContact(contact.id, contact.name)}
@@ -1031,12 +1166,13 @@ export default function CrmView({
                     <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">Statut CRM</label>
                     <select
                       value={newRole}
-                      onChange={(e) => setNewRole(e.target.value as 'prospect' | 'client' | 'partner_media')}
+                      onChange={(e) => setNewRole(e.target.value as any)}
                       className="w-full p-2.5 bg-[#F8F7F2] border border-[#E8E6DE] rounded-xl outline-hidden text-[#2D2D2D] text-[11px] font-semibold"
                     >
                       <option value="prospect">Prospect (En attente)</option>
                       <option value="client">Exposant (Officiel)</option>
                       <option value="partner_media">Partenaire Média</option>
+                      <option value="fournisseur">Fournisseur / Prestataire</option>
                     </select>
                   </div>
 
@@ -1255,6 +1391,151 @@ export default function CrmView({
                           </div>
                         );
                       })()}
+                    </div>
+                  )}
+
+                  {newRole === 'fournisseur' && (
+                    <div className="col-span-2 border border-[#E8E6DE]/60 bg-[#FAFAF8] rounded-2xl p-4.5 space-y-3.5 my-1 animate-in fade-in duration-250">
+                      <div className="flex justify-between items-center border-b border-[#E8E6DE]/50 pb-2">
+                        <span className="text-[10px] font-bold text-[#A68A64] uppercase tracking-wider font-serif">Détails Fournisseur / Prestataire</span>
+                        <span className="text-[8.5px] bg-[#2D2D2D] text-white px-2 py-0.5 rounded-full font-bold">PRESTATAIRE</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3.5">
+                        <div className="col-span-2 space-y-1">
+                          <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Charger facture ou justificatif (Photo / Image)</label>
+                          <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E8E6DE] hover:border-[#A68A64] rounded-xl text-[11px] font-semibold text-[#2D2D2D] cursor-pointer transition shadow-3xs">
+                              <Upload className="w-3.5 h-3.5 text-[#A68A64]" />
+                              <span>Sélectionner le fichier</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      setNewFournisseurInvoicePhoto(reader.result as string);
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                            </label>
+                            {newFournisseurInvoicePhoto ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">✓ Fichier chargé</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setNewFournisseurInvoicePhoto('')}
+                                  className="text-[10px] text-rose-500 hover:underline font-bold"
+                                >
+                                  Supprimer
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-[#7A7667]/60 italic font-medium">Aucune photo chargée</span>
+                            )}
+                          </div>
+                          {newFournisseurInvoicePhoto && (
+                            <div className="mt-2.5 p-2 bg-white rounded-xl border border-[#E8E6DE] max-w-sm relative group overflow-hidden">
+                              <div className="text-[9px] text-[#7A7667] font-bold mb-1">Aperçu de la facture chargée :</div>
+                              <img 
+                                src={newFournisseurInvoicePhoto} 
+                                alt="Aperçu facture" 
+                                className="h-32 w-auto object-contain rounded-lg border border-[#E8E6DE] shadow-3xs" 
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Avance réglée ?</label>
+                          <div className="flex bg-[#F0EEE6] p-1 rounded-xl border border-[#E8E6DE]/60 max-w-fit">
+                            <button
+                              type="button"
+                              onClick={() => setNewFournisseurAdvancePaid('yes')}
+                              className={`px-3 py-1 rounded-lg text-[9.5px] font-bold transition-all cursor-pointer ${
+                                newFournisseurAdvancePaid === 'yes'
+                                  ? 'bg-emerald-600 text-white shadow-xs'
+                                  : 'text-[#7A7667] hover:text-[#2D2D2D]'
+                              }`}
+                            >
+                              Oui
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNewFournisseurAdvancePaid('no')}
+                              className={`px-3 py-1 rounded-lg text-[9.5px] font-bold transition-all cursor-pointer ${
+                                newFournisseurAdvancePaid === 'no'
+                                  ? 'bg-rose-500 text-white shadow-xs'
+                                  : 'text-[#7A7667] hover:text-[#2D2D2D]'
+                              }`}
+                            >
+                              Non
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Facture reçue ?</label>
+                          <div className="flex bg-[#F0EEE6] p-1 rounded-xl border border-[#E8E6DE]/60 max-w-fit">
+                            <button
+                              type="button"
+                              onClick={() => setNewFournisseurInvoiceReceived('yes')}
+                              className={`px-3 py-1 rounded-lg text-[9.5px] font-bold transition-all cursor-pointer ${
+                                newFournisseurInvoiceReceived === 'yes'
+                                  ? 'bg-emerald-600 text-white shadow-xs'
+                                  : 'text-[#7A7667] hover:text-[#2D2D2D]'
+                              }`}
+                            >
+                              Oui
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNewFournisseurInvoiceReceived('no')}
+                              className={`px-3 py-1 rounded-lg text-[9.5px] font-bold transition-all cursor-pointer ${
+                                newFournisseurInvoiceReceived === 'no'
+                                  ? 'bg-rose-500 text-white shadow-xs'
+                                  : 'text-[#7A7667] hover:text-[#2D2D2D]'
+                              }`}
+                            >
+                              Non
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="col-span-2 space-y-1.5 border-t border-[#E8E6DE]/40 pt-2.5">
+                          <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Statut de Règlement principal</label>
+                          <div className="flex bg-[#F0EEE6] p-1 rounded-xl border border-[#E8E6DE]/60 max-w-fit">
+                            <button
+                              type="button"
+                              onClick={() => setNewFournisseurPaymentStatus('paye')}
+                              className={`px-4.5 py-1.5 rounded-lg text-[9.5px] font-black transition-all cursor-pointer ${
+                                newFournisseurPaymentStatus === 'paye'
+                                  ? 'bg-[#7E8F7A] text-white shadow-xs'
+                                  : 'text-[#7A7667] hover:text-[#2D2D2D]'
+                              }`}
+                            >
+                              💰 Payé
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNewFournisseurPaymentStatus('non_paye')}
+                              className={`px-4.5 py-1.5 rounded-lg text-[9.5px] font-black transition-all cursor-pointer ${
+                                newFournisseurPaymentStatus === 'non_paye'
+                                  ? 'bg-[#A68A64] text-white shadow-xs'
+                                  : 'text-[#7A7667] hover:text-[#2D2D2D]'
+                              }`}
+                            >
+                              ⏳ Non Payé
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -2114,6 +2395,155 @@ export default function CrmView({
                 </div>
               )}
 
+              {editRole === 'fournisseur' && (
+                <div className="sm:col-span-2 border border-[#E8E6DE]/60 bg-[#FAFAF8] rounded-2xl p-4.5 space-y-3.5 my-1 animate-in fade-in duration-250">
+                  <div className="flex justify-between items-center border-b border-[#E8E6DE]/50 pb-2">
+                    <span className="text-[10px] font-bold text-[#A68A64] uppercase tracking-wider font-serif">Ajustements Fournisseur / Prestataire</span>
+                    <span className="text-[8.5px] bg-[#2D2D2D] text-white px-2 py-0.5 rounded-full font-bold">EDITION</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div className="col-span-2 space-y-1">
+                      <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Remplacer la facture ou justificatif (Photo / Image)</label>
+                      <div className="flex items-center gap-3">
+                        <label className="flex items-center gap-2 px-3 py-2 bg-white border border-[#E8E6DE] hover:border-[#A68A64] rounded-xl text-[11px] font-semibold text-[#2D2D2D] cursor-pointer transition shadow-3xs">
+                          <Upload className="w-3.5 h-3.5 text-[#A68A64]" />
+                          <span>Remplacer le fichier</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setEditFournisseurInvoicePhoto(reader.result as string);
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                        {editFournisseurInvoicePhoto ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">✓ Justificatif présent</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm("Voulez-vous supprimer ce justificatif ?")) {
+                                  setEditFournisseurInvoicePhoto('');
+                                }
+                              }}
+                              className="text-[10px] text-rose-500 hover:underline font-bold"
+                            >
+                              Supprimer
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-[#7A7667]/60 italic font-medium">Aucun fichier chargé</span>
+                        )}
+                      </div>
+                      {editFournisseurInvoicePhoto && (
+                        <div className="mt-2.5 p-2 bg-white rounded-xl border border-[#E8E6DE] max-w-sm relative group overflow-hidden">
+                          <div className="text-[9px] text-[#7A7667] font-bold mb-1">Aperçu actuel de la facture :</div>
+                          <img 
+                            src={editFournisseurInvoicePhoto} 
+                            alt="Aperçu facture" 
+                            className="h-32 w-auto object-contain rounded-lg border border-[#E8E6DE] shadow-3xs" 
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Avance réglée ?</label>
+                      <div className="flex bg-[#F0EEE6] p-1 rounded-xl border border-[#E8E6DE]/60 max-w-fit">
+                        <button
+                          type="button"
+                          onClick={() => setEditFournisseurAdvancePaid('yes')}
+                          className={`px-3 py-1 rounded-lg text-[9.5px] font-bold transition-all cursor-pointer ${
+                            editFournisseurAdvancePaid === 'yes'
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'text-[#7A7667] hover:text-[#2D2D2D]'
+                          }`}
+                        >
+                          Oui
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditFournisseurAdvancePaid('no')}
+                          className={`px-3 py-1 rounded-lg text-[9.5px] font-bold transition-all cursor-pointer ${
+                            editFournisseurAdvancePaid === 'no'
+                              ? 'bg-rose-500 text-white shadow-xs'
+                              : 'text-[#7A7667] hover:text-[#2D2D2D]'
+                          }`}
+                        >
+                          Non
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Facture reçue ?</label>
+                      <div className="flex bg-[#F0EEE6] p-1 rounded-xl border border-[#E8E6DE]/60 max-w-fit">
+                        <button
+                          type="button"
+                          onClick={() => setEditFournisseurInvoiceReceived('yes')}
+                          className={`px-3 py-1 rounded-lg text-[9.5px] font-bold transition-all cursor-pointer ${
+                            editFournisseurInvoiceReceived === 'yes'
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'text-[#7A7667] hover:text-[#2D2D2D]'
+                          }`}
+                        >
+                          Oui
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditFournisseurInvoiceReceived('no')}
+                          className={`px-3 py-1 rounded-lg text-[9.5px] font-bold transition-all cursor-pointer ${
+                            editFournisseurInvoiceReceived === 'no'
+                              ? 'bg-rose-500 text-white shadow-xs'
+                              : 'text-[#7A7667] hover:text-[#2D2D2D]'
+                          }`}
+                        >
+                          Non
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="col-span-2 space-y-1.5 border-t border-[#E8E6DE]/40 pt-2.5">
+                      <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider block">Statut de Règlement principal</label>
+                      <div className="flex bg-[#F0EEE6] p-1 rounded-xl border border-[#E8E6DE]/60 max-w-fit">
+                        <button
+                          type="button"
+                          onClick={() => setEditFournisseurPaymentStatus('paye')}
+                          className={`px-4.5 py-1.5 rounded-lg text-[9.5px] font-black transition-all cursor-pointer ${
+                            editFournisseurPaymentStatus === 'paye'
+                              ? 'bg-[#7E8F7A] text-white shadow-xs'
+                              : 'text-[#7A7667] hover:text-[#2D2D2D]'
+                          }`}
+                        >
+                          💰 Payé
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditFournisseurPaymentStatus('non_paye')}
+                          className={`px-4.5 py-1.5 rounded-lg text-[9.5px] font-black transition-all cursor-pointer ${
+                            editFournisseurPaymentStatus === 'non_paye'
+                              ? 'bg-[#A68A64] text-white shadow-xs'
+                              : 'text-[#7A7667] hover:text-[#2D2D2D]'
+                          }`}
+                        >
+                          ⏳ Non Payé
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-1 sm:col-span-2">
                 <label className="text-[10px] font-bold text-[#7A7667] uppercase tracking-wider">
                   N° Stand attribué
@@ -2169,6 +2599,39 @@ export default function CrmView({
             </div>
 
           </form>
+        </div>
+      )}
+
+      {/* Lightbox photo modal */}
+      {activeInvoicePhoto && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs cursor-pointer" 
+          onClick={() => setActiveInvoicePhoto(null)}
+        >
+          <div 
+            className="relative bg-white max-w-4xl max-h-[85vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col cursor-default font-sans animate-in zoom-in-95 duration-200" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E6DE] bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <Receipt className="w-5 h-5 text-[#A68A64] shrink-0" />
+                <span className="font-bold text-[#2D2D2D] text-sm font-serif">Aperçu du justificatif / Facture</span>
+              </div>
+              <button 
+                onClick={() => setActiveInvoicePhoto(null)} 
+                className="p-1 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 rounded-xl text-xs font-bold font-sans transition cursor-pointer border border-rose-200"
+              >
+                Fermer ✕
+              </button>
+            </div>
+            <div className="p-5 overflow-auto flex items-center justify-center bg-zinc-900 border-none min-h-[400px]">
+              {activeInvoicePhoto.startsWith('data:application/pdf') ? (
+                <embed src={activeInvoicePhoto} type="application/pdf" className="w-[700px] h-[550px]" />
+              ) : (
+                <img src={activeInvoicePhoto} alt="Justificatif de Facture" className="max-w-full max-h-[65vh] object-contain rounded-xl border border-white/15 shadow-md" referrerPolicy="no-referrer" />
+              )}
+            </div>
+          </div>
         </div>
       )}
 

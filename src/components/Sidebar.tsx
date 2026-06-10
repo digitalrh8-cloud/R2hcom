@@ -172,6 +172,15 @@ export default function Sidebar({
                   <UserSquare2 className="w-4 h-4 text-[#A68A64]" />
                   <span>Clients & Exposants</span>
                 </button>
+                <button 
+                  type="button"
+                  id="nav-fournisseurs"
+                  onClick={() => handleTabSelect('fournisseurs')} 
+                  className={getLinkClass('fournisseurs')}
+                >
+                  <Layers className="w-4 h-4 text-[#A68A64]" />
+                  <span>📦 Prestataires & Fournisseurs</span>
+                </button>
               </>
             )}
             {canViewDevis && (
