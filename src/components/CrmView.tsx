@@ -574,6 +574,41 @@ export default function CrmView({
     triggerToast("Prospect promu au statut d'exposant officiel !");
   };
 
+  // Convert exhibitor (client) or contact to media partner (partner_media)
+  const handleConvertExposantToMediaPartner = (contactId: string) => {
+    setContacts(prev => prev.map(c => {
+      if (c.id === contactId) {
+        return { 
+          ...c, 
+          role: 'partner_media', 
+          mediaType: 'Web / Actualités',
+          mediaAudience: 'National',
+          mediaCoverage: 'Non spécifié',
+          mediaStatus: 'actif',
+          mediaLogo: '',
+          mediaArticles: []
+        };
+      }
+      return c;
+    }));
+    
+    // Update active inspector if focused
+    if (selectedContact?.id === contactId) {
+      setSelectedContact(prev => prev ? { 
+        ...prev, 
+        role: 'partner_media',
+        mediaType: 'Web / Actualités',
+        mediaAudience: 'National',
+        mediaCoverage: 'Non spécifié',
+        mediaStatus: 'actif',
+        mediaLogo: '',
+        mediaArticles: []
+      } : null);
+    }
+
+    triggerToast("Exposant transféré au statut de Partenaire Média avec succès !");
+  };
+
   // Delete a prospect or exhibitor/client
   const handleDeleteContact = (contactId: string, name: string) => {
     setContacts(prev => prev.filter(c => c.id !== contactId));
@@ -943,7 +978,15 @@ export default function CrmView({
                                   title="Générer une facture de stand"
                                 >
                                   <FileText className="w-3.5 h-3.5 shrink-0" />
-                                  <span>Facturer</span>
+                                  <span>Factures</span>
+                                </button>
+                                <button
+                                  onClick={() => handleConvertExposantToMediaPartner(contact.id)}
+                                  className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-bold shadow-xs transition cursor-pointer inline-flex items-center gap-1 border border-purple-700/20"
+                                  title="Transférer cet exposant au statut de Partenaire Média"
+                                >
+                                  <RefreshCw className="w-3 h-3 hover:rotate-180 transition-transform duration-300" />
+                                  <span>Transfert Média</span>
                                 </button>
                                 <button
                                   onClick={() => handleDeleteContact(contact.id, contact.name)}
@@ -1802,6 +1845,15 @@ export default function CrmView({
                     >
                       <FileText className="w-4 h-4 shrink-0" />
                       <span>Générer Facture R2H</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleConvertExposantToMediaPartner(selectedContact.id)}
+                      className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2 text-xs border border-purple-700/20"
+                      title="Convertir cet exposant en un partenaire média gratuit"
+                    >
+                      <RefreshCw className="w-4 h-4 hover:rotate-180 transition-transform duration-300" />
+                      <span>Transférer en Partenaire Média</span>
                     </button>
                     <button
                       type="button"

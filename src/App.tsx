@@ -148,7 +148,7 @@ export default function App() {
       return 'partenaires-medias';
     }
     const cleanTab = path.substring(1);
-    if (['dashboard', 'prospects', 'clients', 'fournisseurs', 'devis', 'factures', 'stands', 'marketing', 'parametres'].includes(cleanTab)) {
+    if (['dashboard', 'prospects', 'clients', 'fournisseurs', 'devis', 'factures', 'stands', 'marketing', 'partenaires-medias', 'parametres'].includes(cleanTab)) {
       return cleanTab;
     }
     return 'dashboard';
@@ -165,7 +165,7 @@ export default function App() {
           setCurrentTab('partenaires-medias');
         } else {
           const tabFromPath = path.substring(1);
-          if (['dashboard', 'prospects', 'clients', 'fournisseurs', 'devis', 'factures', 'stands', 'marketing', 'parametres'].includes(tabFromPath)) {
+          if (['dashboard', 'prospects', 'clients', 'fournisseurs', 'devis', 'factures', 'stands', 'marketing', 'partenaires-medias', 'parametres'].includes(tabFromPath)) {
             setCurrentTab(tabFromPath);
           } else {
             setCurrentTab('dashboard');
@@ -447,6 +447,8 @@ export default function App() {
             contacts={contacts}
             setContacts={setContacts}
             sites={sites}
+            stands={stands}
+            setStands={setStands}
           />
         );
       case 'devis':

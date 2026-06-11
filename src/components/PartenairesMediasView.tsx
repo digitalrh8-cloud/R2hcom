@@ -31,20 +31,24 @@ import {
   Info,
   Globe
 } from 'lucide-react';
-import { SiteId, Contact } from '../types';
+import { SiteId, Contact, Stand } from '../types';
 
 interface PartenairesMediasViewProps {
   selectedSite: SiteId;
   contacts: Contact[];
   setContacts: React.Dispatch<React.SetStateAction<Contact[]>>;
   sites: { id: string; name: string }[];
+  stands?: Stand[];
+  setStands?: React.Dispatch<React.SetStateAction<Stand[]>>;
 }
 
 export default function PartenairesMediasView({
   selectedSite,
   contacts,
   setContacts,
-  sites
+  sites,
+  stands,
+  setStands
 }: PartenairesMediasViewProps) {
   
   // 1. Filter contacts to get media partners (role === 'partner_media')
@@ -77,6 +81,15 @@ export default function PartenairesMediasView({
   const [formLogo, setFormLogo] = useState('');
   const [formNotes, setFormNotes] = useState('');
   const [formSite, setFormSite] = useState<SiteId>(selectedSite);
+  const [formStandNumber, setFormStandNumber] = useState('');
+
+  // Calculate sorted free stands for current formSite, including the partner's current stand if editing
+  const freeStands = (stands || [])
+    .filter(s => s.site === formSite && (
+      s.status === 'disponible' || 
+      (editPartnerId && s.num.toLowerCase() === (contacts.find(c => c.id === editPartnerId)?.standNumber || '').toLowerCase() && s.site === formSite)
+    ))
+    .sort((a, b) => a.num.localeCompare(b.num, undefined, { numeric: true, sensitivity: 'base' }));
 
   // Press article / Contract adding Form fields
   const [showAddArticleForm, setShowAddArticleForm] = useState(false);
@@ -232,6 +245,12 @@ export default function PartenairesMediasView({
       return;
     }
 
+    const oldPartner = editPartnerId ? contacts.find(c => c.id === editPartnerId) : null;
+    const oldStandNum = oldPartner?.standNumber?.trim();
+    const oldSite = oldPartner?.site;
+    const newStandNum = formStandNumber.trim();
+    const newSite = formSite;
+
     if (editPartnerId) {
       // Edit mode
       setContacts(prev => prev.map(c => {
@@ -248,7 +267,8 @@ export default function PartenairesMediasView({
             mediaStatus: formStatus,
             mediaLogo: formLogo || c.mediaLogo,
             notes: formNotes,
-            site: formSite
+            site: formSite,
+            standNumber: newStandNum || undefined
           };
         }
         return c;
@@ -268,7 +288,8 @@ export default function PartenairesMediasView({
           mediaStatus: formStatus,
           mediaLogo: formLogo || prev.mediaLogo,
           notes: formNotes,
-          site: formSite
+          site: formSite,
+          standNumber: newStandNum || undefined
         } : null);
       }
 
@@ -290,11 +311,40 @@ export default function PartenairesMediasView({
         mediaStatus: formStatus,
         mediaLogo: formLogo,
         notes: formNotes,
-        mediaArticles: []
+        mediaArticles: [],
+        standNumber: newStandNum || undefined
       };
 
       setContacts(prev => [newMedia, ...prev]);
+      setSelectedPartner(newMedia);
       showToast(`Partenaire Média "${formCompany}" inscrit avec succès !`);
+    }
+
+    // Synchronize to floorplan stands if configured
+    if (setStands) {
+      setStands(prev => prev.map(s => {
+        let updatedStand = { ...s };
+
+        // Free old stand if it was assigned, and is now removed or changed
+        if (oldStandNum && s.site === oldSite && s.num.toLowerCase() === oldStandNum.toLowerCase()) {
+          const isStillSameStand = (newStandNum && s.site === newSite && s.num.toLowerCase() === newStandNum.toLowerCase());
+          if (!isStillSameStand) {
+            updatedStand.status = 'disponible';
+            updatedStand.companyName = '';
+            updatedStand.clientName = '';
+            updatedStand.category = '';
+          }
+        }
+
+        // Assign new stand if provided
+        if (newStandNum && s.site === newSite && s.num.toLowerCase() === newStandNum.toLowerCase()) {
+          updatedStand.status = 'sponsorise'; // Media partners are sponsorise (non-billed / gratuit)
+          updatedStand.companyName = formCompany.trim();
+          updatedStand.clientName = formName.trim();
+        }
+
+        return updatedStand;
+      }));
     }
 
     resetForm();
@@ -312,6 +362,7 @@ export default function PartenairesMediasView({
     setFormLogo('');
     setFormNotes('');
     setFormSite(selectedSite);
+    setFormStandNumber('');
     setEditPartnerId(null);
     setShowAddForm(false);
   };
@@ -328,6 +379,7 @@ export default function PartenairesMediasView({
     setFormLogo(partner.mediaLogo || '');
     setFormNotes(partner.notes || '');
     setFormSite(partner.site);
+    setFormStandNumber(partner.standNumber || '');
 
     setEditPartnerId(partner.id);
     setShowAddForm(true);
@@ -661,6 +713,11 @@ export default function PartenairesMediasView({
                                 <span>{p.company}</span>
                               </div>
                               <span className="text-[10px] text-[#7A7667]/80 block mt-0.5">{p.name || 'Inconnu'}</span>
+                              {p.standNumber && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-purple-700 bg-purple-50 border border-purple-100 px-1.5 py-0.5 rounded mt-1 shadow-3xs">
+                                  Stand {p.standNumber} <span className="text-[8px] font-normal text-purple-500 font-sans shrink-0">(Sans Facture)</span>
+                                </span>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -811,6 +868,16 @@ export default function PartenairesMediasView({
                 <div className="flex justify-between">
                   <span className="text-[#7A7667] font-semibold text-[10px] uppercase">Diffusion estimée</span>
                   <span className="text-[#2D2D2D] font-bold">{selectedPartner.mediaCoverage || "Non déclarée"}</span>
+                </div>
+                <div className="flex justify-between items-center border-t border-[#E8E6DE]/40 pt-1.5 mt-1">
+                  <span className="text-[#7A7667] font-semibold text-[10px] uppercase">N° Stand Attribué</span>
+                  {selectedPartner.standNumber ? (
+                    <span className="text-purple-700 font-bold bg-purple-50 border border-purple-150 px-2 py-0.5 rounded text-[11px] shadow-3xs flex items-center gap-1">
+                      Stand {selectedPartner.standNumber} <span className="text-[9px] font-medium text-purple-500 font-sans">(Non Facturé)</span>
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 italic font-medium">Aucun stand</span>
+                  )}
                 </div>
 
                 {selectedPartner.notes && (
@@ -1185,6 +1252,31 @@ export default function PartenairesMediasView({
                   <option value="Régional">Régional</option>
                   <option value="International">International</option>
                 </select>
+              </div>
+
+              {/* N° Stand attribué */}
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-[10px] font-bold text-purple-800 uppercase block font-sans">
+                  N° Stand attribué <span className="text-[8.5px] text-purple-650 font-normal lowercase">(partenaire média - sans facturation / gratuit)</span>
+                </label>
+                <select
+                  value={formStandNumber}
+                  onChange={(e) => setFormStandNumber(e.target.value)}
+                  className="w-full p-2.5 bg-[#FAF9F5] border border-purple-100 hover:border-purple-300 focus:bg-white rounded-xl text-xs text-[#2D2D2D] font-medium transition shadow-3xs"
+                >
+                  <option value="">-- Aucun stand assigné (Gratuit / Sponsorisé) --</option>
+                  {freeStands.map(s => {
+                    const isCurrent = editPartnerId && s.num.toLowerCase() === (contacts.find(c => c.id === editPartnerId)?.standNumber || '').toLowerCase();
+                    return (
+                      <option key={s.id} value={s.num}>
+                        {s.num} ({s.area}m²) {isCurrent ? "★ Stand Actuel" : "✓ Libre (Exposant Sponsorisé)"}
+                      </option>
+                    );
+                  })}
+                </select>
+                <p className="text-[9px] text-[#A68A64] font-medium leading-relaxed mt-0.5">
+                  L'attribution d'un stand aux relations médias s'effectue à titre gratuit (sponsorisé / non facturé) et met à jour le plan interactif sans générer de devis ou de facture.
+                </p>
               </div>
 
               {/* Volume of reach (coverage) text */}
