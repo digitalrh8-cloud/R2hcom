@@ -35,6 +35,14 @@ interface SettingsViewProps {
     maskedUrl: string | null;
     dbName?: string;
     apiKey?: string;
+    vercel?: {
+      isConfigured: boolean;
+      hasDatabaseUrl: boolean;
+      dbInitialized: boolean;
+      error: string | null;
+      dbName: string;
+      maskedUrl: string | null;
+    } | null;
   } | null;
   refreshDbState?: () => Promise<void>;
 }
@@ -62,6 +70,14 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
   const [vercelStatus, setVercelStatus] = useState<'connected' | 'disconnected'>('connected');
   const [savingVercelDomain, setSavingVercelDomain] = useState(false);
   const [vercelDomainMessage, setVercelDomainMessage] = useState<{ type: 'success' | 'err' | null; text: string | null }>({ type: null, text: null });
+
+  // Vercel Postgres Second Database Layer states
+  const [vercelDbUrl, setVercelDbUrl] = useState('');
+  const [updatingVercelUrl, setUpdatingVercelUrl] = useState(false);
+  const [syncingToVercel, setSyncingToVercel] = useState(false);
+  const [syncingFromVercel, setSyncingFromVercel] = useState(false);
+  const [initializingVercelDb, setInitializingVercelDb] = useState(false);
+  const [vercelDbMessage, setVercelDbMessage] = useState<{ type: 'success' | 'err' | null; text: string | null }>({ type: null, text: null });
 
   // User profile management states
   const [usersList, setUsersList] = useState<UserProfile[]>([]);
@@ -343,6 +359,111 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
     }
   };
 
+  const handleSaveVercelDbUrl = async () => {
+    if (!vercelDbUrl.trim()) {
+      setVercelDbMessage({ type: 'err', text: "L'URL ne peut pas être vide." });
+      return;
+    }
+    setUpdatingVercelUrl(true);
+    setVercelDbMessage({ type: null, text: null });
+    try {
+      const res = await fetch('/api/db/vercel/url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ databaseUrl: vercelDbUrl.trim() })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setVercelDbMessage({ type: 'success', text: data.message });
+        if (refreshDbState) {
+          await refreshDbState();
+        }
+      } else {
+        setVercelDbMessage({ type: 'err', text: data.error || 'Une erreur est survenue.' });
+      }
+    } catch (err: any) {
+      setVercelDbMessage({ type: 'err', text: err.message || String(err) });
+    } finally {
+      setUpdatingVercelUrl(false);
+    }
+  };
+
+  const handleInitializeVercelTables = async (force: boolean) => {
+    if (!confirm(force ? "Voulez-vous réinitialiser et VIDER toutes les tables de la base de données Vercel ?" : "Voulez-vous vérifier et initialiser la base de données Vercel ?")) {
+      return;
+    }
+    setInitializingVercelDb(true);
+    setVercelDbMessage({ type: null, text: null });
+    try {
+      const res = await fetch('/api/db/vercel/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setVercelDbMessage({ type: 'success', text: data.message });
+        if (refreshDbState) {
+          await refreshDbState();
+        }
+      } else {
+        setVercelDbMessage({ type: 'err', text: data.error || 'Échec d\'initialisation.' });
+      }
+    } catch (err: any) {
+      setVercelDbMessage({ type: 'err', text: err.message || String(err) });
+    } finally {
+      setInitializingVercelDb(false);
+    }
+  };
+
+  const handleSyncToVercel = async () => {
+    if (!confirm("Voulez-vous écraser la base de données Vercel avec les données actuelles de la base principale Railway ?")) {
+      return;
+    }
+    setSyncingToVercel(true);
+    setVercelDbMessage({ type: null, text: null });
+    try {
+      const res = await fetch('/api/db/vercel/sync-to', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setVercelDbMessage({ type: 'success', text: data.message });
+        if (refreshDbState) {
+          await refreshDbState();
+        }
+      } else {
+        setVercelDbMessage({ type: 'err', text: data.error || 'Échec de la réplication.' });
+      }
+    } catch (err: any) {
+      setVercelDbMessage({ type: 'err', text: err.message || String(err) });
+    } finally {
+      setSyncingToVercel(false);
+    }
+  };
+
+  const handleSyncFromVercel = async () => {
+    if (!confirm("ATTENTION : Cette action va écraser VOTRE BASE PRINCIPALE (Railway) avec les données de Vercel. Continuer ?")) {
+      return;
+    }
+    setSyncingFromVercel(true);
+    setVercelDbMessage({ type: null, text: null });
+    try {
+      const res = await fetch('/api/db/vercel/sync-from', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setVercelDbMessage({ type: 'success', text: data.message });
+        if (refreshDbState) {
+          await refreshDbState();
+        }
+      } else {
+        setVercelDbMessage({ type: 'err', text: data.error || 'Échec de la restauration.' });
+      }
+    } catch (err: any) {
+      setVercelDbMessage({ type: 'err', text: err.message || String(err) });
+    } finally {
+      setSyncingFromVercel(false);
+    }
+  };
+
   const activeSite = initialSites.find(s => s.id === selectedSite) || initialSites[0];
 
   const triggerBackup = () => {
@@ -592,6 +713,156 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
               <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-lg text-blue-800 font-medium font-sans flex items-start gap-1.5 leading-relaxed">
                 <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                 <span className="text-[11px]">{backupStatus}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Second Database administration (Vercel) */}
+        <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-display flex items-center gap-1.5 justify-between">
+            <div className="flex items-center gap-1.5">
+              <Database className="w-4 h-4 text-indigo-500" />
+              <span>Base Vercel (2ème Base de Données)</span>
+            </div>
+            {dbStatus?.vercel?.isConfigured ? (
+              <span className="text-[9px] px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></span>
+                Opérationnelle
+              </span>
+            ) : (
+              <span className="text-[9px] px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full font-bold">
+                Non configurée
+              </span>
+            )}
+          </h3>
+
+          <div className="space-y-4 text-xs text-slate-700 font-sans">
+            {dbStatus?.vercel?.isConfigured ? (
+              <div className="space-y-2.5">
+                <div className="p-3 bg-indigo-50/40 border border-indigo-100/50 rounded-lg space-y-1.5">
+                  <p className="font-bold text-indigo-800 text-[11px] flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4.5 h-4.5 text-indigo-600" />
+                    <span>Double Écriture Automatique Active</span>
+                  </p>
+                  <p className="text-[10px] text-slate-500 leading-relaxed">
+                    Votre deuxième base de données Vercel est synchronisée en temps réel lors de chaque sauvegarde de stands, prospects ou transactions.
+                  </p>
+                </div>
+                
+                <div className="space-y-1 font-mono text-[10px] bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">URI Vercel :</span>
+                    <span className="font-bold text-slate-700 truncate max-w-[180px]" title={dbStatus.vercel.maskedUrl || ''}>
+                      {dbStatus.vercel.maskedUrl}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-slate-200/50 pt-1 mt-1">
+                    <span className="text-slate-400">Tables Vercel :</span>
+                    <span className="font-bold text-indigo-800">
+                      {dbStatus.vercel.dbInitialized ? 'Initialisées' : 'Non détectées'}
+                    </span>
+                  </div>
+                  {dbStatus.vercel.error && (
+                    <div className="text-rose-600 font-sans text-[10px] border-t border-slate-200/50 pt-1 mt-1 bg-rose-50/30 p-1.5 rounded">
+                      <strong>Erreur Vercel :</strong> {dbStatus.vercel.error}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5">
+                <p className="font-bold text-slate-700 text-[11px] flex items-center gap-1.5">
+                  <AlertCircle className="w-4.5 h-4.5 text-slate-500 shrink-0" />
+                  <span>En attente de connexion Vercel</span>
+                </p>
+                <p className="text-[10px] text-slate-500 leading-relaxed">
+                  Ajoutez l'URL de connexion PostgreSQL pour votre deuxième base. Son statut passera en ligne et les données y seront automatiquement dupliquées.
+                </p>
+              </div>
+            )}
+
+            {/* URL custom configuration for Vercel */}
+            <div className="pt-1.5 space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Définir l'URL de connexion Vercel</label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="password"
+                  value={vercelDbUrl}
+                  onChange={(e) => setVercelDbUrl(e.target.value)}
+                  placeholder="postgresql://default:secret@ep-cool-lake.us-east-1.neon.tech/neondb"
+                  className="flex-1 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-hidden text-slate-700 font-mono text-[11px]"
+                />
+                <button
+                  onClick={handleSaveVercelDbUrl}
+                  disabled={updatingVercelUrl}
+                  className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg font-semibold text-xs transition-all duration-150 shrink-0 cursor-pointer"
+                >
+                  {updatingVercelUrl ? 'Liaison...' : 'Lier'}
+                </button>
+              </div>
+            </div>
+
+            {/* Sync actions side-by-side */}
+            {dbStatus?.isConfigured && dbStatus?.vercel?.isConfigured && (
+              <div className="border-t border-slate-100 pt-2.5 space-y-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Réplication Manuelle Bidirectionnelle</p>
+                
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={handleSyncToVercel}
+                    disabled={syncingToVercel}
+                    className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-semibold text-center cursor-pointer text-[10px] transition-colors duration-150"
+                  >
+                    {syncingToVercel ? 'Copie...' : 'Railway ➔ Vercel'}
+                  </button>
+                  <button
+                    onClick={handleSyncFromVercel}
+                    disabled={syncingFromVercel}
+                    className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-semibold text-center cursor-pointer text-[10px] transition-colors duration-150"
+                  >
+                    {syncingFromVercel ? 'Copie...' : 'Vercel ➔ Railway'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Vercel Tables initialization */}
+            {dbStatus?.vercel?.isConfigured && (
+              <div className="border-t border-slate-100 pt-2.5 space-y-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tables de la 2ème Base</p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={() => handleInitializeVercelTables(false)}
+                    disabled={initializingVercelDb}
+                    className="flex-1 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700/90 rounded-lg font-semibold text-center cursor-pointer text-[10px] border border-slate-200 transition-colors duration-150"
+                  >
+                    Vérifier / Créer
+                  </button>
+                  <button
+                    onClick={() => handleInitializeVercelTables(true)}
+                    disabled={initializingVercelDb}
+                    className="flex-1 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-semibold text-center cursor-pointer text-[10px] border border-rose-200 transition-colors duration-150"
+                  >
+                    Vider / Formater
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Message reporting box */}
+            {vercelDbMessage.text && (
+              <div className={`p-2.5 rounded-lg text-[10px] leading-relaxed flex items-start gap-1.5 border transition-all duration-300 ${
+                vercelDbMessage.type === 'success'
+                  ? 'bg-emerald-50/50 border-emerald-100/70 text-emerald-800'
+                  : 'bg-rose-50/50 border-rose-100/70 text-rose-800'
+              }`}>
+                {vercelDbMessage.type === 'success' ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                )}
+                <span className="font-medium">{vercelDbMessage.text}</span>
               </div>
             )}
           </div>

@@ -108,6 +108,410 @@ let pgPool: pg.Pool | null = null;
 let schemaInitialized = false;
 let dbError: string | null = null;
 
+let vercelPool: pg.Pool | null = null;
+let vercelSchemaInitialized = false;
+let vercelDbError: string | null = null;
+let cachedVercelDbUrl = '';
+
+/**
+ * Helper to get vercel database URL either from cache, database config, or env variables
+ */
+export async function getVercelPgUri(): Promise<string> {
+  if (cachedVercelDbUrl) return cachedVercelDbUrl;
+
+  let url = '';
+  try {
+    if (schemaInitialized) {
+      url = await getRailwayConfigValue('vercel_database_url');
+    }
+  } catch (err) {}
+
+  if (!url) {
+    url = cleanEnv(process.env.VERCEL_DATABASE_URL) || cleanEnv(process.env.POSTGRES_URL);
+  }
+
+  if (url) {
+    cachedVercelDbUrl = url;
+  }
+  return url;
+}
+
+/**
+ * 1. Initialize and test the reusable Vercel Postgres pool
+ */
+export async function getVercelPgPool(): Promise<pg.Pool | null> {
+  const uri = await getVercelPgUri();
+  if (!uri) {
+    vercelDbError = "L'URL de la deuxième base de données (Vercel) n'est pas configurée.";
+    return null;
+  }
+
+  if (!vercelPool) {
+    try {
+      console.log('[Vercel Postgres] Connection attempt to secondary database...');
+      vercelPool = new Pool({
+        connectionString: uri,
+        ssl: uri.includes('localhost') || uri.includes('127.0.0.1') ? false : { rejectUnauthorized: false },
+        connectionTimeoutMillis: 8000,
+        idleTimeoutMillis: 30000,
+        max: 10
+      });
+
+      vercelPool.on('error', (err) => {
+        console.error('[Vercel Postgres] Unexpected error on idle client:', err);
+        vercelPool = null;
+        vercelSchemaInitialized = false;
+      });
+
+      const client = await vercelPool.connect();
+      client.release();
+      console.log('[Vercel Postgres] Connected to Vercel PostgreSQL successfully.');
+      vercelDbError = null;
+    } catch (err: any) {
+      console.error('[Vercel Postgres] Startup connection pool failed:', err);
+      logToFile(`Vercel Startup failed. Error: ${err.message || String(err)}`);
+      vercelDbError = err.message || String(err);
+      vercelPool = null;
+      return null;
+    }
+  }
+  return vercelPool;
+}
+
+/**
+ * Executes a Vercel query with retry logic.
+ */
+export async function executeVercelQuery(queryText: string, params?: any[], retryCount = 1): Promise<any> {
+  const pool = await getVercelPgPool();
+  if (!pool) {
+    throw new Error('Vercel database pool is offline.');
+  }
+  try {
+    return await pool.query(queryText, params);
+  } catch (err: any) {
+    const isConnErr = err.message && (
+      err.message.includes('terminated unexpectedly') ||
+      err.message.includes('closed') ||
+      err.message.includes('socket') ||
+      err.message.includes('connection') ||
+      err.message.includes('SSL') ||
+      err.code === 'ECONNRESET' ||
+      err.code === '57P01'
+    );
+    if (isConnErr && retryCount > 0) {
+      console.warn(`[Vercel Postgres] Connection error caught ("${err.message}"). Re-establishing pool and retrying query...`);
+      if (vercelPool) {
+        try {
+          await vercelPool.end();
+        } catch (e) {}
+        vercelPool = null;
+      }
+      vercelSchemaInitialized = false;
+      return executeVercelQuery(queryText, params, retryCount - 1);
+    }
+    throw err;
+  }
+}
+
+/**
+ * 2. Vercel schema configuration setup
+ */
+export async function initializeVercelDbSchema(): Promise<boolean> {
+  if (vercelSchemaInitialized) return true;
+
+  const rawPool = await getVercelPgPool();
+  if (!rawPool) {
+    console.warn('[Vercel Postgres] Database pool is offline - skipping table initialization.');
+    return false;
+  }
+  const pool = { query: (text: string, params?: any[]) => executeVercelQuery(text, params) };
+
+  try {
+    console.log('[Vercel Postgres] Creating Vercel relational tables...');
+    
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS stands (
+        id VARCHAR(255) PRIMARY KEY,
+        data JSONB NOT NULL
+      );
+    `);
+    
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS contacts (
+        id VARCHAR(255) PRIMARY KEY,
+        data JSONB NOT NULL
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS media_partners (
+        id VARCHAR(255) PRIMARY KEY,
+        data JSONB NOT NULL
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS transactions (
+        id VARCHAR(255) PRIMARY KEY,
+        data JSONB NOT NULL
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS campaigns (
+        id VARCHAR(255) PRIMARY KEY,
+        data JSONB NOT NULL
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tasks (
+        id VARCHAR(255) PRIMARY KEY,
+        data JSONB NOT NULL
+      );
+    `);
+
+    vercelSchemaInitialized = true;
+    vercelDbError = null;
+    return true;
+  } catch (err: any) {
+    console.error('[Vercel Postgres] Relational tables build layout failed:', err);
+    vercelDbError = err.message || String(err);
+    return false;
+  }
+}
+
+/**
+ * Reset and force re-create Vercel database schemas
+ */
+export async function resetVercelDbSchema(force = false): Promise<boolean> {
+  const rawPool = await getVercelPgPool();
+  if (!rawPool) {
+    console.warn('[Vercel Postgres] Connection pool offline - cannot reset schemas.');
+    return false;
+  }
+  const pool = { query: (text: string, params?: any[]) => executeVercelQuery(text, params) };
+
+  try {
+    if (force) {
+      console.log('[Vercel Postgres] Dropping database tables...');
+      await pool.query('DROP TABLE IF EXISTS stands, contacts, media_partners, transactions, campaigns, tasks;');
+    }
+
+    vercelSchemaInitialized = false;
+    await initializeVercelDbSchema();
+    return true;
+  } catch (err: any) {
+    console.error('[Vercel Postgres] Table reset failed:', err);
+    vercelDbError = err.message || String(err);
+    return false;
+  }
+}
+
+/**
+ * Load User Data from Vercel Postgresql
+ */
+export async function loadUserDataFromVercel() {
+  const rawPool = await getVercelPgPool();
+  if (!rawPool) {
+    console.warn('[Vercel Postgres] Database offline, cannot load records.');
+    return null;
+  }
+  const pool = { query: (text: string, params?: any[]) => executeVercelQuery(text, params) };
+
+  try {
+    await initializeVercelDbSchema();
+
+    const [standsRes, contactsRes, mediaPartnersRes, transactionsRes, campaignsRes, tasksRes] = await Promise.all([
+      pool.query('SELECT data FROM stands'),
+      pool.query('SELECT data FROM contacts'),
+      pool.query('SELECT data FROM media_partners'),
+      pool.query('SELECT data FROM transactions'),
+      pool.query('SELECT data FROM campaigns'),
+      pool.query('SELECT data FROM tasks')
+    ]);
+
+    const dbContacts = contactsRes.rows.map((row: any) => row.data) as Contact[];
+    const dbMediaPartners = mediaPartnersRes.rows.map((row: any) => row.data) as Contact[];
+    
+    dbMediaPartners.forEach(p => {
+      p.role = 'partner_media';
+    });
+
+    return {
+      stands: standsRes.rows.map((row: any) => row.data) as Stand[],
+      contacts: [...dbContacts, ...dbMediaPartners],
+      transactions: transactionsRes.rows.map((row: any) => row.data) as Transaction[],
+      campaigns: campaignsRes.rows.map((row: any) => row.data) as Campaign[],
+      tasks: tasksRes.rows.map((row: any) => row.data) as Task[]
+    };
+  } catch (err: any) {
+    console.error('[Vercel Postgres] Load failed:', err);
+    vercelDbError = err.message || String(err);
+    return null;
+  }
+}
+
+/**
+ * Save / sync full state to Vercel Postgresql
+ */
+export async function saveUserDataToVercel(data: {
+  stands: Stand[];
+  contacts: Contact[];
+  transactions: Transaction[];
+  campaigns: Campaign[];
+  tasks: Task[];
+}) {
+  const rawPool = await getVercelPgPool();
+  if (!rawPool) return false;
+  const pool = { query: (text: string, params?: any[]) => executeVercelQuery(text, params) };
+
+  try {
+    await initializeVercelDbSchema();
+
+    // 1. Stands
+    if (data.stands) {
+      if (data.stands.length > 0) {
+        for (const s of data.stands) {
+          await pool.query(
+            'INSERT INTO stands (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
+            [s.id, JSON.stringify(s)]
+          );
+        }
+        const standIds = data.stands.map(s => s.id);
+        await pool.query(
+          'DELETE FROM stands WHERE id NOT IN (' + standIds.map((_, i) => '$' + (i + 1)).join(', ') + ')',
+          standIds
+        );
+      } else {
+        await pool.query('DELETE FROM stands');
+      }
+    }
+
+    // 2. Contacts & Media Partners Separation
+    if (data.contacts) {
+      if (data.contacts.length > 0) {
+        const generalContacts = data.contacts.filter(c => c.role !== 'partner_media');
+        const mediaPartners = data.contacts.filter(c => c.role === 'partner_media');
+
+        // Block A: General Contacts
+        if (generalContacts.length > 0) {
+          for (const c of generalContacts) {
+            await pool.query(
+              'INSERT INTO contacts (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
+              [c.id, JSON.stringify(c)]
+            );
+          }
+          const contactIds = generalContacts.map(c => c.id);
+          await pool.query(
+            'DELETE FROM contacts WHERE id NOT IN (' + contactIds.map((_, i) => '$' + (i + 1)).join(', ') + ')',
+            contactIds
+          );
+        } else {
+          await pool.query('DELETE FROM contacts');
+        }
+
+        // Block B: Media Partners
+        if (mediaPartners.length > 0) {
+          for (const m of mediaPartners) {
+            await pool.query(
+              'INSERT INTO media_partners (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
+              [m.id, JSON.stringify(m)]
+            );
+          }
+          const partnerIds = mediaPartners.map(m => m.id);
+          await pool.query(
+            'DELETE FROM media_partners WHERE id NOT IN (' + partnerIds.map((_, i) => '$' + (i + 1)).join(', ') + ')',
+            partnerIds
+          );
+        } else {
+          await pool.query('DELETE FROM media_partners');
+        }
+      } else {
+        await pool.query('DELETE FROM contacts');
+        await pool.query('DELETE FROM media_partners');
+      }
+    }
+
+    // 3. Transactions
+    if (data.transactions) {
+      if (data.transactions.length > 0) {
+        for (const t of data.transactions) {
+          await pool.query(
+            'INSERT INTO transactions (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
+            [t.id, JSON.stringify(t)]
+          );
+        }
+        const transactionIds = data.transactions.map(t => t.id);
+        await pool.query(
+          'DELETE FROM transactions WHERE id NOT IN (' + transactionIds.map((_, i) => '$' + (i + 1)).join(', ') + ')',
+          transactionIds
+        );
+      } else {
+        await pool.query('DELETE FROM transactions');
+      }
+    }
+
+    // 4. Campaigns
+    if (data.campaigns) {
+      if (data.campaigns.length > 0) {
+        for (const c of data.campaigns) {
+          await pool.query(
+            'INSERT INTO campaigns (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
+            [c.id, JSON.stringify(c)]
+          );
+        }
+        const campaignIds = data.campaigns.map(c => c.id);
+        await pool.query(
+          'DELETE FROM campaigns WHERE id NOT IN (' + campaignIds.map((_, i) => '$' + (i + 1)).join(', ') + ')',
+          campaignIds
+        );
+      } else {
+        await pool.query('DELETE FROM campaigns');
+      }
+    }
+
+    // 5. Tasks
+    if (data.tasks) {
+      if (data.tasks.length > 0) {
+        for (const t of data.tasks) {
+          await pool.query(
+            'INSERT INTO tasks (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
+            [t.id, JSON.stringify(t)]
+          );
+        }
+        const taskIds = data.tasks.map(t => t.id);
+        await pool.query(
+          'DELETE FROM tasks WHERE id NOT IN (' + taskIds.map((_, i) => '$' + (i + 1)).join(', ') + ')',
+          taskIds
+        );
+      } else {
+        await pool.query('DELETE FROM tasks');
+      }
+    }
+
+    console.log('[Vercel Postgres] Replication fully synchronized database rows.');
+    return true;
+  } catch (err: any) {
+    console.error('[Vercel Postgres] Synchronize collections failed:', err);
+    return false;
+  }
+}
+
+export function getVercelPostgresStatus() {
+  const uri = cachedVercelDbUrl || cleanEnv(process.env.VERCEL_DATABASE_URL) || cleanEnv(process.env.POSTGRES_URL);
+  return {
+    isConfigured: !!uri,
+    hasDatabaseUrl: !!uri,
+    dbInitialized: vercelSchemaInitialized,
+    error: vercelDbError,
+    dbName: 'data_bas2_vercel',
+    maskedUrl: uri 
+      ? uri.replace(/:([^:@]+)@/, ':******@').split('?')[0]
+      : null,
+  };
+}
+
 /**
  * 1. Initialize and test the reusable Postgres pool
  */
@@ -576,6 +980,18 @@ export async function saveUserDataToPostgres(data: {
     }
 
     console.log('[Postgres Service] Data tables successfully sychronized.');
+    
+    // Dual-write replication to Vercel (secondary database layer) if configured
+    try {
+      const vercelPoolConnected = await getVercelPgPool();
+      if (vercelPoolConnected) {
+        console.log('[Postgres Duel-Sync] Replicating updates to Vercel Database secondary layer...');
+        await saveUserDataToVercel(data);
+      }
+    } catch (vErr) {
+      console.warn('[Postgres Duel-Sync] Vercel replication failed, primary database is safe:', vErr);
+    }
+
     return true;
   } catch (err: any) {
     console.error('[Postgres Service] Synchronize collections failed:', err);

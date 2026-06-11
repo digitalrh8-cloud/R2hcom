@@ -11,7 +11,12 @@ import {
   getPgPool,
   resetDbSchema,
   getRailwayConfigValue,
-  saveRailwayConfigValue
+  saveRailwayConfigValue,
+  getVercelPostgresStatus,
+  loadUserDataFromVercel,
+  saveUserDataToVercel,
+  initializeVercelDbSchema,
+  resetVercelDbSchema
 } from './lib/postgres';
 
 import { Stand, Contact, Transaction, Campaign, Task } from './src/types';
@@ -38,6 +43,16 @@ export async function initializeDatabaseSchema(): Promise<boolean> {
   } else {
     console.warn('[Startup Test] Postgres database initialisation check: FAILED/OFFLINE.');
   }
+
+  // Also try to initialize Vercel database if available
+  try {
+    const isVercelConfigured = getVercelPostgresStatus().isConfigured;
+    if (isVercelConfigured) {
+      await initializeVercelDbSchema();
+      console.log('[Startup Test] Secundary Vercel Database initialized.');
+    }
+  } catch (err) {}
+
   return result;
 }
 
@@ -73,6 +88,34 @@ export async function saveUserDataToDatabase(data: {
  */
 export function getDatabaseStatus() {
   return getPostgresStatus();
+}
+
+/**
+ * Bridge Vercel status check
+ */
+export function getVercelDatabaseStatus() {
+  return getVercelPostgresStatus();
+}
+
+/**
+ * Bridge Vercel load operation
+ */
+export async function loadFromVercelDatabase() {
+  return loadUserDataFromVercel();
+}
+
+/**
+ * Bridge Vercel save operation
+ */
+export async function saveToVercelDatabase(data: any) {
+  return saveUserDataToVercel(data);
+}
+
+/**
+ * Bridge Vercel reset database schema
+ */
+export async function resetVercelDatabaseSchema(force = false) {
+  return resetVercelDbSchema(force);
 }
 
 /**

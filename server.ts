@@ -14,7 +14,11 @@ import {
   initializeDatabaseSchema,
   resetDatabaseSchema,
   getRailwayConfig,
-  saveRailwayConfig
+  saveRailwayConfig,
+  getVercelDatabaseStatus,
+  loadFromVercelDatabase,
+  saveToVercelDatabase,
+  resetVercelDatabaseSchema
 } from './db';
 
 // Load environment variables
@@ -38,7 +42,11 @@ app.get('/api/health', (req, res) => {
 app.get('/api/db/status', (req, res) => {
   try {
     const status = getDatabaseStatus();
-    res.json(status);
+    const vercelStatus = getVercelDatabaseStatus();
+    res.json({
+      ...status,
+      vercel: vercelStatus
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message || String(err) });
   }
@@ -222,6 +230,86 @@ app.post('/api/db/initialize', async (req, res) => {
       });
     } else {
       res.status(500).json({ success: false, error: 'Échec d\'initialisation des tables PostgreSQL. Vérifiez votre connexion.' });
+    }
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || String(err) });
+  }
+});
+
+// Force-create or reseed Vercel PostgreSQL tables
+app.post('/api/db/vercel/initialize', async (req, res) => {
+  try {
+    const status = getVercelDatabaseStatus();
+    if (!status.isConfigured) {
+      res.json({ success: false, configured: false, message: 'URL de base de données Vercel non configurée.' });
+      return;
+    }
+    const { force = false } = req.body || {};
+    const success = await resetVercelDatabaseSchema(force);
+    if (success) {
+      res.json({ 
+        success: true, 
+        message: force 
+          ? 'La deuxième base (Vercel) a été réinitialisée et toutes les tables ont été recréées avec succès !'
+          : 'Les tables de la deuxième base (Vercel) ont été vérifiées et initialisées avec succès !',
+        collections: ['stands', 'contacts', 'transactions', 'campaigns', 'tasks']
+      });
+    } else {
+      res.status(500).json({ success: false, error: 'Échec d\'initialisation des tables Vercel. Vérifiez votre connexion.' });
+    }
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || String(err) });
+  }
+});
+
+// Update Vercel custom Database URL in config
+app.post('/api/db/vercel/url', async (req, res) => {
+  try {
+    const { databaseUrl } = req.body || {};
+    if (!databaseUrl) {
+      res.status(400).json({ success: false, error: 'URL non fournie.' });
+      return;
+    }
+    // Update config row
+    await saveRailwayConfig('vercel_database_url', databaseUrl.trim());
+    res.json({ success: true, message: 'URL de connexion de la deuxième base (Vercel) enregistrée avec succès !' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || String(err) });
+  }
+});
+
+// Copy all records from Railway database into Vercel database (Sync To Vercel)
+app.post('/api/db/vercel/sync-to', async (req, res) => {
+  try {
+    const primaryData = await loadUserDataFromDatabase();
+    if (!primaryData) {
+      res.status(500).json({ success: false, error: 'Impossible de lire les données de la base principale (Railway).' });
+      return;
+    }
+    const success = await saveToVercelDatabase(primaryData);
+    if (success) {
+      res.json({ success: true, message: 'Réplication complète de la base Railway vers la base Vercel effectuée avec succès !' });
+    } else {
+      res.status(500).json({ success: false, error: 'Échec de la réplication vers Vercel. Assurez-vous d\'avoir configuré une URL valide.' });
+    }
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || String(err) });
+  }
+});
+
+// Copy all records from Vercel database into Railway database (Sync From Vercel)
+app.post('/api/db/vercel/sync-from', async (req, res) => {
+  try {
+    const vercelData = await loadFromVercelDatabase();
+    if (!vercelData) {
+      res.status(500).json({ success: false, error: 'Impossible de lire les données depuis la base Vercel. Vérifiez la connexion.' });
+      return;
+    }
+    const success = await saveUserDataToDatabase(vercelData);
+    if (success) {
+      res.json({ success: true, message: 'Restauration complète de la base Vercel vers la base Railway effectuée avec succès !' });
+    } else {
+      res.status(500).json({ success: false, error: 'Échec de la restauration vers la base principale (Railway).' });
     }
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || String(err) });
