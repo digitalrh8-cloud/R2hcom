@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { SiteId, Transaction, TransactionItem } from '../types';
 import { initialSites } from '../initialData';
+import R2HLogo from './R2HLogo';
 
 interface ComptabiliteViewProps {
   selectedSite: SiteId;
@@ -324,6 +325,7 @@ export default function ComptabiliteView({
             max-width: 800px;
             margin: 0 auto;
             background: #ffffff;
+            overflow: hidden;
           }
           .font-title {
             font-family: "Playfair Display", "Times New Roman", serif;
@@ -337,6 +339,19 @@ export default function ComptabiliteView({
       <body>
         <div class="invoice-sheet">
           ${paidCheckWatermark}
+          
+          <!-- Background logo watermark SVG -->
+          <div style="position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%); width: 280px; height: 280px; opacity: 0.035; z-index: 0; pointer-events: none; display: flex; align-items: center; justify-content: center;">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
+              <circle cx="50" cy="50" r="44" stroke="#000000" stroke-width="4" />
+              <g stroke="#000000" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M28.5,53 L28.5,41.5 M28.5,42.5 C28.5,38 32.5,38 36.5,38" />
+                <path d="M44.5,42 C44.5,37 52.5,37 52.5,42.5 C52.5,47 44.5,51.5 44.5,53 L53.5,53" />
+                <path d="M61.5,29 L61.5,53 M61.5,44.5 C63.5,40.5 71.5,40.5 71.5,45 L71.5,53" />
+              </g>
+              <text x="50" y="68" fill="#000000" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="6.2" letter-spacing="0.08em" text-anchor="middle">COMMUNICATION</text>
+            </svg>
+          </div>
           
           <!-- Corporate Stationery Header -->
           <div style="display: flex; justify-content: space-between; align-items: flex-start; border-b: 1px solid #e8e6de; padding-bottom: 22px; margin-bottom: 24px;">
@@ -876,7 +891,12 @@ export default function ComptabiliteView({
               {focusReceipt ? (
                 <>
                 {/* Corporate printable page mockup frame rendering */}
-                <div id="printable-area-mockup" className="bg-white border border-slate-300 p-6 rounded-lg font-sans text-[11px] leading-relaxed relative text-slate-800 selection:bg-rose-100">
+                <div id="printable-area-mockup" className="bg-white border border-slate-300 p-6 rounded-lg font-sans text-[11px] leading-relaxed relative text-slate-800 selection:bg-rose-100 overflow-hidden">
+                  
+                  {/* Background logo watermark */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 opacity-[0.035] select-none pointer-events-none z-0">
+                    <R2HLogo className="w-full h-full" color="#000000" />
+                  </div>
                   
                   {/* Watermark paid indicator */}
                   {focusReceipt.status === 'paye' && (
