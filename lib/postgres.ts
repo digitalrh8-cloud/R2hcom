@@ -372,6 +372,15 @@ async function seedCollectionsIfEmpty(rawPool: pg.Pool) {
       await pool.query("INSERT INTO railway_config (key, value) VALUES ('railway_api_status', 'connected')");
     }
 
+    // 7. Vercel 2nd Layer Domain Seed
+    const vercelDomainRes = await pool.query("SELECT value FROM railway_config WHERE key = 'vercel_domain'");
+    if (vercelDomainRes.rows.length === 0) {
+      console.log('[Postgres Service] Seeding default Vercel 2nd layer API domain...');
+      await pool.query("INSERT INTO railway_config (key, value) VALUES ('vercel_domain', 'r2hcom.vercel.app')");
+      await pool.query("INSERT INTO railway_config (key, value) VALUES ('vercel_linked_since', '" + new Date().toISOString() + "')");
+      await pool.query("INSERT INTO railway_config (key, value) VALUES ('vercel_api_status', 'connected')");
+    }
+
     console.log('[Postgres Service] PostgreSQL seed datasets loaded successfully.');
   } catch (err) {
     console.error('[Postgres Service] Error seeding tables:', err);

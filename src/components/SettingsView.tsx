@@ -56,6 +56,13 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
   const [savingDomain, setSavingDomain] = useState(false);
   const [domainMessage, setDomainMessage] = useState<{ type: 'success' | 'err' | null; text: string | null }>({ type: null, text: null });
 
+  // Vercel 2nd Layer Domain API integration states
+  const [vercelDomain, setVercelDomain] = useState('r2hcom.vercel.app');
+  const [vercelLinkedSince, setVercelLinkedSince] = useState<string | null>(null);
+  const [vercelStatus, setVercelStatus] = useState<'connected' | 'disconnected'>('connected');
+  const [savingVercelDomain, setSavingVercelDomain] = useState(false);
+  const [vercelDomainMessage, setVercelDomainMessage] = useState<{ type: 'success' | 'err' | null; text: string | null }>({ type: null, text: null });
+
   // User profile management states
   const [usersList, setUsersList] = useState<UserProfile[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -238,9 +245,9 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
     }
   };
 
-  // Load configured Railway Domain on component mount
+  // Load configured Railway & Vercel Domains on component mount
   React.useEffect(() => {
-    async function loadRailwayConfig() {
+    async function loadConfigs() {
       try {
         const res = await fetch('/api/railway/config');
         const data = await res.json();
@@ -258,8 +265,26 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
       } catch (err) {
         console.warn("Impossible de charger la configuration Railway:", err);
       }
+
+      try {
+        const res = await fetch('/api/vercel/config');
+        const data = await res.json();
+        if (data.success) {
+          if (data.domain) {
+            setVercelDomain(data.domain);
+          }
+          if (data.linkedSince) {
+            setVercelLinkedSince(data.linkedSince);
+          }
+          if (data.status) {
+            setVercelStatus(data.status);
+          }
+        }
+      } catch (err) {
+        console.warn("Impossible de charger la configuration Vercel:", err);
+      }
     }
-    loadRailwayConfig();
+    loadConfigs();
   }, []);
 
   const handleSaveDomain = async () => {
@@ -287,6 +312,34 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
       setDomainMessage({ type: 'err', text: err.message || String(err) });
     } finally {
       setSavingDomain(false);
+    }
+  };
+
+  const handleSaveVercelDomain = async () => {
+    if (!vercelDomain.trim()) {
+      setVercelDomainMessage({ type: 'err', text: "Le domaine ne peut pas être vide." });
+      return;
+    }
+    setSavingVercelDomain(true);
+    setVercelDomainMessage({ type: null, text: null });
+    try {
+      const res = await fetch('/api/vercel/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: vercelDomain.trim() })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setVercelDomainMessage({ type: 'success', text: data.message || '2ème couche de domaine (Vercel) liée avec succès !' });
+        setVercelLinkedSince(data.linkedSince);
+        setVercelStatus('connected');
+      } else {
+        setVercelDomainMessage({ type: 'err', text: data.error || 'Une erreur est survenue lors de la liaison.' });
+      }
+    } catch (err: any) {
+      setVercelDomainMessage({ type: 'err', text: err.message || String(err) });
+    } finally {
+      setSavingVercelDomain(false);
     }
   };
 
@@ -587,6 +640,25 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
               </span>
             </div>
 
+            <div className="flex justify-between items-center p-2.5 bg-slate-50/70 rounded-lg border border-slate-200/60">
+              <div>
+                <a 
+                  href={`https://${vercelDomain || 'r2hcom.vercel.app'}`}
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="font-bold text-indigo-700 hover:text-indigo-800 hover:underline flex items-center gap-1"
+                >
+                  <span>{vercelDomain || 'r2hcom.vercel.app'}</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+                <p className="text-[10px] text-slate-400">Domaine Vercel Actif • 2ème Couche API</p>
+              </div>
+              <span className="text-[9px] font-bold px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse"></span>
+                API 2ème Couche
+              </span>
+            </div>
+
             {/* Link Custom Domain configuration form */}
             <div className="pt-3 border-t border-slate-100 space-y-2.5">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Gérer votre Domaine Railway</label>
@@ -605,7 +677,7 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
                 <button
                   onClick={handleSaveDomain}
                   disabled={savingDomain}
-                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg font-semibold text-xs transition-all duration-150 shrink-0 select-none cursor-pointer"
+                  className="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white rounded-lg font-semibold text-xs transition-all duration-150 shrink-0 select-none cursor-pointer"
                 >
                   {savingDomain ? 'Liaison...' : 'Lier'}
                 </button>
@@ -629,6 +701,52 @@ export default function SettingsView({ selectedSite, dbStatus, refreshDbState }:
                     <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
                   )}
                   <span className="font-medium">{domainMessage.text}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Link Vercel 2nd Layer Domain form */}
+            <div className="pt-3 border-t border-slate-100 space-y-2.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Gérer votre Domaine Vercel (2ème Couche API)</label>
+              
+              <div className="flex items-center gap-1.5">
+                <div className="relative flex-1">
+                  <span className="absolute left-2.5 top-2 py-0.5 text-slate-400 text-[11px] font-mono">https://</span>
+                  <input
+                    type="text"
+                    value={vercelDomain}
+                    onChange={(e) => setVercelDomain(e.target.value)}
+                    placeholder="r2hcom.vercel.app"
+                    className="w-full pl-14 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-hidden text-slate-700 font-mono text-[11px]"
+                  />
+                </div>
+                <button
+                  onClick={handleSaveVercelDomain}
+                  disabled={savingVercelDomain}
+                  className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg font-semibold text-xs transition-all duration-150 shrink-0 select-none cursor-pointer"
+                >
+                  {savingVercelDomain ? 'Liaison...' : 'Lier'}
+                </button>
+              </div>
+
+              {vercelLinkedSince && (
+                <p className="text-[9px] text-slate-400">
+                  Liaison établie avec succès le : <span className="font-mono">{new Date(vercelLinkedSince).toLocaleString('fr-FR')}</span>
+                </p>
+              )}
+
+              {vercelDomainMessage.text && (
+                <div className={`p-2 rounded-lg text-[10px] leading-relaxed flex items-start gap-1.5 border ${
+                  vercelDomainMessage.type === 'success'
+                    ? 'bg-emerald-50/50 border-emerald-100 text-emerald-800'
+                    : 'bg-rose-50/50 border-rose-100 text-rose-800'
+                }`}>
+                  {vercelDomainMessage.type === 'success' ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                  )}
+                  <span className="font-medium">{vercelDomainMessage.text}</span>
                 </div>
               )}
             </div>

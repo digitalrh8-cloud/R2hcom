@@ -104,6 +104,66 @@ app.post('/api/railway/config', async (req, res) => {
   }
 });
 
+// Get Vercel 2nd Layer Domain configuration values
+app.get('/api/vercel/config', async (req, res) => {
+  try {
+    const status = getDatabaseStatus();
+    if (!status.isConfigured) {
+      res.json({
+        success: true,
+        domain: 'r2hcom.vercel.app',
+        linkedSince: null,
+        status: 'disconnected'
+      });
+      return;
+    }
+    let domain = await getRailwayConfig('vercel_domain');
+    const linkedSince = await getRailwayConfig('vercel_linked_since');
+    const configStatus = await getRailwayConfig('vercel_api_status');
+
+    if (domain) {
+      // Clean up protocol if stored with https:// or http:// or trailing slashes
+      domain = domain.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+    }
+
+    res.json({
+      success: true,
+      domain: domain || 'r2hcom.vercel.app',
+      linkedSince: linkedSince || null,
+      status: configStatus || 'connected'
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || String(err) });
+  }
+});
+
+// Update Vercel 2nd Layer Domain configuration
+app.post('/api/vercel/config', async (req, res) => {
+  try {
+    let { domain } = req.body || {};
+    if (!domain) {
+      res.status(400).json({ success: false, error: "Domaine non fourni" });
+      return;
+    }
+    
+    // Clean up domain URL formats
+    domain = domain.trim().replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+    
+    await saveRailwayConfig('vercel_domain', domain);
+    await saveRailwayConfig('vercel_linked_since', new Date().toISOString());
+    await saveRailwayConfig('vercel_api_status', 'connected');
+    
+    res.json({ 
+      success: true, 
+      message: "2ème couche API (Vercel) mise à jour et liée avec succès !", 
+      domain,
+      linkedSince: new Date().toISOString()
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || String(err) });
+  }
+});
+
 // Load all datasets from PostgreSQL
 app.get('/api/db/load', async (req, res) => {
   try {
