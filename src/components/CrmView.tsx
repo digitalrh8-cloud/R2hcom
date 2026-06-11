@@ -149,64 +149,106 @@ export default function CrmView({
   // Toast indicator
   const [toastMessage, setToastMessage] = useState<React.ReactNode | null>(null);
 
-  // Synchronise sold and reserved stands to CRM contacts dynamically
+  // Synchronise bidirectionally: align GRC/CRM contacts and Floorplan stands
   const handleSyncStandsToCrm = (isSilent = false) => {
-    let countAdded = 0;
-    let countUpdated = 0;
-    
-    setContacts(prev => {
-      const updatedContacts = [...prev];
-      
-      stands.forEach(stand => {
-        // We look at rented ('vendu') and optioned ('reserve') stands
-        if (stand.status === 'vendu' || stand.status === 'reserve' || stand.status === 'sponsorise') {
+    let countAddedContacts = 0;
+    let countUpdatedContacts = 0;
+    let countUpdatedStands = 0;
+
+    let nextContacts = [...contacts];
+    let nextStands = [...stands];
+
+    // 1. Align stands on floorplan with CRM contacts who have stand assignments (CRM -> Floorplan)
+    nextStands = nextStands.map(stand => {
+      const matchingContact = nextContacts.find(c => 
+        c.site === stand.site && 
+        c.standNumber?.trim().toLowerCase() === stand.num.trim().toLowerCase()
+      );
+
+      if (matchingContact) {
+        let expectedStatus: 'vendu' | 'reserve' | 'sponsorise' | 'disponible' = 'reserve';
+        if (matchingContact.role === 'client') {
+          expectedStatus = 'vendu';
+        } else if (matchingContact.role === 'partner_media' || matchingContact.role === 'partner') {
+          expectedStatus = 'sponsorise';
+        } else {
+          expectedStatus = 'reserve';
+        }
+
+        const needsUpdate = 
+          stand.status !== expectedStatus ||
+          stand.companyName !== matchingContact.company ||
+          stand.clientName !== matchingContact.name;
+
+        if (needsUpdate) {
+          countUpdatedStands++;
+          return {
+            ...stand,
+            status: expectedStatus,
+            companyName: matchingContact.company.trim(),
+            clientName: matchingContact.name.trim()
+          };
+        }
+      }
+      return stand;
+    });
+
+    // 2. Align CRM contacts with floorplan reservations (Floorplan -> CRM)
+    nextStands.forEach(stand => {
+      if (stand.status === 'vendu' || stand.status === 'reserve' || stand.status === 'sponsorise') {
           // Check if there is already a contact assigned to this specific stand (case insensitive)
-          const contactWithStandIdx = updatedContacts.findIndex(c => 
-            c.site === stand.site && 
-            c.standNumber?.trim().toLowerCase() === stand.num.trim().toLowerCase()
-          );
+        const contactWithStandIdx = nextContacts.findIndex(c => 
+          c.site === stand.site && 
+          c.standNumber?.trim().toLowerCase() === stand.num.trim().toLowerCase()
+        );
+        
+        const contactWithCompanyIdx = nextContacts.findIndex(c => 
+          c.site === stand.site && 
+          (!c.standNumber || c.standNumber.trim() === '') &&
+          c.company.trim().toLowerCase() === (stand.companyName || '').trim().toLowerCase()
+        );
           
-          // Or find a contact matching the identical company name in that site that doesn't have a standNumber yet
-          const contactWithCompanyIdx = updatedContacts.findIndex(c => 
-            c.site === stand.site && 
-            c.company.trim().toLowerCase() === (stand.companyName || '').trim().toLowerCase()
-          );
+        if (contactWithStandIdx !== -1) {
+          const match = { ...nextContacts[contactWithStandIdx] };
+          let changed = false;
           
-          if (contactWithStandIdx !== -1) {
-            // Found a matching contact for this stand. Let's make sure its role and name are synchronized!
-            const match = updatedContacts[contactWithStandIdx];
-            let changed = false;
-            
-            if (stand.companyName && match.company !== stand.companyName) {
-              match.company = stand.companyName;
-              changed = true;
-            }
-            if (stand.clientName && match.name !== stand.clientName) {
-              match.name = stand.clientName;
-              changed = true;
-            }
-            const expectedRole = stand.status === 'vendu' || stand.status === 'sponsorise' ? 'client' : 'prospect';
-            if (match.role !== expectedRole) {
-              match.role = expectedRole;
-              changed = true;
-            }
-            
-            if (changed) {
-              countUpdated++;
-            }
-          } else if (contactWithCompanyIdx !== -1) {
-            // Found matching company name in GRC without stand number. Let's assign the stand number to link them.
-            const match = updatedContacts[contactWithCompanyIdx];
-            match.standNumber = stand.num;
-            const expectedRole = stand.status === 'vendu' || stand.status === 'sponsorise' ? 'client' : 'prospect';
-            if (match.role !== expectedRole) {
-              match.role = expectedRole;
-            }
-            if (stand.clientName && stand.clientName !== 'À désigner' && match.name !== stand.clientName) {
-              match.name = stand.clientName;
-            }
-            countUpdated++;
-          } else {
+          if (stand.companyName && match.company !== stand.companyName) {
+            match.company = stand.companyName;
+            changed = true;
+          }
+          if (stand.clientName && match.name !== stand.clientName) {
+            match.name = stand.clientName;
+            changed = true;
+          }
+          let expectedRole: Contact['role'] = stand.status === 'vendu' || stand.status === 'sponsorise' ? 'client' : 'prospect';
+          if (match.role === 'partner_media' || match.role === 'fournisseur') {
+            expectedRole = match.role;
+          }
+          if (match.role !== expectedRole) {
+            match.role = expectedRole;
+            changed = true;
+          }
+          
+          if (changed) {
+            countUpdatedContacts++;
+            nextContacts[contactWithStandIdx] = match;
+          }
+        } else if (contactWithCompanyIdx !== -1) {
+          const match = { ...nextContacts[contactWithCompanyIdx] };
+          match.standNumber = stand.num;
+          let expectedRole: Contact['role'] = stand.status === 'vendu' || stand.status === 'sponsorise' ? 'client' : 'prospect';
+          if (match.role === 'partner_media' || match.role === 'fournisseur') {
+            expectedRole = match.role;
+          }
+          if (match.role !== expectedRole) {
+            match.role = expectedRole;
+          }
+          if (stand.clientName && stand.clientName !== 'À désigner' && match.name !== stand.clientName) {
+            match.name = stand.clientName;
+          }
+          countUpdatedContacts++;
+          nextContacts[contactWithCompanyIdx] = match;
+        } else {
             // NO MATCH FOUND - Create a synchronized contact card in GRC
             const companyName = stand.companyName?.trim() || `Option Stand ${stand.num}`;
             const clientName = stand.clientName?.trim() || `Interlocuteur ${stand.num}`;
@@ -233,24 +275,36 @@ export default function CrmView({
               standNumber: stand.num
             };
             
-            updatedContacts.push(newContact);
-            countAdded++;
-          }
+          nextContacts.push(newContact);
+          countAddedContacts++;
         }
-      });
-      
-      return updatedContacts;
+      }
     });
 
+    setContacts(nextContacts);
+    if (setStands) {
+      setStands(nextStands);
+    }
+
     if (!isSilent) {
-      if (countAdded > 0 || countUpdated > 0) {
+      if (countAddedContacts > 0 || countUpdatedContacts > 0 || countUpdatedStands > 0) {
         triggerToast(
-          <span>
-            <strong>Synchro réussie !</strong> {countAdded} entreprises importées dans le CRM, {countUpdated} coordonnées ré-associées de manière transparente.
-          </span>
+          <div className="space-y-1 text-left">
+            <span className="font-bold block text-xs text-amber-100">Synchro bidirectionnelle réussie !</span>
+            <div className="text-[10px] space-y-0.5 text-white/95 leading-relaxed font-sans mt-1">
+              {countAddedContacts > 0 && <div>• <strong>{countAddedContacts}</strong> nouveaux contacts créés dans le CRM</div>}
+              {countUpdatedContacts > 0 && <div>• <strong>{countUpdatedContacts}</strong> fiches de contact CRM alignées</div>}
+              {countUpdatedStands > 0 && <div>• <strong>{countUpdatedStands}</strong> stands sur le plan mis à jour</div>}
+            </div>
+          </div>
         );
       } else {
-        triggerToast("Vos coordonnées CRM sont déjà à jour avec le plan.");
+        triggerToast(
+          <div className="text-left font-sans">
+            <strong>Plan & CRM déjà alignés !</strong>
+            <p className="text-[10px] text-white/80 mt-0.5">Toutes les attributions de stands et fiches d'exposants sont parfaitement synchronisées.</p>
+          </div>
+        );
       }
     }
   };
