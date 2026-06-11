@@ -86,7 +86,7 @@ export default function DashboardView({
 
   // KPI calculations
   const totalRevenue = siteTransactions
-    .filter(t => t.status === 'paye' || t.status === 'envoye')
+    .filter(t => t.type === 'facture' && (t.status === 'paye' || t.status === 'envoye'))
     .reduce((sum, curr) => sum + curr.amount, 0);
 
   const totalReliquat = siteTransactions
@@ -101,7 +101,12 @@ export default function DashboardView({
   const pendingInvoicesCount = siteTransactions.filter(t => t.type === 'facture' && t.status === 'envoye').length;
   const pendingInvoicesSum = siteTransactions
     .filter(t => t.type === 'facture' && t.status === 'envoye')
-    .reduce((sum, curr) => sum + curr.amount, 0);
+    .reduce((sum, curr) => {
+      const transHasTva = curr.includeTva !== false;
+      const transTtc = transHasTva ? curr.amount * 1.2 : curr.amount;
+      const remaining = transTtc - (curr.advancePaid || 0);
+      return sum + (remaining > 0 ? remaining : 0);
+    }, 0);
 
   const prospectCount = siteContacts.filter(c => c.role === 'prospect').length;
 

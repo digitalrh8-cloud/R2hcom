@@ -55,14 +55,27 @@ export default function ComptabiliteView({
 
   const handleUpdateAdvance = (amount: number) => {
     if (!focusReceipt) return;
+    const hasTva = focusReceipt.includeTva !== false;
+    const multiplier = hasTva ? 1.2 : 1.0;
+    const ttcAmount = focusReceipt.amount * multiplier;
+
+    // Automatiquement passer en paye si l'avance couvre la totalité du net à payer TTC
+    const nextStatus = amount >= Math.round(ttcAmount) ? 'paye' : 'envoye';
+
     setTransactions(prev => prev.map(t => {
       if (t.id === focusReceipt.id) {
-        return { ...t, advancePaid: amount };
+        return { ...t, advancePaid: amount, status: nextStatus };
       }
       return t;
     }));
-    setFocusReceipt(prev => prev ? { ...prev, advancePaid: amount } : null);
-    triggerToast(`Mise à jour de l'avance : ${amount.toLocaleString()} MAD.`);
+
+    setFocusReceipt(prev => prev ? { ...prev, advancePaid: amount, status: nextStatus } : null);
+    
+    if (amount >= Math.round(ttcAmount)) {
+      triggerToast(`Facture encaissée en totalité ! Statut mis à jour sur 'Encaissé'.`);
+    } else {
+      triggerToast(`Mise à jour de l'avance : ${amount.toLocaleString()} MAD. Reliquat recalculé automatiquement.`);
+    }
   };
 
   const [copiedRib, setCopiedRib] = useState(false);
@@ -178,15 +191,46 @@ export default function ComptabiliteView({
     const nextStatus = currentStatus === 'paye' ? 'envoye' : 'paye';
     setTransactions(prev => prev.map(t => {
       if (t.id === docId) {
-        return { ...t, status: nextStatus };
+        const hasTva = t.includeTva !== false;
+        const multiplier = hasTva ? 1.2 : 1.0;
+        const ttcAmount = t.amount * multiplier;
+        
+        // Si marqué encaissé, l'avance payée devient égale au total TTC du document pour un reliquat de 0
+        // Si marqué envoyé d'une facture entièrement réglée, l'avance est réinitialisée à 0
+        let nextAdvance = t.advancePaid || 0;
+        if (nextStatus === 'paye') {
+          nextAdvance = Math.round(ttcAmount);
+        } else if (nextStatus === 'envoye' && Math.round(t.advancePaid || 0) >= Math.round(ttcAmount)) {
+          nextAdvance = 0;
+        }
+
+        return { ...t, status: nextStatus, advancePaid: nextAdvance };
       }
       return t;
     }));
 
     if (focusReceipt?.id === docId) {
-      setFocusReceipt(prev => prev ? { ...prev, status: nextStatus } : null);
+      setFocusReceipt(prev => {
+        if (!prev) return null;
+        const hasTva = prev.includeTva !== false;
+        const multiplier = hasTva ? 1.2 : 1.0;
+        const ttcAmount = prev.amount * multiplier;
+
+        let nextAdvance = prev.advancePaid || 0;
+        if (nextStatus === 'paye') {
+          nextAdvance = Math.round(ttcAmount);
+        } else if (nextStatus === 'envoye' && Math.round(prev.advancePaid || 0) >= Math.round(ttcAmount)) {
+          nextAdvance = 0;
+        }
+
+        return { ...prev, status: nextStatus, advancePaid: nextAdvance };
+      });
     }
-    triggerToast("Statut de la transaction actualisé avec succès.");
+    
+    triggerToast(nextStatus === 'paye' ? 
+      "Transaction encaissée en totalité. Solde reliquat mis à 0 !" : 
+      "Statut de la transaction actualisé. Reliquat réactivé."
+    );
   };
 
   const handleDeleteDoc = (docId: string, docNum: string, docType: 'devis' | 'facture') => {
