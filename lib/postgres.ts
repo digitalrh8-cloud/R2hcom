@@ -223,6 +223,13 @@ export async function initializeDbSchema(): Promise<boolean> {
     `);
 
     await pool.query(`
+      CREATE TABLE IF NOT EXISTS media_partners (
+        id VARCHAR(255) PRIMARY KEY,
+        data JSONB NOT NULL
+      );
+    `);
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS transactions (
         id VARCHAR(255) PRIMARY KEY,
         data JSONB NOT NULL
@@ -275,7 +282,7 @@ export async function resetDbSchema(force = false): Promise<boolean> {
   try {
     if (force) {
       console.log('[Postgres Service] Dropping database tables...');
-      await pool.query('DROP TABLE IF EXISTS stands, contacts, transactions, campaigns, tasks;');
+      await pool.query('DROP TABLE IF EXISTS stands, contacts, media_partners, transactions, campaigns, tasks;');
     }
 
     schemaInitialized = false;
@@ -309,8 +316,20 @@ async function seedCollectionsIfEmpty(rawPool: pg.Pool) {
     const contactsCount = parseInt(contactsCountRes.rows[0].count, 10);
     if (contactsCount === 0) {
       console.log('[Postgres Service] Seeding contacts...');
-      for (const c of initialContacts) {
+      const nonMediaContacts = initialContacts.filter(c => c.role !== 'partner_media');
+      for (const c of nonMediaContacts) {
         await pool.query('INSERT INTO contacts (id, data) VALUES ($1, $2)', [c.id, JSON.stringify(c)]);
+      }
+    }
+
+    // 2.5 Media Partners
+    const partnersCountRes = await pool.query('SELECT COUNT(*) FROM media_partners');
+    const partnersCount = parseInt(partnersCountRes.rows[0].count, 10);
+    if (partnersCount === 0) {
+      console.log('[Postgres Service] Seeding media partners...');
+      const mediaContacts = initialContacts.filter(c => c.role === 'partner_media');
+      for (const m of mediaContacts) {
+        await pool.query('INSERT INTO media_partners (id, data) VALUES ($1, $2)', [m.id, JSON.stringify(m)]);
       }
     }
 
@@ -373,17 +392,26 @@ export async function loadUserDataFromPostgres() {
   try {
     await initializeDbSchema();
 
-    const [standsRes, contactsRes, transactionsRes, campaignsRes, tasksRes] = await Promise.all([
+    const [standsRes, contactsRes, mediaPartnersRes, transactionsRes, campaignsRes, tasksRes] = await Promise.all([
       pool.query('SELECT data FROM stands'),
       pool.query('SELECT data FROM contacts'),
+      pool.query('SELECT data FROM media_partners'),
       pool.query('SELECT data FROM transactions'),
       pool.query('SELECT data FROM campaigns'),
       pool.query('SELECT data FROM tasks')
     ]);
 
+    const dbContacts = contactsRes.rows.map((row: any) => row.data) as Contact[];
+    const dbMediaPartners = mediaPartnersRes.rows.map((row: any) => row.data) as Contact[];
+    
+    // Hard check to verify proper role alignment
+    dbMediaPartners.forEach(p => {
+      p.role = 'partner_media';
+    });
+
     return {
       stands: standsRes.rows.map((row: any) => row.data) as Stand[],
-      contacts: contactsRes.rows.map((row: any) => row.data) as Contact[],
+      contacts: [...dbContacts, ...dbMediaPartners],
       transactions: transactionsRes.rows.map((row: any) => row.data) as Transaction[],
       campaigns: campaignsRes.rows.map((row: any) => row.data) as Campaign[],
       tasks: tasksRes.rows.map((row: any) => row.data) as Task[]
@@ -431,22 +459,53 @@ export async function saveUserDataToPostgres(data: {
       }
     }
 
-    // 2. Contacts
+    // 2. Contacts & Media Partners Separation
     if (data.contacts) {
       if (data.contacts.length > 0) {
-        for (const c of data.contacts) {
+        const generalContacts = data.contacts.filter(c => c.role !== 'partner_media');
+        const mediaPartners = data.contacts.filter(c => c.role === 'partner_media');
+
+        // Block A: General Contacts
+        if (generalContacts.length > 0) {
+          for (const c of generalContacts) {
+            await pool.query(
+              'INSERT INTO contacts (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
+              [c.id, JSON.stringify(c)]
+            );
+          }
+          const contactIds = generalContacts.map(c => c.id);
           await pool.query(
-            'INSERT INTO contacts (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
-            [c.id, JSON.stringify(c)]
+            'DELETE FROM contacts WHERE id NOT IN (' + contactIds.map((_, i) => '$' + (i + 1)).join(', ') + ')',
+            contactIds
           );
+        } else {
+          await pool.query('DELETE FROM contacts');
         }
-        const contactIds = data.contacts.map(c => c.id);
-        await pool.query(
-          'DELETE FROM contacts WHERE id NOT IN (' + contactIds.map((_, i) => '$' + (i + 1)).join(', ') + ')',
-          contactIds
-        );
+
+        // Block B: Media Partners
+        if (mediaPartners.length > 0) {
+          for (const m of mediaPartners) {
+            try {
+              await pool.query(
+                'INSERT INTO media_partners (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
+                [m.id, JSON.stringify(m)]
+              );
+            } catch (err: any) {
+              console.error(`[Postgres INSERT Error] Failed writing to media_partners (ID: ${m.id}) with:`, err.message || err);
+              throw err;
+            }
+          }
+          const partnerIds = mediaPartners.map(m => m.id);
+          await pool.query(
+            'DELETE FROM media_partners WHERE id NOT IN (' + partnerIds.map((_, i) => '$' + (i + 1)).join(', ') + ')',
+            partnerIds
+          );
+        } else {
+          await pool.query('DELETE FROM media_partners');
+        }
       } else {
         await pool.query('DELETE FROM contacts');
+        await pool.query('DELETE FROM media_partners');
       }
     }
 
